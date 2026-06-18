@@ -15,11 +15,13 @@ Then:
 ```bash
 cd my-repo
 claude
-/bootstrap         # ONCE: read the repo, ask about gaps, tailor the agents to the project
+/bootstrap         # ONCE: reads the repo, asks your project policy (test rigor, lint, CI), tailors the agents
 /agents            # see the team
 /ship "add a /health endpoint with a test"
 ```
 Requirements: Claude Code v2.x, `bash`, `python3` (security barriers). On Windows: WSL or Git Bash.
+
+**Before running `/bootstrap`, read the policy section in [GUIDE.md](GUIDE.md)** — it explains the choices `/bootstrap` will ask you (test rigor, lint, CI) so you're ready.
 
 ## What you get
 ```

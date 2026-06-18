@@ -28,6 +28,11 @@ Ask a short, grouped, numbered batch — only what recon couldn't settle:
   - **Mid tier** (review, testing, structured analysis) — default: the balanced option
   - **Light tier** (docs, high-volume, cheap edits) — default: the cheapest adequate model
   Don't suggest specific model names or versions — they change and vary by tool. If the user says "use defaults" or skips, keep the tier labels as-is and note them as ASSUMPTIONS.
+- **Project policy** (rigor knobs → written to `.claude/army.conf`; **security barriers are NOT a knob — always on**). Ask which level fits THIS repo on each axis; this is multi-dimensional, so add axes if the repo needs them:
+  - **Testing** — `strict` (TDD RED→GREEN + Testing Trophy, default) · `pragmatic` (tests, not strict-RED-first) · `light` (smoke/happy-path) · `none` (no tests — throwaway/side project). For a quick side project the user may legitimately pick `none`; respect it.
+  - **Lint** — `on` (gate blocks on lint errors, default) · `off`.
+  - **CI** — `on` (use our `quality.yml`) · `off` (the repo has its own, richer CI — don't rely on ours; offer to remove the copied workflow).
+  Default everything to the strict end if the user doesn't care.
 "Assume and go" → record **ASSUMPTIONS** explicitly. **Greenfield** (empty repo): skip code-recon, ask the full set, and choose the stack together with the user.
 
 ## Step 3 · Generate the tailored team (write files)
@@ -48,7 +53,8 @@ Use the baseline agents in `.claude/agents/` as the starting CONTRACT and **rewr
   - keep each example concrete: explicit assertions, RED→GREEN where TDD applies — no abstract `[UNIT]`/`[E2E]` tags without a path.
   If you can't find enough distinct real scenarios for an agent, say so rather than padding with generic filler.
 Then:
-- **Write/refresh `CLAUDE.md`** (and `AGENTS.md` if the repo uses it) with the decisions: stack, exact commands, conventions, testing strategy, the team roster, the guardrails (hooks).
+- **Write `.claude/army.conf`** from the Step-2 policy answers (`TEST_POLICY` / `LINT_POLICY` / `CI_MODE`). The hooks read it deterministically. If `CI_MODE=off`, remove the copied `.github/workflows/quality.yml`. Honor the chosen `TEST_POLICY` everywhere you specialize: at `none` the team SKIPS the `tester`/TDD steps (implement + lint + security + docs only) and the agents must not re-impose tests; at `light`/`pragmatic` scale the Testing-Trophy mix down accordingly. Never relax the **security** barriers — those are not part of this policy.
+- **Write/refresh `CLAUDE.md`** (and `AGENTS.md` if the repo uses it) with the decisions: stack, exact commands, conventions, testing strategy, the team roster, the guardrails (hooks), and a **`## Project policy`** block summarizing `army.conf` so the agents honor it.
 - **Specialize the blueprint templates** in `.claude/templates/blueprint/` to this repo (real commands, test file naming, framework-specific assertion examples).
 - **Create the `design-docs/` skeleton.**
 - Before overwriting any agent, save the original as `.claude/agents/<name>.base.md` (reversible).

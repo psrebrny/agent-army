@@ -6,6 +6,9 @@ description: Full SDD pipeline with the agent team — discovery/interview, blue
 
 > Token discipline for every step lives in `.claude/skills/context-budget/SKILL.md`
 > (cheapest adequate model, pointers not payloads, match the fan-out to task size).
+> This pipeline honors the repo's **Project policy** (`.claude/army.conf`): at `TEST_POLICY=none`
+> skip step 2's tester/TDD loop entirely (implement → security → docs); at `light`/`pragmatic`
+> scale the tests down. Security barriers stay on at every level.
 
 ## 0 · DISCOVERY & INTERVIEW  → agent `architect` (Phase 0)
 Understand the project first. `architect` classifies the repo:
@@ -28,6 +31,7 @@ Default if unspecified: **B (supervised)** for non-trivial tasks, **A** for smal
 Writes `design-docs/[Task-ID]/00_CORE_MANIFEST.md` + `0X_PR_*.md` (1 PR = 1 file). Atomic tasks (Logic + UI/Endpoint + Test), with explicit test paths and API contracts. When there are multiple options — asks which to take.
 
 ## 2 · IMPLEMENTATION per task — STRICT TDD `<auto_critic>` with `tester`
+_(Applies at `TEST_POLICY=strict`/`pragmatic`. At `light`: thin happy-path tests, no strict RED-first. At `none`: skip this whole step — the main session just implements; lint/security still apply.)_
 For EACH task in the blueprint:
 1. **`tester` writes the tests (RED)** — independently, from the contract/acceptance criteria (not from the implementation), in Testing-Trophy weighting. Runs them → **MUST FAIL (RED)** for the right reason.
 2. **The main session implements** the smallest change that satisfies the task (does not rewrite the tests).

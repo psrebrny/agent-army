@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Claude Agent Army — installer (universal). Drops the agent team + barriers into any repo.
-# Usage:  ./install.sh [--tool <claude|cursor|copilot|codex|opencode|gemini|auto|other>] [path-to-repo]
+# Usage:  ./install.sh [--tool <claude|cursor|copilot|codex|opencode|gemini|auto|other>] [--no-ci] [path-to-repo]
 #   --tool  which tool you'll use (default: claude). For non-Claude: Claude hooks are inert,
 #           the hard barrier becomes git pre-commit + CI; the entry point is AGENTS.md.
+#   --no-ci skip Agent Army's CI workflow (use when the repo brings its own, richer CI).
 #   path defaults to the current directory.
 set -euo pipefail
 
@@ -12,10 +13,12 @@ usage() {
 
 TOOL="claude"
 TARGET=""
+NO_CI=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --tool) TOOL="${2:-}"; shift 2 ;;
     --tool=*) TOOL="${1#*=}"; shift ;;
+    --no-ci) NO_CI=1; shift ;;
     -h|--help) usage; exit 0 ;;
     --) shift; break ;;
     -*) echo "Unknown option: $1"; usage; exit 1 ;;
@@ -49,8 +52,19 @@ else
   echo "    • tool=$TOOL → Claude Code hooks inert (.claude/settings.json idle); hard barrier = git pre-commit + CI"
 fi
 
-# CI workflow (optional, does not overwrite an existing one)
-if [ -d "$SRC/.github" ] && [ ! -e "$TARGET/.github/workflows/quality.yml" ]; then
+# CI workflow (optional). Skip when: --no-ci, ours already present, or the repo brings its own CI.
+CONF="$TARGET/.claude/army.conf"
+existing_ci=""
+[ -d "$TARGET/.github/workflows" ] && existing_ci="$(find "$TARGET/.github/workflows" -name '*.yml' -o -name '*.yaml' 2>/dev/null | head -1)"
+if [ "$NO_CI" = "1" ]; then
+  echo "    • --no-ci → skipping Agent Army CI (CI_MODE=off)"
+  [ -f "$CONF" ] && sed -i.bak 's/^CI_MODE=.*/CI_MODE=off/' "$CONF" && rm -f "$CONF.bak"
+elif [ -e "$TARGET/.github/workflows/quality.yml" ]; then
+  echo "    • .github/workflows/quality.yml already present — leaving it as is"
+elif [ -n "$existing_ci" ]; then
+  echo "    • Repo already has CI ($(basename "$existing_ci")…) — NOT adding ours (CI_MODE=off). Override in .claude/army.conf."
+  [ -f "$CONF" ] && sed -i.bak 's/^CI_MODE=.*/CI_MODE=off/' "$CONF" && rm -f "$CONF.bak"
+elif [ -d "$SRC/.github" ]; then
   mkdir -p "$TARGET/.github/workflows"
   cp "$SRC/.github/workflows/quality.yml" "$TARGET/.github/workflows/quality.yml"
   echo "    • Added .github/workflows/quality.yml (CI reuses verify.sh)"

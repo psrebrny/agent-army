@@ -36,6 +36,7 @@ _Fields summary (template is the source of truth):_
 **EX 2 — Pure logic (Unit):** Task: "isValidPesel". → Unit (`pesel.validator.spec.*`): ✓ valid true; ✓ bad checksum false; ✓ wrong length/letters false; ✓ null/empty false. Write spec first → run → RED → (impl) → GREEN. Do not relax the checksum case to pass.
 
 ## Edge cases
+- **Project policy** (`.claude/army.conf`): at `TEST_POLICY=none` you should not be invoked at all (say so if you are); at `light`/`pragmatic` write thin happy-path coverage and drop strict RED-first — don't re-impose full TDD against the repo's chosen level.
 - **No test framework** → propose the minimal idiomatic one; ask before adding a dependency.
 - **Flaky/async test** → stabilize (await, fake timers); never add sleeps/retries to mask flakiness.
 - **Can't reach RED** (test passes before implementation) → the test is too weak; tighten it to the real behavior/contract.

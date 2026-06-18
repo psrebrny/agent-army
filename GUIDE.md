@@ -7,6 +7,30 @@ other honest, plus deterministic **hooks** (barriers the model can't bypass).
 ## Requirements
 Claude Code v2.x · `bash` · `python3` (barriers; a fallback runs without it). Windows: WSL or Git Bash.
 
+## Project policy — before you start
+`/bootstrap` will ask you to set a **policy** for this repo — it's one step, no mystery. The Army adapts to your project's actual stakes. These settings are saved in `.claude/army.conf` (committed; visible in review) and read by both the agents and the gates:
+
+**Testing rigor** — what level of tests does THIS repo need?
+- `strict` (default) — full TDD: write RED tests first, verify GREEN. Testing Trophy (E2E/integration > unit). For most real projects.
+- `pragmatic` — tests required, but not strict RED-first. Write them, keep them passing. Still Testing Trophy mix.
+- `light` — smoke tests / happy-path only. When coverage must be thin.
+- `none` — no tests at all. For throwaway / side-project validators, POCs, experiments. The test gate is skipped entirely.
+
+**Lint** — does the gate block on lint errors?
+- `on` (default) — yes, linter must pass. For production code.
+- `off` — linting still runs (auto-format on save), but the gate won't halt a commit. Use when you have your own, stricter linter elsewhere.
+
+**CI** — does this repo use Agent Army's workflow, or do you bring your own?
+- `on` (default) — use `.github/workflows/quality.yml` (the Army's verify.sh).
+- `off` — the repo already has its own CI (richer, specialized) — don't install ours; you brought it.
+
+**Examples:**
+- A 3-week side-project validator? `TEST_POLICY=none, LINT_POLICY=off, CI_MODE=off` — fast iteration, no ceremony.
+- A microservice in a monorepo with its own CI pipeline? `TEST_POLICY=strict, LINT_POLICY=on, CI_MODE=off` — full rigor, but don't overlay our CI.
+- A frontend feature in a React app, no existing CI? `TEST_POLICY=pragmatic, LINT_POLICY=on, CI_MODE=on` — reasonable tests, use our basic CI.
+
+**Security barriers are NOT a knob.** Secret files and dangerous commands are blocked at every level — that does not change.
+
 ## Install (once per repo)
 ```bash
 # unpack the package, then from the repo directory:

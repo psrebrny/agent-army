@@ -27,4 +27,13 @@ fi
 if [ -f Cargo.toml ]; then
   FMT_CMD="${FMT_CMD:-cargo fmt}"; LINT_CMD="${LINT_CMD:-cargo clippy -q}"; TEST_CMD="${TEST_CMD:-cargo test -q}"
 fi
-export FMT_CMD LINT_CMD TEST_CMD
+
+# Project policy (.claude/army.conf) — relaxes QUALITY rigor only; security barriers are separate.
+# Absent file → defaults (strict tests, lint on), so existing installs are unchanged.
+CONF="$ROOT/.claude/army.conf"
+# shellcheck disable=SC1090
+[ -f "$CONF" ] && . "$CONF"
+case "${TEST_POLICY:-strict}" in none) TEST_CMD="" ;; esac   # 'none' → no test gate
+case "${LINT_POLICY:-on}"     in off)  LINT_CMD="" ;; esac   # 'off'  → no lint gate
+
+export FMT_CMD LINT_CMD TEST_CMD TEST_POLICY LINT_POLICY CI_MODE

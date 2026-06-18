@@ -15,8 +15,13 @@ npm/pnpm/yarn · pytest/ruff · go · cargo.]
 - Small, atomic changes. Plan first, then code.
 - Commits in Conventional Commits format.
 - SDD: the plan lives as files in `design-docs/[Task-ID]/`, not just in chat.
-- Tests: Testing Trophy (E2E/integration > unit), behavior not implementation.
-- Strict TDD: Red → Green for every task (auto-critic lock).
+- Tests & rigor: follow the **Project policy** below (default: Testing Trophy + strict TDD Red→Green).
+
+## Project policy (`.claude/army.conf`)
+Configurable rigor for THIS repo, read by both the hooks and the agents. Set by `/bootstrap`, editable by hand. **Security barriers (secret/dangerous-command blocking) are NOT part of this — always on.**
+- **TEST_POLICY** = `[strict | pragmatic | light | none]` — `strict` = TDD Red→Green + Testing Trophy; `none` = no tests (the `tester`/TDD steps are skipped and the test gate is off).
+- **LINT_POLICY** = `[on | off]` — whether the Stop gate blocks on lint errors.
+- **CI_MODE** = `[on | off]` — whether this repo uses Agent Army's `quality.yml` or its own CI.
 
 ## Entry point, orchestrator and team
 **Entry point → `/bootstrap`** (run ONCE, after install): reads the repo (code analysis), asks questions, reviews the templates, and **creates/specializes the whole team for this repo** per `.claude/agents/_STANDARD.md`. Greenfield → interview + bootstrap of the foundations.

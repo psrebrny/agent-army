@@ -26,7 +26,7 @@ Rules: ask only what you don't know; never re-ask what's already in standards/pr
 - **BAD (micromanagement):** separate tasks for "Add Selector", "Import Module", "Write Test".
 - **GOOD (atomic):** ONE Task = Logic + UI/Endpoint + Test → a single functional, verifiable change.
 
-**3. ⏳ TESTING TROPHY (inverted pyramid)** — *test behavior, not implementation.* Prioritize Integration & E2E over fine-grained Unit ("confidence over isolation").
+**3. ⏳ TESTING TROPHY (inverted pyramid)** — *test behavior, not implementation.* Prioritize Integration & E2E over fine-grained Unit ("confidence over isolation"). **Scales with `.claude/army.conf`:** at `TEST_POLICY=none` the blueprint plans NO tests and drops the auto-critic TDD block (Rule 10); at `light`/`pragmatic` plan a reduced mix. Never scale down the security/contract rigor.
 - **E2E / Integration — PRIMARY FOCUS:** high-value journeys (happy paths) AND error handling (HTTP 500, timeouts, DB failures). Verify real integration across layers.
 - **Component / UI:** everything that does NOT need a real backend — state changes, validation.
 - **Unit — REDUCED SCOPE:** strictly converters, mappers, pure math, complex/branch-heavy algorithms. **DO NOT** unit-test simple getters/setters.
