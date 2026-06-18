@@ -1,0 +1,1 @@
+# Tu wrzucaj reguły zależne od ścieżki (.claude/rules/), ładują się tylko, gdy Claude dotyka pasujących plików.

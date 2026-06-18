@@ -1,0 +1,19 @@
+name: quality
+on: [push, pull_request]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Dodaj setup pod swój stack (odkomentuj właściwe):
+      # - uses: actions/setup-node@v4
+      #   with: { node-version: 20 }
+      #   # potem: npm ci
+      # - uses: actions/setup-python@v5
+      #   with: { python-version: '3.12' }
+      #   # potem: pip install -r requirements.txt
+      - name: Verify (lint + testy, ta sama bramka co lokalnie)
+        run: |
+          chmod +x .claude/hooks/*.sh
+          CLAUDE_PROJECT_DIR="$PWD" .claude/hooks/verify.sh
