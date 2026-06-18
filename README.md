@@ -5,12 +5,25 @@ team: architect, tester, reviewer, security auditor, performance auditor and doc
 each other honest — plus deterministic **barriers (hooks)** no agent can bypass.
 
 ## Install (into any repo)
+
+**Option 1: Clone the repo (full history)**
 ```bash
-# from the repo you want to inject the team into:
-/path/to/claude-agent-army/install.sh .
-# or point at a repo directly:
-/path/to/claude-agent-army/install.sh ~/projects/my-repo
+git clone https://github.com/pawel-srebrny/agent-army
+cd agent-army
+./install.sh ~/projects/my-repo --tool claude
 ```
+
+**Option 2: Download the latest release (clean, no .git history)**
+```bash
+cd /tmp
+wget https://github.com/pawel-srebrny/agent-army/releases/download/v0.2.0/agent-army-0.2.0.tar.gz
+tar xz && cd agent-army && ./install.sh ~/projects/my-repo --tool claude
+# or
+curl -fsSL https://github.com/pawel-srebrny/agent-army/releases/download/v0.2.0/agent-army-0.2.0.tar.gz | tar xz && \
+  cd agent-army && ./install.sh ~/projects/my-repo --tool claude
+```
+
+**Then in the repo:**
 Then:
 ```bash
 cd my-repo
