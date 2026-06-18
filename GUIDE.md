@@ -50,7 +50,7 @@ Switch on the fly: "switch to autonomous/supervised".
 ```
 .claude/
   settings.json                 # hook registration (barriers)
-  agents/                       # the team (architect, tester, code-reviewer, security-auditor, perf-auditor, docs-writer)
+  agents/                       # the team (architect, tester, code-reviewer, security-auditor, perf-auditor, docs-writer; + optional coder)
     _STANDARD.md                # the quality bar for EVERY agent
   hooks/                        # guard / format / verify / gate / detect / git-pre-commit
   skills/                       # bootstrap (entry) · ship (orchestrator) · new-agent · context-budget

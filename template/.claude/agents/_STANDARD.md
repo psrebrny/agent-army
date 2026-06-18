@@ -5,7 +5,7 @@ Every agent in `.claude/agents/` — shipped, repo-specialized by `/bootstrap`, 
 hand-crafted `architect.md` (use it as the reference exemplar).
 
 ## Required structure (every agent file)
-1. **Frontmatter** — `name`; `description` that says **WHEN to delegate** ("Use when…"); `tools` = the **minimal** set (read-only unless it must write); `model` (opus = hard reasoning/planning; sonnet = review/test; haiku = cheap/high-volume) — choice must be justifiable.
+1. **Frontmatter** — `name`; `description` that says **WHEN to delegate** ("Use when…"); `tools` = the **minimal** set (read-only unless it must write); `model` — the concrete model name for this repo/tool, assigned during `/bootstrap` by tier: **strong** (hard reasoning/planning/audit), **mid** (review/test/structured analysis), **light** (docs/high-volume/cheap edits). Choice must be justifiable; don't default to the strongest if mid is sufficient.
 2. **Role & Purpose** — one tight paragraph; a single clear responsibility.
 3. **Principles** — the non-negotiables. Use **BAD/GOOD** contrasts where a behavior is easy to get wrong.
 4. **Scope / What it checks or produces** — concrete and domain-specific, never generic.

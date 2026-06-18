@@ -23,10 +23,16 @@ Ask a short, grouped, numbered batch — only what recon couldn't settle:
 - **Testing** — confirm Testing-Trophy weighting; which layers exist; exact commands if ambiguous.
 - **NFR** — performance, security, compliance constraints.
 - **Process** — Task-ID format, branch/PR rules, commit convention.
+- **Model tiers** — ask: "Which models are available in your tool, and which should map to each tier?" Present the three roles and their default logic, then let the user name concrete models:
+  - **Strong tier** (hard reasoning / planning / architectural audit) — default: the strongest available
+  - **Mid tier** (review, testing, structured analysis) — default: the balanced option
+  - **Light tier** (docs, high-volume, cheap edits) — default: the cheapest adequate model
+  Don't suggest specific model names or versions — they change and vary by tool. If the user says "use defaults" or skips, keep the tier labels as-is and note them as ASSUMPTIONS.
 "Assume and go" → record **ASSUMPTIONS** explicitly. **Greenfield** (empty repo): skip code-recon, ask the full set, and choose the stack together with the user.
 
 ## Step 3 · Generate the tailored team (write files)
-Use the baseline agents in `.claude/agents/` as the starting CONTRACT and **rewrite each in place, specialized to this repo**. Keep every agent's role and guarantees; inject repo specifics:
+Use the baseline agents in `.claude/agents/` as the starting CONTRACT and **rewrite each in place, specialized to this repo**. Keep every agent's role and guarantees; inject repo specifics — including the model names chosen in Step 2:
+- Replace the `model:` frontmatter field in each agent with the concrete model name the user provided for that tier. If the user kept defaults, document the tier label and add a comment explaining the reasoning so the next person knows what to change.
 - **Exact verification commands** (lint/test/e2e) + single-test invocation.
 - **Test framework + file naming/paths** to mirror; Testing-Trophy mix appropriate to the stack.
 - **Conventions** (naming, smart/dumb, layering), domain vocabulary, forbidden zones.

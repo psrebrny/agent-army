@@ -11,12 +11,15 @@ These rules cut usage without weakening any guarantee. They are defaults, not ex
 gate.
 
 ## 1 · Right model for the job
-- `opus` — hard reasoning only: `architect` (planning/blueprints), `code-reviewer` and
-  `security-auditor` (depth pays off here — reserve the strong model for review/security).
-- `sonnet` — `tester`, `perf-auditor`: structured work against a clear contract.
-- `haiku` — `docs-writer` and any high-volume, low-judgment editing.
+Three tiers — the concrete model names are set at `/bootstrap` time and vary by tool:
+- **Strong tier** — hard reasoning only: `architect` (planning/blueprints), `code-reviewer`,
+  `security-auditor` when depth matters. Reserve for tasks where the quality gain justifies the
+  cost (complex architecture, security-critical diffs, large unfamiliar codebases).
+- **Mid tier** — `tester`, `perf-auditor`: structured work against a clear contract. Also the
+  right default for `code-reviewer` on routine diffs in well-understood codebases.
+- **Light tier** — `docs-writer` and any high-volume, low-judgment editing.
 - New agents (`/new-agent`): start at the **cheapest tier that passes**, justify upgrades in the
-  frontmatter — never default to `opus`.
+  frontmatter — never default to strong by habit.
 
 ## 2 · Plan first, interact less
 A blueprint in `design-docs/` is a token optimization, not just process: the agent follows a
@@ -53,7 +56,10 @@ Army is built to make short sessions safe **because state lives in files, not in
 - "1 PR = 1 file" is a resume boundary: do **one task/PR per session**, then start clean.
 - Subagents isolate context — they do heavy work in their own window and return a short result, so
   the orchestrator's context stays lean. Prefer "delegate → get summary" over doing everything in
-  the main thread.
+  the main thread. Concretely: when an implementation will churn through many files or a lot of
+  trial-and-error, delegate it to a `coder` subagent instead of coding in the main session — the
+  churn stays disposable in the coder's window and the orchestrator only absorbs the summary. Small
+  tasks stay inline (the cold-start hop would cost more than it saves).
 - Don't keep a single `/ship` running across an entire epic. When a task is done, close it; the
   next session rehydrates from `design-docs/`.
 

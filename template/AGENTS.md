@@ -44,6 +44,7 @@ review → security → docs → commit (only with your approval).
 - `security-auditor` — read-only security audit (secrets, injection, unsafe data handling)
 - `perf-auditor` — read-only performance audit (measure first, then hotspots)
 - `docs-writer` — minimal, truthful documentation updates
+**Who writes what code:** `tester` writes and runs the **test** code (never production). **Production code** is written by the `/ship` orchestrator (main session) by default — it holds the warm context (blueprint + RED tests + your conversation), so small/medium tasks need no extra hop. For **large, file-heavy, or parallel-PR** tasks, delegate production coding to the `coder` subagent (ships off the default `/ship` pipeline; `/bootstrap` tailors it): its exploration stays in its own throwaway context window and it returns a short summary, which keeps the orchestrator's session lean (see `context-budget` → "avoid infinite sessions").
 Quality bar for every agent: `.claude/agents/_STANDARD.md`. Context discipline (pass pointers, read
 scoped, cache the stable prefix, cheapest adequate model tier): `.claude/skills/context-budget/SKILL.md`.
 

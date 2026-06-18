@@ -101,7 +101,7 @@ echo "      cd \"$TARGET\""
 if [ "$IS_CLAUDE" = "1" ]; then
   echo "      claude                       # start a session"
   echo "      /bootstrap                   # FIRST: reads the repo, asks about gaps, tailors agents to the project"
-  echo "      /agents                      # see the team (6 agents)"
+  echo "      /agents                      # see the team (6 core agents + optional coder)"
   echo "      /ship \"task description\"      # full pipeline (discovery -> blueprint -> TDD -> review)"
 else
   echo "      # Open the repo in your tool ($TOOL). No slash commands → run bootstrap from AGENTS.md:"

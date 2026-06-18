@@ -33,6 +33,7 @@ Requirements: Claude Code v2.x, `bash`, `python3` (security barriers). On Window
     security-auditor.md  #  → security audit (read-only)
     perf-auditor.md      #  → performance audit (read-only)
     docs-writer.md       #  → updates documentation
+    coder.md             #  → production-code implementer (OPTIONAL, off the default pipeline; for big/parallel tasks)
   hooks/                 # deterministic barriers
     guard.sh             #  PreToolUse  → blocks secrets + dangerous commands
     format.sh            #  PostToolUse → auto-format after every change
@@ -58,7 +59,7 @@ CLAUDE.md                # project memory (universal template)
 Above all of it sit the **hooks** — a layer the model cannot talk past:
 - **PreToolUse (guard.sh)** — hard-blocks editing `.env`/keys and commands like `rm -rf /`.
 - **PostToolUse (format.sh)** — formats code after every change.
-- **SubagentStop (verify.sh)** — runs lint+tests after the tester/reviewer finishes.
+- **SubagentStop (verify.sh)** — runs lint+tests after the tester finishes.
 - **Stop (gate.sh)** — won't let the turn end until lint/tests are green.
 
 It's a division of labor: **agents = judgment** (LLM, can be wrong), **hooks = law** (scripts, deterministic).
