@@ -6,21 +6,26 @@ each other honest — plus deterministic **barriers (hooks)** no agent can bypas
 
 ## Install (into any repo)
 
-**Option 1: Clone the repo (full history)**
+**Option 1: One-liner (always latest release)**
+```bash
+# Downloads & runs the latest Agent Army release
+curl -fsSL https://raw.githubusercontent.com/pawel-srebrny/agent-army/main/.github/scripts/install-latest.sh | bash -s -- ~/my-repo --tool claude
+```
+
+**Option 2: Clone the repo (full history)**
 ```bash
 git clone https://github.com/pawel-srebrny/agent-army
 cd agent-army
-./install.sh ~/projects/my-repo --tool claude
+./install.sh ~/my-repo --tool claude
 ```
 
-**Option 2: Download the latest release (clean, no .git history)**
+**Option 3: Download a specific release manually**
 ```bash
+# Pick a version from https://github.com/pawel-srebrny/agent-army/releases
+VERSION=v0.2.0
 cd /tmp
-wget https://github.com/pawel-srebrny/agent-army/releases/download/v0.2.0/agent-army-0.2.0.tar.gz
-tar xz && cd agent-army && ./install.sh ~/projects/my-repo --tool claude
-# or
-curl -fsSL https://github.com/pawel-srebrny/agent-army/releases/download/v0.2.0/agent-army-0.2.0.tar.gz | tar xz && \
-  cd agent-army && ./install.sh ~/projects/my-repo --tool claude
+curl -fsSL https://github.com/pawel-srebrny/agent-army/releases/download/$VERSION/agent-army-$VERSION.tar.gz | tar xz
+cd agent-army && ./install.sh ~/my-repo --tool claude
 ```
 
 **Then in the repo:**
