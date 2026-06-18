@@ -1,89 +1,97 @@
 # Claude Agent Army 🛡️
 
-Uniwersalny, wrzucany do **dowolnego repo** zestaw, który zamienia Claude Code w samokontrolującą się drużynę agentów: planista, tester, recenzent, audytor bezpieczeństwa i redaktor dokumentacji — pilnujący się nawzajem, plus deterministyczne **bariery (hooki)**, których żaden agent nie obejdzie.
+A universal toolkit you drop into **any repo** that turns Claude Code into a self-checking agent
+team: architect, tester, reviewer, security auditor, performance auditor and docs editor — keeping
+each other honest — plus deterministic **barriers (hooks)** no agent can bypass.
 
-## Instalacja (do dowolnego repo)
+## Install (into any repo)
 ```bash
-# z katalogu repo, do którego chcesz wstrzyknąć drużynę:
-/ścieżka/do/claude-agent-army/install.sh .
-# albo wskaż repo wprost:
-/ścieżka/do/claude-agent-army/install.sh ~/projekty/moje-repo
+# from the repo you want to inject the team into:
+/path/to/claude-agent-army/install.sh .
+# or point at a repo directly:
+/path/to/claude-agent-army/install.sh ~/projects/my-repo
 ```
-Następnie:
+Then:
 ```bash
-cd moje-repo
+cd my-repo
 claude
-/agents            # zobacz drużynę
-/ship "dodaj endpoint /health z testem"
+/bootstrap         # ONCE: read the repo, ask about gaps, tailor the agents to the project
+/agents            # see the team
+/ship "add a /health endpoint with a test"
 ```
-Wymagania: Claude Code v2.x, `bash`, `python3` (bariery bezpieczeństwa). Na Windows: WSL lub Git Bash.
+Requirements: Claude Code v2.x, `bash`, `python3` (security barriers). On Windows: WSL or Git Bash.
 
-## Co dostajesz
+## What you get
 ```
 .claude/
-  settings.json          # rejestracja hooków (bariery)
-  agents/                # drużyna subagentów
-    planner.md           #  → plan + kryteria akceptacji (nie koduje)
-    tester.md            #  → pisze i uruchamia testy
-    code-reviewer.md     #  → recenzja diffa, blokuje na BLOKERACH (read-only)
-    security-auditor.md  #  → audyt bezpieczeństwa (read-only)
-    docs-writer.md       #  → aktualizuje dokumentację
-    perf-auditor.md      #  → audyt wydajności (read-only)
-  hooks/                 # deterministyczne bariery
-    guard.sh             #  PreToolUse  → blokuje sekrety + groźne komendy
-    format.sh            #  PostToolUse → auto-format po każdej zmianie
-    verify.sh            #  lint + testy (wykrywa stack automatycznie)
-    gate.sh              #  Stop        → nie kończy, póki testy/lint nie są zielone
-    detect.sh            #  wykrywanie stacku (npm/pnpm/yarn, pytest/ruff, go, cargo)
-    git-pre-commit.sh    #  bariera gita: skan sekretów + lint/testy (instalowana do .git/hooks)
-  skills/ship/SKILL.md   # komenda /ship: cały pipeline end-to-end
-  rules/                 # reguły zależne od ścieżki (opcjonalne)
-CLAUDE.md                # pamięć projektu (uniwersalny szablon)
-.github/workflows/quality.yml  # CI: ta sama bramka (verify.sh) na push/PR
+  settings.json          # hook registration (barriers)
+  agents/                # the subagent team
+    _STANDARD.md         #  → quality bar for EVERY agent
+    architect.md         #  → plan + acceptance criteria (never writes source)
+    tester.md            #  → writes and runs tests (strict TDD)
+    code-reviewer.md     #  → audits the diff; verdict APPROVED / CHANGES_REQUESTED / …
+    security-auditor.md  #  → security audit (read-only)
+    perf-auditor.md      #  → performance audit (read-only)
+    docs-writer.md       #  → updates documentation
+  hooks/                 # deterministic barriers
+    guard.sh             #  PreToolUse  → blocks secrets + dangerous commands
+    format.sh            #  PostToolUse → auto-format after every change
+    verify.sh            #  lint + tests (auto-detects the stack)
+    gate.sh              #  Stop        → won't finish until tests/lint are green
+    detect.sh            #  stack detection (npm/pnpm/yarn, pytest/ruff, go, cargo)
+    git-pre-commit.sh    #  git barrier: secret scan + lint/tests (installed to .git/hooks)
+  skills/                # bootstrap (entry) · ship (orchestrator) · new-agent · context-budget
+  templates/             # blueprint + report templates the agents must use
+  rules/                 # path-scoped rules (optional)
+CLAUDE.md                # project memory (universal template)
+.github/workflows/quality.yml  # CI: the same gate (verify.sh) on push/PR
 ```
 
-## Jak agenci „pilnują się nawzajem"
-1. **planner** rozpisuje plan i kryteria akceptacji — zanim padnie linia kodu.
-2. Sesja główna implementuje najmniejszą zmianę.
-3. **tester** dopisuje i uruchamia testy (nie wolno mu osłabiać asercji).
-4. **code-reviewer** recenzuje diff — przy BLOKERACH zwraca `REVIEW: ODRZUCONE` i pętla wraca do napraw.
-5. **security-auditor** szuka sekretów i podatności (tylko odczyt).
-6. **docs-writer** aktualizuje dokumentację.
+## How the agents "keep each other honest"
+1. **architect** writes the plan and acceptance criteria — before a line of code.
+2. The main session implements the smallest change.
+3. **tester** writes and runs tests independently (never weakens assertions).
+4. **code-reviewer** audits the diff — on blockers returns `CHANGES_REQUESTED` and the loop goes back to fixes.
+5. **security-auditor** hunts for secrets and vulnerabilities (read-only).
+6. **docs-writer** updates the documentation.
 
-Nad tym wszystkim czuwają **hooki** — warstwa, której model nie może „przegadać":
-- **PreToolUse (guard.sh)** — twardo blokuje edycję `.env`/kluczy i komendy typu `rm -rf /`.
-- **PostToolUse (format.sh)** — formatuje kod po każdej zmianie.
-- **SubagentStop (verify.sh)** — po pracy testera/recenzenta odpala lint+testy.
-- **Stop (gate.sh)** — nie pozwala zakończyć tury, dopóki lint/testy nie są zielone.
+Above all of it sit the **hooks** — a layer the model cannot talk past:
+- **PreToolUse (guard.sh)** — hard-blocks editing `.env`/keys and commands like `rm -rf /`.
+- **PostToolUse (format.sh)** — formats code after every change.
+- **SubagentStop (verify.sh)** — runs lint+tests after the tester/reviewer finishes.
+- **Stop (gate.sh)** — won't let the turn end until lint/tests are green.
 
-To podział pracy: **agenci = osąd** (LLM, mogą się mylić), **hooki = prawo** (skrypty, deterministyczne).
+It's a division of labor: **agents = judgment** (LLM, can be wrong), **hooks = law** (scripts, deterministic).
 
-## Uniwersalność
-`detect.sh` sam rozpoznaje stack po plikach (`package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`…) i podstawia właściwe komendy formatowania/lintu/testów. Nie musisz nic konfigurować, by działało w nowym repo. Możesz nadpisać komendy w `CLAUDE.md`.
+## Universal by design
+`detect.sh` recognizes the stack from files (`package.json`, `pyproject.toml`, `go.mod`,
+`Cargo.toml`…) and substitutes the right format/lint/test commands. Nothing to configure to make
+it work in a new repo. You can override the commands in `CLAUDE.md`.
 
-## Dostosowanie
-- Dodaj agenta: nowy plik `.claude/agents/<nazwa>.md` (frontmatter `name/description/tools/model` + prompt).
-- Zaostrz/poluzuj barierę: edytuj wzorce w `hooks/guard.sh`.
-- Dodaj własny gate: dopisz hook w `settings.json` (zdarzenia: PreToolUse, PostToolUse, SubagentStop, Stop, UserPromptSubmit, SessionStart…).
-- Pełna równoległa „drużyna" w osobnych sesjach: `export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (Agent Teams, v2.1.32+).
+## Customizing
+- Add an agent: a new `.claude/agents/<name>.md` (frontmatter `name/description/tools/model` + prompt), or run `/new-agent` to hold it to `_STANDARD.md`.
+- Tighten/loosen a barrier: edit the patterns in `hooks/guard.sh`.
+- Add your own gate: register a hook in `settings.json` (events: PreToolUse, PostToolUse, SubagentStop, Stop, UserPromptSubmit, SessionStart…).
+- Token/context discipline: `.claude/skills/context-budget/SKILL.md` (cheapest adequate model, plan first, short sessions).
 
-## Dwie warstwy: kopiowanie vs inteligencja
-`install.sh` jest **deterministyczny** — kopiuje gotowe pliki 1:1, nic nie generuje (zero LLM, zero tokenów). To daje powtarzalność.
+## Two layers: copying vs intelligence
+`install.sh` is **deterministic** — it copies finished files 1:1, generates nothing (zero LLM, zero tokens). That gives reproducibility.
 
-Dopasowanie do repo robi **`/bootstrap`** — skill uruchamiany w sesji Claude Code, który:
-1. **czyta repo** (stack, standardy, konwencje, realne komendy test/lint),
-2. **zadaje parę mądrych pytań** (tylko luki, których recon nie pokrył),
-3. **generuje agentów dopasowanych do tego repo** (dokładne komendy, framework testowy, konwencje) + `CLAUDE.md`/`AGENTS.md` + szkielet `design-docs/`, i weryfikuje, że komendy działają.
+Tailoring to the repo is done by **`/bootstrap`** — a skill run inside a Claude Code session that:
+1. **reads the repo** (stack, standards, conventions, real test/lint commands),
+2. **asks a few smart questions** (only the gaps recon didn't cover),
+3. **generates agents tailored to this repo** (exact commands, test framework, conventions) + `CLAUDE.md`/`AGENTS.md` + a `design-docs/` skeleton, and verifies the commands actually run.
 
-Czyli: **install = mechaniczny baseline**, **/bootstrap = inteligentne dopasowanie w runtime**. Uruchom `/bootstrap` raz, zaraz po instalacji.
+So: **install = mechanical baseline**, **/bootstrap = intelligent runtime tailoring**. Run `/bootstrap` once, right after install.
 
-## Hardening (v2)
-- **Stop bez nieskończonej pętli** — `gate.sh` respektuje `stop_hook_active`: po wymuszonej naprawie pozwala modelowi zakończyć, zamiast blokować w kółko.
-- **Fail-closed bez python3** — gdy brak `python3`, `guard.sh` i tak blokuje najgroźniejsze wzorce (`rm -rf /`, `curl | sh`, edycję sekretów) zgrubnym fallbackiem w bashu.
-- **Bariera gita (pre-commit)** — instalator dokłada `.git/hooks/pre-commit`: blokuje commit sekretów i nie wpuści czerwonych testów (działa też, gdy ktoś omija Claude Code).
-- **CI** — `.github/workflows/quality.yml` uruchamia tę samą `verify.sh` na push/PR (dodaj setup-node/setup-python pod swój stack).
-- **perf-auditor** — szósty agent: audyt wydajności (najpierw pomiar, potem hotspoty).
+## Hardening
+- **Stop without an infinite loop** — `gate.sh` respects `stop_hook_active`: after a forced fix it lets the model finish instead of blocking in circles.
+- **Fail-closed without python3** — when `python3` is missing, `guard.sh` still blocks the worst patterns (`rm -rf /`, `curl | sh`, editing secrets) with a coarse bash fallback.
+- **Git barrier (pre-commit)** — the installer adds `.git/hooks/pre-commit`: blocks committing secrets and won't let red tests through (works even when someone bypasses Claude Code).
+- **CI** — `.github/workflows/quality.yml` runs the same `verify.sh` on push/PR (add setup-node/setup-python for your stack).
+- **perf-auditor** — a sixth agent: performance audit (measure first, then hotspots).
 
-## Bezpieczeństwo
-Bariery są dodatkową warstwą, nie gwarancją. Trzymaj `.claude/settings.local.json` poza gitem (instalator dodaje wpis do `.gitignore`). Przeglądaj diffy przed commitem — zgoda człowieka jest wpisana w zasady CLAUDE.md.
-# agent-army
+## Security
+The barriers are an extra layer, not a guarantee. Keep `.claude/settings.local.json` out of git
+(the installer adds an entry to `.gitignore`). Review diffs before committing — human approval is
+written into the CLAUDE.md rules.

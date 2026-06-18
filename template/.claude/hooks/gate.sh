@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Stop: bramka jakości — nie pozwól zakończyć tury, dopóki lint/testy nie są zielone.
-# WAŻNE: respektuje stop_hook_active (kontrakt Claude Code), inaczej blokuje w nieskończoność.
+# Stop: quality gate — don't let the turn end until lint/tests are green.
+# IMPORTANT: respects stop_hook_active (Claude Code contract), otherwise it blocks forever.
 INPUT="$(cat)"
 
-# Ponowne odpalenie po wcześniejszym "block" -> pozwól modelowi zakończyć (koniec pętli).
+# Re-fired after a previous "block" -> let the model finish (end of the loop).
 if printf '%s' "$INPUT" | grep -Eq '"stop_hook_active"[[:space:]]*:[[:space:]]*true'; then
   exit 0
 fi
@@ -11,7 +11,7 @@ fi
 DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
 source "$DIR/detect.sh"
-[ -z "$LINT_CMD$TEST_CMD" ] && exit 0          # brak checków -> nie blokuj
+[ -z "$LINT_CMD$TEST_CMD" ] && exit 0          # no checks -> don't block
 
 if "$DIR/verify.sh" >/tmp/cc_gate.log 2>&1; then
   exit 0
@@ -22,10 +22,10 @@ if command -v python3 >/dev/null 2>&1; then
   python3 - "$LOG" <<'PY'
 import sys, json
 print(json.dumps({"decision":"block","reason":
-  "Bramka jakości: lint/testy nie przechodzą. Napraw przyczynę i zakończ ponownie.\n\n"+sys.argv[1]}))
+  "Quality gate: lint/tests are failing. Fix the cause and finish again.\n\n"+sys.argv[1]}))
 PY
 else
-  echo "Bramka jakosci: lint/testy nie przechodza. Napraw i zakoncz ponownie." >&2
+  echo "Quality gate: lint/tests are failing. Fix it and finish again." >&2
   exit 2
 fi
 exit 0

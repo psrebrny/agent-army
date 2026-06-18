@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Wykrywa stack projektu i ustawia FMT_CMD / LINT_CMD / TEST_CMD.
-# Source'owany przez pozostałe hooki. Uniwersalny — działa w każdym repo.
+# Detects the project stack and sets FMT_CMD / LINT_CMD / TEST_CMD.
+# Sourced by the other hooks. Universal — works in any repo.
 ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 cd "$ROOT" 2>/dev/null || true
 FMT_CMD=""; LINT_CMD=""; TEST_CMD=""

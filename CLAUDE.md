@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `template/` — everything that gets installed into a target repo:
   - `.claude/agents/` — six subagent definition files + `_STANDARD.md` quality bar
   - `.claude/hooks/` — bash scripts wired as Claude Code lifecycle hooks
-  - `.claude/skills/` — slash-command skills (`/bootstrap`, `/ship`, `/new-agent`)
+  - `.claude/skills/` — skills: `/bootstrap`, `/ship`, `/new-agent` (slash commands) + `context-budget` (token/context discipline, loaded on demand)
   - `.claude/templates/` — report and blueprint templates agents must use
   - `CLAUDE.md` — project memory template (filled in by `/bootstrap` in the target repo)
   - `AGENTS.md` — cross-tool entry point (readable by Cursor, Copilot, Codex, etc.)
