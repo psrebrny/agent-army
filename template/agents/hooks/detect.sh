@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Detects the project stack and sets FMT_CMD / LINT_CMD / TEST_CMD.
-# Sourced by the other hooks. Universal — works in any repo.
+# Sets FMT_CMD / LINT_CMD / TEST_CMD for the other hooks.
+# Priority: army.conf (written by /bootstrap) > auto-detection below.
+# /bootstrap verifies exact commands and writes them to army.conf — that wins.
+# Auto-detection is the fallback for repos where /bootstrap hasn't run yet.
 ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 cd "$ROOT" 2>/dev/null || true
 FMT_CMD=""; LINT_CMD=""; TEST_CMD=""

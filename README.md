@@ -10,11 +10,20 @@ Two phases: **install once** globally, then **use from any repo**.
 
 ### Phase 1 — install `army` globally (one time)
 
+**Private repo — use `gh` CLI (recommended while repo is private):**
 ```bash
-# One-liner (recommended):
-curl -fsSL https://raw.githubusercontent.com/pawel-srebrny/agent-army/main/.github/scripts/install-latest.sh | bash -s -- --global
+gh release download --repo pawel-srebrny/agent-army --pattern "*.tar.gz" --dir /tmp/army && \
+  tar xzf /tmp/army/*.tar.gz -C /tmp/army && \
+  /tmp/army/agent-army/install.sh --global
+```
 
-# Or clone + install:
+**Public repo — one-liner:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/pawel-srebrny/agent-army/main/.github/scripts/install-latest.sh | bash -s -- --global
+```
+
+**Or clone + install (always works):**
+```bash
 git clone https://github.com/pawel-srebrny/agent-army
 agent-army/install.sh --global
 ```

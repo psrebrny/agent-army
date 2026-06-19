@@ -53,7 +53,13 @@ Use the baseline agents in `.claude/agents/` as the starting CONTRACT and **rewr
   - keep each example concrete: explicit assertions, RED→GREEN where TDD applies — no abstract `[UNIT]`/`[E2E]` tags without a path.
   If you can't find enough distinct real scenarios for an agent, say so rather than padding with generic filler.
 Then:
-- **Write `.claude/army.conf`** from the Step-2 policy answers (`TEST_POLICY` / `LINT_POLICY` / `CI_MODE`). The hooks read it deterministically. If `CI_MODE=off`, remove the copied `.github/workflows/quality.yml`. Honor the chosen `TEST_POLICY` everywhere you specialize: at `none` the team SKIPS the `tester`/TDD steps (implement + lint + security + docs only) and the agents must not re-impose tests; at `light`/`pragmatic` scale the Testing-Trophy mix down accordingly. Never relax the **security** barriers — those are not part of this policy.
+- **Write `.claude/army.conf`** from the Step-2 policy answers (`TEST_POLICY` / `LINT_POLICY` / `CI_MODE`) **plus the exact commands discovered in Step 1** (`FMT_CMD` / `LINT_CMD` / `TEST_CMD`). These override `detect.sh` auto-detection — hooks read `army.conf` last, so whatever you write here wins. Only write a command after you verified it runs (Step 4). Example:
+  ```
+  FMT_CMD=npm run format      # confirmed: prettier via package.json "format" script
+  LINT_CMD=npm run lint        # confirmed: eslint via package.json "lint" script
+  TEST_CMD=npm test            # confirmed: vitest via package.json "test" script
+  ```
+  If `CI_MODE=off`, remove the copied `.github/workflows/quality.yml`. Honor the chosen `TEST_POLICY` everywhere you specialize: at `none` the team SKIPS the `tester`/TDD steps (implement + lint + security + docs only) and the agents must not re-impose tests; at `light`/`pragmatic` scale the Testing-Trophy mix down accordingly. Never relax the **security** barriers — those are not part of this policy.
 - **Write/refresh `CLAUDE.md`** (and `AGENTS.md` if the repo uses it) with the decisions: stack, exact commands, conventions, testing strategy, the team roster, the guardrails (hooks), and a **`## Project policy`** block summarizing `army.conf` so the agents honor it.
 - **Specialize the blueprint templates** in `.claude/templates/blueprint/` to this repo (real commands, test file naming, framework-specific assertion examples).
 - **Create the `design-docs/` skeleton.**
