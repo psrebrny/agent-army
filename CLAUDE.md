@@ -10,13 +10,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `install.sh` — the installer. Copies `template/` to a target repo. Supports `--tool` flag (`claude|cursor|copilot|codex|opencode|gemini|auto|other`). Pure bash, no LLM calls.
 - `template/` — everything that gets installed into a target repo:
-  - `.claude/agents/` — six subagent definition files + `_STANDARD.md` quality bar
-  - `.claude/hooks/` — bash scripts wired as Claude Code lifecycle hooks
-  - `.claude/skills/` — skills: `/bootstrap`, `/ship`, `/new-agent` (slash commands) + `context-budget` (token/context discipline, loaded on demand)
-  - `.claude/templates/` — report and blueprint templates agents must use
+  - `agents/agents/` — six subagent definition files + `_STANDARD.md` quality bar (installed as `.claude/agents/`)
+  - `agents/hooks/` — bash scripts wired as Claude Code lifecycle hooks (installed as `.claude/hooks/`)
+  - `agents/skills/` — skills: `/bootstrap`, `/ship`, `/new-agent` (slash commands) + `context-budget` (installed as `.claude/skills/`)
+  - `agents/templates/` — report and blueprint templates agents must use (installed as `.claude/templates/`)
   - `CLAUDE.md` — project memory template (filled in by `/bootstrap` in the target repo)
   - `AGENTS.md` — cross-tool entry point (readable by Cursor, Copilot, Codex, etc.)
-  - `.claude/settings.json` — hook wiring for Claude Code
+  - `agents/settings.json` — hook wiring for Claude Code (installed as `.claude/settings.json`)
   - `.github/workflows/quality.yml` — CI that re-runs `verify.sh`
 
 ## Agent architecture
