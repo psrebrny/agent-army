@@ -1,17 +1,51 @@
 #!/usr/bin/env bash
-# Claude Agent Army — installer (universal). Drops the agent team + barriers into any repo.
-# Usage:  ./install.sh [--tool <claude|cursor|copilot|codex|opencode|gemini|auto|other>] [--no-ci] [path-to-repo]
-#   --tool  which tool you'll use (default: claude). For non-Claude: Claude hooks are inert,
-#           the hard barrier becomes git pre-commit + CI; the entry point is AGENTS.md.
-#   --no-ci skip Agent Army's CI workflow (use when the repo brings its own, richer CI).
-#   path defaults to the current directory.
 set -euo pipefail
 
 usage() {
-  sed -n '2,7p' "$0" | sed 's/^# \{0,1\}//'
+  cat <<'EOF'
+Claude Agent Army — installer (universal)
+
+Usage: ./install.sh [--tool <tool>] [--no-ci] [path-to-repo]
+
+Options:
+  --tool <tool>   Which AI tool you use in this repo (default: claude).
+  --no-ci         Skip adding Agent Army's CI workflow.
+  -h, --help      Show this help.
+  path            Target repo directory (default: current directory).
+
+Available tools:
+  claude      Claude Code (claude.ai/code) — full hook mode; lifecycle barriers + slash commands
+  cursor      Cursor IDE — hooks inert; barrier = git pre-commit + CI; entry point = AGENTS.md
+  copilot     GitHub Copilot (VS Code / JetBrains) — same as cursor
+  codex       OpenAI Codex CLI — same as cursor
+  opencode    OpenCode CLI — same as cursor
+  gemini      Gemini CLI — same as cursor
+  auto        Unknown / mixed — Claude hooks active; bootstrap will confirm the actual tool
+  other       Any other tool — hooks inert; barrier = git pre-commit + CI
+
+For non-Claude tools: Claude Code hooks are inert; the hard barrier is git pre-commit + CI;
+the universal entry point is AGENTS.md (every tool reads it).
+EOF
 }
 
-TOOL="claude"
+print_tools() {
+  cat <<'EOF'
+Available --tool values:
+  claude      Claude Code (full hook mode)
+  cursor      Cursor IDE
+  copilot     GitHub Copilot
+  codex       OpenAI Codex CLI
+  opencode    OpenCode CLI
+  gemini      Gemini CLI
+  auto        Unknown/mixed (bootstrap confirms later)
+  other       Any other tool
+
+Defaulting to: claude
+Run with --help for details.
+EOF
+}
+
+TOOL=""
 TARGET=""
 NO_CI=0
 while [ $# -gt 0 ]; do
@@ -27,9 +61,15 @@ while [ $# -gt 0 ]; do
 done
 TARGET="${TARGET:-$(pwd)}"
 
+if [ -z "$TOOL" ]; then
+  print_tools
+  echo ""
+  TOOL="claude"
+fi
+
 case "$TOOL" in
   claude|cursor|copilot|codex|opencode|gemini|auto|other) : ;;
-  *) echo "    • Unknown --tool: '$TOOL' (allowed: claude, cursor, copilot, codex, opencode, gemini, auto, other). Treating as 'other'."; TOOL="other" ;;
+  *) echo "    • Unknown --tool: '$TOOL'. Run ./install.sh --help to see available tools. Treating as 'other'."; TOOL="other" ;;
 esac
 # Activate the Claude Code path (hooks + CLAUDE.md as native memory)?
 IS_CLAUDE=0; [ "$TOOL" = "claude" ] && IS_CLAUDE=1
@@ -42,7 +82,7 @@ echo "==> Installing Agent Army into: $TARGET   (tool=$TOOL)"
 
 # Portable core: agents, templates, skills, barrier scripts (verify/detect shared by git+CI).
 mkdir -p "$TARGET/.claude"
-cp -R "$SRC/.claude/." "$TARGET/.claude/"
+cp -R "$SRC/agents/." "$TARGET/.claude/"
 chmod +x "$TARGET/.claude/hooks/"*.sh 2>/dev/null || true
 if [ "$IS_CLAUDE" = "1" ]; then
   echo "    • Claude Code hooks active (.claude/settings.json)"
@@ -98,7 +138,7 @@ fi
 
 # Git pre-commit (hard barrier at the git level — tool-independent)
 if [ -d "$TARGET/.git" ]; then
-  cp "$SRC/.claude/hooks/git-pre-commit.sh" "$TARGET/.git/hooks/pre-commit"
+  cp "$SRC/agents/hooks/git-pre-commit.sh" "$TARGET/.git/hooks/pre-commit"
   chmod +x "$TARGET/.git/hooks/pre-commit"
   echo "    • Installed git pre-commit (secret scan + lint/tests)"
 else
