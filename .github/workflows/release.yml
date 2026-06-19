@@ -16,8 +16,9 @@ jobs:
       - name: Build tarball
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
-          tar czf agent-army-${VERSION}.tar.gz \
-            template/ install.sh README.md GUIDE.md CLAUDE.md LICENSE
+          mkdir agent-army
+          cp -r template/ install.sh README.md GUIDE.md CLAUDE.md agent-army/
+          tar czf agent-army-${VERSION}.tar.gz agent-army/
           ls -lh agent-army-${VERSION}.tar.gz
 
       - name: Compute checksums

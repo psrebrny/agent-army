@@ -1,62 +1,70 @@
-# AGENTS.md — Agent Army (cross-tool entry point)
+# AGENTS.md — Agent Army source repo
 
-> Portable instruction file read natively by 20+ agentic coding tools (OpenAI Codex, Cursor,
-> GitHub Copilot, Gemini/Antigravity, Aider, Windsurf, Zed, Factory, Jules, Devin, Amp, VS Code,
-> JetBrains Junie …; Claude Code reads it too). This is the kickoff for the self-checking Agent
-> Army installed in this repo. Keep it focused — deep detail lives in `.claude/skills/` and
-> `.claude/agents/`.
+> Universal entry point readable by Claude Code, Cursor, GitHub Copilot, Codex, Gemini, and
+> other agentic tools. **This is the SOURCE repo** — you're working on the toolkit itself,
+> not a repo where it's already installed.
 
-## Target tool
-Set at install time: **other**. If this says `auto` or `other`, the bootstrap will ask
-once which tool is in use and adapt; otherwise treat it as already chosen (do not re-ask).
+## What this repo is
 
-## First run — bootstrap ONCE
-The team shipped here is a generic, tool-agnostic baseline. Before real work, specialize it to
-THIS repo and emit it in this tool's native format.
+**Claude Agent Army** is a deployable toolkit that injects a self-checking agent team +
+deterministic hook barriers into any target repo. This repo is the *source* — it contains
+`template/` and `install.sh` that get copied out. No build step, no package manager, no test suite.
 
-**Run the bootstrap routine in `.claude/skills/bootstrap/SKILL.md`.**
-- **Claude Code:** type `/bootstrap`.
-- **Other tools (no slash command):** start a task and paste the Kickoff prompt below, or tell the
-  agent: "Follow `.claude/skills/bootstrap/SKILL.md` against this repo."
+## Key files
 
-Bootstrap will: confirm the tool and resolve its Adapter Contract (agent format/location, memory
-file, guardrail mechanism, command format, model tiers), read the codebase, ask a few gap
-questions, then emit a repo-tailored team in this tool's native format, refresh this `AGENTS.md`
-(+ the tool's native memory file), wire the guardrails, and verify the commands actually run. Run
-it once.
+- `install.sh` — the installer. Copies `template/` to a target repo. Pure bash, no LLM calls.
+- `template/` — everything that gets installed:
+  - `agents/agents/` — seven subagent definition files + `_STANDARD.md` quality bar (→ `.claude/agents/`): `architect`, `tester`, `code-reviewer`, `security-auditor`, `perf-auditor`, `docs-writer`, `coder` (optional)
+  - `agents/hooks/` — lifecycle hook scripts (→ `.claude/hooks/`)
+  - `agents/skills/` — `/bootstrap`, `/ship`, `/new-agent`, `context-budget` (→ `.claude/skills/`)
+  - `agents/templates/` — report + blueprint templates (→ `.claude/templates/`)
+  - `AGENTS.md` — cross-tool entry point template (installed into target repos)
+  - `CLAUDE.md` — Claude Code memory template (installed into target repos, filled by `/bootstrap`)
+  - `agents/settings.json` — hook wiring for Claude Code (→ `.claude/settings.json`)
+  - `.github/workflows/quality.yml` — CI that re-runs `verify.sh`
 
-### Kickoff prompt (copy-paste for tools without slash commands)
-> Read `.claude/skills/bootstrap/SKILL.md` and run it against this repository. The target tool is
-> other. Honor `.claude/agents/_STANDARD.md` and `.claude/skills/context-budget/SKILL.md`.
-> Ask only for gaps recon can't settle, then specialize the team in this tool's native format.
+## Agent architecture
 
-## Day-to-day — ship a task
-For each feature/fix, run the pipeline in `.claude/skills/ship/SKILL.md`:
-discovery/interview → blueprint in `design-docs/` → strict TDD (Red → Green) → architectural
-review → security → docs → commit (only with your approval).
-- **Claude Code:** `/ship "<task>"`.
-- **Other tools:** "Follow `.claude/skills/ship/SKILL.md` for this task: <task>."
+**LLM layer (judgment, can be wrong):**
+- `architect` — writes blueprints in `design-docs/`, never writes source code
+- `tester` — strict TDD executor: writes RED tests from contract, verifies GREEN
+- `code-reviewer` — architectural auditor; verdict: `APPROVED` / `CHANGES_REQUESTED` / `ARCHITECTURAL_ALIGNMENT_NEEDED`
+- `security-auditor` — read-only, secrets + injection scan
+- `perf-auditor` — read-only, measure-first performance audit
+- `docs-writer` — minimal documentation updates
+- `coder` — optional; production-code implementer for large/parallel tasks (off the default `/ship` pipeline)
 
-## The team (delegate by role)
-- `architect` — interview (greenfield/existing) + blueprint in `design-docs/` (never writes source)
-- `tester` — strict-TDD executor: writes RED tests from the contract, verifies GREEN
-- `code-reviewer` — architectural audit of the diff vs blueprint + business goal; routes fixes/escalations
-- `security-auditor` — read-only security audit (secrets, injection, unsafe data handling)
-- `perf-auditor` — read-only performance audit (measure first, then hotspots)
-- `docs-writer` — minimal, truthful documentation updates
-**Who writes what code:** `tester` writes and runs the **test** code (never production). **Production code** is written by the `/ship` orchestrator (main session) by default — it holds the warm context (blueprint + RED tests + your conversation), so small/medium tasks need no extra hop. For **large, file-heavy, or parallel-PR** tasks, delegate production coding to the `coder` subagent (ships off the default `/ship` pipeline; `/bootstrap` tailors it): its exploration stays in its own throwaway context window and it returns a short summary, which keeps the orchestrator's session lean (see `context-budget` → "avoid infinite sessions").
-Quality bar for every agent: `.claude/agents/_STANDARD.md`. Context discipline (pass pointers, read
-scoped, cache the stable prefix, cheapest adequate model tier): `.claude/skills/context-budget/SKILL.md`.
+**Hook layer (deterministic, cannot be bypassed):**
+- `guard.sh` (PreToolUse) — blocks secret file edits and dangerous commands
+- `format.sh` (PostToolUse) — auto-formats after every file change
+- `verify.sh` (SubagentStop on `tester`) — runs lint + tests after tester finishes
+- `gate.sh` (Stop) — blocks session end until lint/tests are green
+- `detect.sh` — auto-detects stack from `package.json` / `pyproject.toml` / `go.mod` / `Cargo.toml`
+- `git-pre-commit.sh` — installed to `.git/hooks/pre-commit`; tool-independent barrier
 
-## Guardrails (the "law" the model cannot talk past)
-- **git pre-commit + CI (`.github/workflows/quality.yml`)** — the hard, tool-independent gate:
-  secret scan + lint + tests. Active on EVERY tool, even if someone bypasses the agent.
-- **Claude Code only:** lifecycle hooks in `.claude/settings.json` (PreToolUse / PostToolUse /
-  SubagentStop / Stop) add a deterministic runtime barrier. On other tools this file is inert —
-  the git pre-commit + CI gate is the active barrier.
+## Working in this repo
+
+No build step, no test suite. Changes are in `template/` (what gets installed) and `install.sh` (the installer). Test by running `install.sh` against a scratch repo and verifying the output.
+
+```bash
+# Test the installer locally:
+mkdir /tmp/test-repo && git init /tmp/test-repo
+./install.sh --tool claude /tmp/test-repo
+ls /tmp/test-repo/.claude/
+```
+
+## Agent quality bar
+
+Every agent must conform to `template/agents/agents/_STANDARD.md`. Required sections:
+frontmatter with justified `model` choice, Role & Purpose, Principles (BAD/GOOD contrasts),
+Scope, Workflow, Output, Edge cases, ≥2 concrete `<prompt_examples>` with real paths.
+
+Model tiers: `opus` = hard reasoning/planning; `sonnet` = review/test; `haiku` = cheap/high-volume.
 
 ## Hard rules
-- Do NOT commit without human approval.
-- Do NOT weaken or disable tests/hooks to "pass".
-- Do NOT paste secrets into code or prompts.
-- Uncertain → ask, don't guess.
+
+- Never commit without human approval.
+- Never weaken or skip tests/hooks to make something pass.
+- Never paste secrets into code or prompts.
+- When unsure: ask, don't guess.
+- `detect.sh` auto-detects stack — don't hardcode commands in hooks.

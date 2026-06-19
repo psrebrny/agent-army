@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 # install-latest.sh — download latest Agent Army release and run the installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/pawel-srebrny/agent-army/main/.github/scripts/install-latest.sh | bash -s -- ~/my-repo --tool claude
+#
+# Global install (run once, then use 'army' from any repo):
+#   curl -fsSL <url> | bash -s -- --global
+#
+# Per-repo install into current directory:
+#   curl -fsSL <url> | bash -s -- --tool claude
+#
+# Per-repo install into a specific path:
+#   curl -fsSL <url> | bash -s -- ~/my-repo --tool claude
 
 set -euo pipefail
 
@@ -24,7 +32,5 @@ curl -fsSL "$DOWNLOAD_URL" | tar xz
 
 echo "Running installer..."
 cd agent-army
-# Pass all arguments to install.sh (target repo, --tool, etc.)
+# Pass all arguments to install.sh (--global, --tool, path, etc.)
 ./install.sh "$@"
-
-echo "✓ Agent Army $VERSION installed successfully!"

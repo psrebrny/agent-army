@@ -4,34 +4,83 @@ A universal toolkit you drop into **any repo** that turns Claude Code into a sel
 team: architect, tester, reviewer, security auditor, performance auditor and docs editor — keeping
 each other honest — plus deterministic **barriers (hooks)** no agent can bypass.
 
-## Install (into any repo)
+## Install
 
-**Option 1: One-liner (always latest release)**
-```bash
-# Downloads & runs the latest Agent Army release
-curl -fsSL https://raw.githubusercontent.com/pawel-srebrny/agent-army/main/.github/scripts/install-latest.sh | bash -s -- ~/my-repo --tool claude
-```
+Two phases: **install once** globally, then **use from any repo**.
 
-**Option 2: Clone the repo (full history)**
+### Phase 1 — install `army` globally (one time)
+
 ```bash
+# One-liner (recommended):
+curl -fsSL https://raw.githubusercontent.com/pawel-srebrny/agent-army/main/.github/scripts/install-latest.sh | bash -s -- --global
+
+# Or clone + install:
 git clone https://github.com/pawel-srebrny/agent-army
-cd agent-army
-./install.sh ~/my-repo --tool claude
+agent-army/install.sh --global
 ```
 
-**Option 3: Download a specific release manually**
+This adds the `army` command to `~/.local/bin/` and stores the toolkit in `~/.local/share/agent-army/`.
+Add `~/.local/bin` to your PATH if it isn't there already (the installer will tell you if it's missing).
+
+### Phase 2 — use from any repo
+
 ```bash
-# Pick a version from https://github.com/pawel-srebrny/agent-army/releases
+cd ~/my-project    # go to any git repo
+army               # install into current directory, defaults to --tool claude
+```
+
+**All options:**
+
+| Flag | Values | Default | Description |
+|------|--------|---------|-------------|
+| `--tool` | `claude` `cursor` `copilot` `codex` `opencode` `gemini` `auto` `other` | `claude` | Which AI tool you use in this repo |
+| `--no-ci` | — | off | Skip adding Agent Army's CI workflow (`quality.yml`) |
+
+```bash
+army                          # Claude Code, with CI
+army --tool cursor            # Cursor IDE (hooks inert; barrier = git pre-commit + CI)
+army --tool claude --no-ci    # Claude Code, skip adding CI (repo already has its own)
+army --tool auto              # unknown/mixed — bootstrap will confirm the tool later
+```
+
+**Tool modes:**
+- `claude` — full hook mode: lifecycle barriers (`guard`, `format`, `verify`, `gate`) + slash commands
+- `cursor` / `copilot` / `codex` / `opencode` / `gemini` — hooks inert; hard barrier = git pre-commit + CI; entry point = `AGENTS.md`
+- `auto` — Claude hooks active; bootstrap confirms the actual tool on first run
+- `other` — hooks inert; barrier = git pre-commit + CI
+
+### Manual / pinned version
+
+```bash
+# Specific release:
 VERSION=v0.2.0
-cd /tmp
 curl -fsSL https://github.com/pawel-srebrny/agent-army/releases/download/$VERSION/agent-army-$VERSION.tar.gz | tar xz
-cd agent-army && ./install.sh ~/my-repo --tool claude
+cd agent-army && ./install.sh --global
 ```
 
-**Then in the repo:**
-Then:
+### Updating to a new version
+
+The `--global` install just overwrites `~/.local/share/agent-army/` — run the same command again:
+
 ```bash
-cd my-repo
+# Update via one-liner (always fetches latest release):
+curl -fsSL https://raw.githubusercontent.com/pawel-srebrny/agent-army/main/.github/scripts/install-latest.sh | bash -s -- --global
+
+# Or update via git clone:
+git -C agent-army pull && agent-army/install.sh --global
+```
+
+This updates the `army` command itself. **Already-installed repos are not affected** — their `.claude/`
+directories are independent copies. To update an existing repo, re-run `army` inside it:
+
+```bash
+cd ~/my-project
+army --tool claude    # overwrites .claude/ with the new version; preserves CLAUDE.md/AGENTS.md
+```
+
+### After installing into a repo
+
+```bash
 claude
 /bootstrap         # ONCE: reads the repo, asks your project policy (test rigor, lint, CI), tailors the agents
 /agents            # see the team

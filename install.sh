@@ -5,11 +5,13 @@ usage() {
   cat <<'EOF'
 Claude Agent Army — installer (universal)
 
-Usage: ./install.sh [--tool <tool>] [--no-ci] [path-to-repo]
+Usage: ./install.sh [--tool <tool>] [--no-ci] [--global] [path-to-repo]
 
 Options:
   --tool <tool>   Which AI tool you use in this repo (default: claude).
   --no-ci         Skip adding Agent Army's CI workflow.
+  --global        Install 'army' as a global command (~/.local/bin/army).
+                  After this, run 'army' from any repo directory.
   -h, --help      Show this help.
   path            Target repo directory (default: current directory).
 
@@ -48,17 +50,50 @@ EOF
 TOOL=""
 TARGET=""
 NO_CI=0
+GLOBAL=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --tool) TOOL="${2:-}"; shift 2 ;;
     --tool=*) TOOL="${1#*=}"; shift ;;
     --no-ci) NO_CI=1; shift ;;
+    --global) GLOBAL=1; shift ;;
     -h|--help) usage; exit 0 ;;
     --) shift; break ;;
     -*) echo "Unknown option: $1"; usage; exit 1 ;;
     *) if [ -z "$TARGET" ]; then TARGET="$1"; shift; else echo "Extra argument: $1"; exit 1; fi ;;
   esac
 done
+
+# --global: install 'army' as a system-wide command, then exit
+if [ "$GLOBAL" = "1" ]; then
+  SRC_GLOBAL="$(cd "$(dirname "$0")" && pwd)"
+  SHARE_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/agent-army"
+  BIN_DIR="${XDG_BIN_HOME:-$HOME/.local/bin}"
+  echo "==> Installing Agent Army globally..."
+  echo "    Data dir : $SHARE_DIR"
+  echo "    Command  : $BIN_DIR/army"
+  mkdir -p "$SHARE_DIR" "$BIN_DIR"
+  # Copy installer + template to share dir
+  cp "$SRC_GLOBAL/install.sh" "$SHARE_DIR/install.sh"
+  chmod +x "$SHARE_DIR/install.sh"
+  cp -r "$SRC_GLOBAL/template" "$SHARE_DIR/template"
+  # Write wrapper
+  cat > "$BIN_DIR/army" <<WRAPPER
+#!/usr/bin/env bash
+exec "$SHARE_DIR/install.sh" "\$@"
+WRAPPER
+  chmod +x "$BIN_DIR/army"
+  echo "==> Done. 'army' installed."
+  # PATH hint
+  case ":$PATH:" in
+    *":$BIN_DIR:"*) ;;
+    *) echo "    NOTE: Add $BIN_DIR to your PATH (it's not there yet):"
+       echo "      echo 'export PATH=\"\$HOME/.local/bin:\$PATH\"' >> ~/.zshrc && source ~/.zshrc" ;;
+  esac
+  echo "    Usage from any repo: army [--tool claude] [path]"
+  exit 0
+fi
+
 TARGET="${TARGET:-$(pwd)}"
 
 if [ -z "$TOOL" ]; then
