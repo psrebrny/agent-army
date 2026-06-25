@@ -6,7 +6,24 @@ each other honest — plus deterministic **barriers (hooks)** no agent can bypas
 
 ## Install
 
-Two phases: **install once** globally, then **use from any repo**.
+Two independent install paths — pick one:
+
+- **A · apm** (cross-tool package manager) — `apm install agent-army`, then `/bootstrap`. Best if you already use [apm](https://microsoft.github.io/apm/) across Claude / Cursor / OpenCode / Codex / Gemini / Windsurf. See [Install via apm](#install-via-apm).
+- **B · bash installer** (`install.sh` / `army`) — self-contained, no apm needed; also covers tools apm doesn't. The original path, documented just below.
+
+Both end the same way: run `/bootstrap` once per repo to specialize the team.
+
+### Install via apm
+
+apm ships only the four **skills** (`bootstrap`, `ship`, `new-agent`, `context-budget`) as live. The baseline agents/hooks/templates ride bundled inside the `bootstrap` skill as raw assets — apm does **not** drop generic agents into your repo. `/bootstrap` materializes them into your tool's directory (not hardcoded to `.claude/`) and specializes them to the codebase.
+
+```bash
+apm install pawel-srebrny/agent-army    # deploys the skills
+# then, inside the target repo, in your AI tool:
+/bootstrap                              # copies baseline → specializes to THIS repo
+```
+
+Package layout: `apm.yml` (manifest) + `.apm/skills/` (the four skills; `bootstrap/baseline/` holds the raw agents/hooks/templates). This path is **separate** from `install.sh`/`template/` — neither touches the other.
 
 ### Phase 1 — install `army` globally (one time)
 

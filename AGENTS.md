@@ -7,8 +7,14 @@
 ## What this repo is
 
 **Claude Agent Army** is a deployable toolkit that injects a self-checking agent team +
-deterministic hook barriers into any target repo. This repo is the *source* — it contains
-`template/` and `install.sh` that get copied out. No build step, no package manager, no test suite.
+deterministic hook barriers into any target repo. This repo is the *source*. It ships **two
+independent install paths** (keep them separate — neither edits the other):
+- **bash** — `install.sh` copies `template/` into a target repo. Pure bash, no LLM calls.
+- **apm** — `apm.yml` + `.apm/` make it installable via Microsoft's Agent Package Manager. apm
+  deploys only the four skills; the baseline agents/hooks/templates ride bundled in
+  `.apm/skills/bootstrap/baseline/` and are materialized + specialized by `/bootstrap`.
+
+No build step, no test suite.
 
 ## Key files
 
