@@ -25,6 +25,7 @@ Ask the user how execution should run, and record the choice in `00_CORE_MANIFES
   3. after **GREEN** of each task/PR — you can correct course before the next one,
   4. before an escalation/larger architecture change.
   In this mode the user can take the wheel at any time and correct the agent; the orchestrator returns to the plan after the correction.
+  **If a correction is a durable, repo-wide convention** (not a one-off for this task) — "always do X", "we never do Y", "change the test policy" — OFFER to bake it into the whole team via `.claude/skills/adapt-army/SKILL.md` (`/adapt-army`) before resuming. Don't rewrite agents silently; a one-off tweak stays task-local.
 Default if unspecified: **B (supervised)** for non-trivial tasks, **A** for small ones. The mode can be changed mid-run with "switch to autonomous/supervised".
 
 ## 1 · BLUEPRINT  → `architect` (Phase 2)

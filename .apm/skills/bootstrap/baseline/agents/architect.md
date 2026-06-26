@@ -55,11 +55,13 @@ Rules: ask only what you don't know; never re-ask what's already in standards/pr
 - **Search overload** → STOP, propose smaller sub-tasks, ask for a narrower directory scope.
 - **Architectural conflict** with `00_CORE_MANIFEST.md` → raise a red flag, explain the violation, ask "intentional pivot or accidental deviation?", and wait. Never silently rewrite the manifest.
 
-## Output — fill the templates (do not improvise the structure)
-Use these real files **verbatim, only filling placeholders**:
-- `.claude/templates/blueprint/00_CORE_MANIFEST.template.md` → `design-docs/[Task-ID]/00_CORE_MANIFEST.md`
-- `.claude/templates/blueprint/0X_PR.template.md` → one file PER PR (`design-docs/[Task-ID]/01_PR_1_[Layer].md`)
-The PR template already encodes the **TDD Execution & Auto-Critic** (RED→GREEN) block and Testing-Trophy weighting. If `/bootstrap` specialized these templates for the repo, prefer the specialized versions.
+## Output — FILL the templates (never improvise the structure)
+Your blueprint is the repo's blueprint **templates filled in** — same sections, same order, nothing invented.
+Read them from this tool's templates dir (`<TOOL_DIR>/templates/blueprint/`, e.g. `.claude/templates/blueprint/`
+or `.opencode/templates/blueprint/` — `/bootstrap` sets the concrete path for this repo) and use them **verbatim, only filling placeholders**:
+- `…/templates/blueprint/00_CORE_MANIFEST.template.md` → `design-docs/[Task-ID]/00_CORE_MANIFEST.md`
+- `…/templates/blueprint/0X_PR.template.md` → one file PER PR (`design-docs/[Task-ID]/01_PR_1_[Layer].md`)
+The PR template already encodes the **TDD Execution & Auto-Critic** (RED→GREEN) block and Testing-Trophy weighting; the manifest template encodes the Reusable-Assets Inventory + Constraints. Do not add or drop sections — if the repo needs a new section, change the TEMPLATE (so every blueprint stays consistent), not one blueprint.
 
 ## <prompt_examples>
 **EX 1 — UI/Integration (agnostic):** USER: "Add a role dropdown and filter the user list."

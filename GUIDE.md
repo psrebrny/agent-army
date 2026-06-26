@@ -36,7 +36,7 @@ Claude Code v2.x · `bash` · `python3` (barriers; a fallback runs without it). 
 cd my-repo
 apm install psrebrny/agent-army --target opencode   # or: claude | cursor | codex | gemini | copilot | windsurf
 ```
-apm deploys the four skills only. The baseline agents/hooks/templates/CI ride bundled as raw assets inside the `bootstrap` skill — they become live, repo-tailored files only when you run `/bootstrap` below (it also installs the git pre-commit hook and appends to `.gitignore`).
+apm deploys the five skills only. The baseline agents/hooks/templates/CI ride bundled as raw assets inside the `bootstrap` skill — they become live, repo-tailored files only when you run `/bootstrap` below (it also installs the git pre-commit hook and appends to `.gitignore`).
 
 ## STEP 1 — entry point: `/bootstrap`  (run first)
 ```
@@ -66,6 +66,7 @@ Switch on the fly: "switch to autonomous/supervised".
 - `/bootstrap` — ONCE: repo analysis + interview + building the team.
 - `/ship "<task>"` — take a feature end-to-end with quality control.
 - `/new-agent` — add a new agent (always to `_STANDARD.md`).
+- `/adapt-army` — propagate a new repo-wide convention/correction into the whole team (routes to every owner, keeps AGENTS.md the source of truth). The agent also OFFERS this on its own when you state a durable convention.
 - `/agents` — list the team.
 
 ## What's in the repo after install
@@ -75,7 +76,7 @@ Switch on the fly: "switch to autonomous/supervised".
   agents/                       # the team (architect, tester, code-reviewer, security-auditor, perf-auditor, docs-writer; + optional coder)
     _STANDARD.md                # the quality bar for EVERY agent
   hooks/                        # guard / format / verify / gate / detect / git-pre-commit
-  skills/                       # bootstrap (entry) · ship (orchestrator) · new-agent · context-budget
+  skills/                       # bootstrap · ship · new-agent · adapt-army · context-budget
   templates/
     blueprint/                  # 00_CORE_MANIFEST + 0X_PR (the architect fills these)
     reports/                    # code-review / security / perf / docs / adr / test-report

@@ -8,7 +8,7 @@
 
 **Claude Agent Army** is a deployable toolkit that injects a self-checking agent team +
 deterministic hook barriers into any target repo. This repo is the *source*, distributed as an
-**apm package** (Microsoft's Agent Package Manager). `apm install` deploys only the four skills;
+**apm package** (Microsoft's Agent Package Manager). `apm install` deploys only the five skills;
 the baseline agents/hooks/templates ride bundled in `.apm/skills/bootstrap/baseline/` and are
 materialized + specialized into the target repo by `/bootstrap`.
 
@@ -17,7 +17,7 @@ No build step, no test suite, no installer script — apm is the install mechani
 ## Key files
 
 - `apm.yml` — apm manifest (name, version, `includes`, deps).
-- `.apm/skills/` — the four live skills apm deploys: `/bootstrap`, `/ship`, `/new-agent`, `context-budget`.
+- `.apm/skills/` — the five live skills apm deploys: `/bootstrap`, `/ship`, `/new-agent`, `/adapt-army`, `context-budget`.
 - `.apm/commands/` — thin command wrappers apm deploys to `.opencode/commands/` etc. (tools that read `commands/`, not `skills/`).
 - `.apm/skills/bootstrap/baseline/` — **the single source of truth** for everything `/bootstrap` installs:
   - `agents/` — seven subagent definitions + `_STANDARD.md` quality bar: `architect`, `tester`, `code-reviewer`, `security-auditor`, `perf-auditor`, `docs-writer`, `coder` (optional). No `tools:` field (cross-tool safe — a string `tools` breaks OpenCode; bootstrap re-adds it where the tool accepts it).

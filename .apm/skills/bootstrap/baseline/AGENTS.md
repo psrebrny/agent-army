@@ -48,6 +48,16 @@ review → security → docs → commit (only with your approval).
 Quality bar for every agent: `.claude/agents/_STANDARD.md`. Context discipline (pass pointers, read
 scoped, cache the stable prefix, cheapest adequate model tier): `.claude/skills/context-budget/SKILL.md`.
 
+## Keeping the team current — offer `/adapt-army` (do not auto-apply)
+The team is only as good as it stays current. When, during ANY conversation, the user states a
+**durable, repo-wide** guideline or corrects an architectural behavior that should hold beyond the
+current task — e.g. "from now on always X", "we never do Y", "switch to strict TDD", "no custom CSS" —
+**offer to propagate it into the whole team**: "That sounds like a new repo convention — want me to bake
+it into the army? (`/adapt-army`)". Only OFFER; never rewrite agents silently. Be conservative: a
+one-off task tweak ("for this PR skip the e2e") is NOT a guideline — apply it to the task only and leave
+the team untouched. The routine lives in `.claude/skills/adapt-army/SKILL.md` (it routes the guideline to
+every agent that owns it and keeps `AGENTS.md` the source of truth).
+
 ## Guardrails (the "law" the model cannot talk past)
 - **git pre-commit + CI (`.github/workflows/quality.yml`)** — the hard, tool-independent gate:
   secret scan + lint + tests. Active on EVERY tool, even if someone bypasses the agent.

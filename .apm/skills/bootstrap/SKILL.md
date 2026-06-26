@@ -34,6 +34,12 @@ The baseline is NOT hardcoded to `.claude/`. Detect the tool and pick its dir:
 - **Git pre-commit (tool-independent hard barrier):** copy `baseline/hooks/git-pre-commit.sh` → `.git/hooks/pre-commit`, `chmod +x`. Skip with a note if there's no `.git`.
 - **CI:** if the repo has no existing workflow, offer to add a `quality.yml` that re-runs `verify.sh`; if it already has CI, leave it and set `CI_MODE=off` in `army.conf`.
 - Add `.claude/settings.local.json` (and the chosen tool's local-state file) to `.gitignore`.
+- **Normalize hardcoded paths (do this right after copying — it keeps every agent linked to its real files).** The baseline agents reference `.claude/agents/`, `.claude/templates/…`, `.claude/army.conf` as defaults. If the tool dir is NOT `.claude/`, rewrite those references across the copied agent files to the actual dir, e.g.:
+  ```bash
+  # example for OpenCode (tool dir = .opencode):
+  sed -i '' 's#\.claude/templates/#.opencode/templates/#g; s#\.claude/army.conf#.opencode/army.conf#g; s#\.claude/agents/#.opencode/agent/#g; s#<TOOL_DIR>/#.opencode/#g' .opencode/agent/*.md
+  ```
+  This is what makes "the architect FILLS the template" actually resolve — the link in each agent's `Output` section must point at the templates that really exist. Leave `.claude/settings.json` references only where the tool is Claude (hooks are Claude-only).
 Report what landed where before moving on.
 
 ## Step 1 · Recon (DEEP — read real code before you ask)
@@ -85,6 +91,9 @@ Gaps:           <what code couldn't tell you → ask in Step 2>
 ```
 If you cannot fill a row from real files, say so — do not guess. Never ask about anything this report already answered.
 
+> ### 🚦 GATE 1 — confirm the laws before writing any agent (supervised mode)
+> Default `BOOTSTRAP_MODE=supervised`: **show the Recon Evidence Report (especially the extracted LAWS, each with its proving path) and the nested-`AGENTS.md` list, and ask the user to confirm/correct** before proceeding. This is the cheapest, highest-leverage checkpoint — a wrong law caught here costs one edit; caught later it has propagated into 6+ agents. Ask plainly: "These are the laws I read out of the code (with proof). Right? Anything I misread or missed? Any 'never touch' zones?" Only continue once confirmed. In `BOOTSTRAP_MODE=auto` (user said "just go"): print the report and continue without pausing.
+
 ## Step 2 · Smart questions (only the gaps)
 Ask a short, grouped, numbered batch — only what recon couldn't settle:
 - **Business** — what the project is / who uses it / MVP scope (if README is silent).
@@ -105,6 +114,11 @@ Ask a short, grouped, numbered batch — only what recon couldn't settle:
 "Assume and go" → record **ASSUMPTIONS** explicitly. **Greenfield** (empty repo): skip code-recon, ask the full set, and choose the stack together with the user.
 
 ## Step 3 · Generate the tailored team (write files)
+**FIRST read `references/agent-worked-examples.md`** (next to this file) — full `Recon → produced agent`
+transformations for `architect`, `tester`, `code-reviewer` and the auditors (across two very different repos).
+They show the target depth, the localization-vs-internalization move, and how the SAME recon report yields a
+different slice per agent. Read them as METHOD, not template (your repo's laws will differ entirely).
+
 The baseline agents are a **CONTRACT (role + guarantees), not a fill-in-the-blanks form.** Rewrite each in place, AUTHORED for this repo from the Recon Evidence Report.
 
 > ⛔ **The failure mode to avoid: "localization".** Swapping generic paths for real paths and the stack name into otherwise-untouched baseline rules is NOT specialization — it produces a generic agent wearing this repo's filenames. That is explicitly forbidden.
@@ -135,7 +149,10 @@ Then:
 - **Write `army.conf`** from the Step-2 policy answers (`TEST_POLICY` / `LINT_POLICY` / `CI_MODE`) **plus the exact commands discovered in Step 1** (`FMT_CMD` / `LINT_CMD` / `TEST_CMD`). These override `detect.sh` — hooks read `army.conf` last. Only write a command after you verified it runs (Step 4). **Monorepo:** chain per-stack commands so the barrier covers ALL stacks, e.g. `TEST_CMD=cd frontend && npm test && cd ../backend && pytest` (or document per-stack `*_FRONTEND`/`*_BACKEND` vars if the hooks support them). If `CI_MODE=off`, remove any copied `quality.yml`. Honor `TEST_POLICY` everywhere: at `none` the team SKIPS the `tester`/TDD steps; at `light`/`pragmatic` scale the Testing-Trophy mix down. Never relax security barriers.
 - **Write/refresh `AGENTS.md` — the single canonical entry point** (every tool reads it, including Claude Code): stack(s), exact commands, the mined laws & conventions, testing strategy, team roster, guardrails (hooks), and a **`## Project policy`** block summarizing `army.conf`. This is where the real content lives.
   - **`CLAUDE.md` only for Claude Code, and keep it THIN** — a few lines that point to `AGENTS.md` as the source of truth (so Claude's native auto-load finds it) plus the `## Project policy` summary. Do NOT duplicate AGENTS.md into it. For OpenCode/Cursor/etc. skip `CLAUDE.md` entirely — `AGENTS.md` is enough.
-- **Specialize the blueprint templates** in `<tool>/templates/blueprint/` to this repo.
+- **Specialize the blueprint templates** in `<tool>/templates/blueprint/` to this repo — AND keep them linked to `architect` in lockstep:
+  - The `architect`'s `Output` section IS the contract for these templates: it must point at `<tool>/templates/blueprint/` (the real tool dir — replace the baseline's `<TOOL_DIR>`/`.claude/` with this repo's actual one, e.g. `.opencode/templates/blueprint/`).
+  - Whatever sections/idioms you bake into the templates (real test commands, framework assertion syntax, repo's manifest fields) must match what `architect`'s `<prompt_examples>` show it producing — example output and template structure cannot diverge.
+  - `tester` and `ship` also consume the PR template's TDD/auto-critic block — if you change that block, update those agents too. (See `references/agent-worked-examples.md`: the example architect output = these templates filled.)
 - **Create the `design-docs/` skeleton.**
 - Before overwriting any agent, save the original as `<tool>/agents/<name>.base.md` (reversible).
 
@@ -154,6 +171,10 @@ List concrete defects (file + line/section), THEN revise the files. Loop 4b unti
 
 ### 4c · Cross-agent consistency
 Check the team agrees with itself: the commands in `architect`, `tester`, `code-reviewer` and `army.conf` are identical; the laws in `code-reviewer`'s checklist match the laws `architect` enforces; no two agents claim the same responsibility. Fix drift.
+
+> ### 🚦 GATE 2 — show the drafts before finalizing (supervised mode)
+> In `BOOTSTRAP_MODE=supervised`, present a **per-agent summary** — the repo LAWS each agent baked in + the `<prompt_examples>` it produced (the essence, not the full files) — and get the user's "ok / fix" before Step 5. They're the quality gate: their answer is what closes the gap to hand-crafted quality. In `auto` mode, skip the pause and go straight to verify.
+> Record the chosen mode in `army.conf` as `BOOTSTRAP_MODE` so re-runs remember it.
 
 ## Step 5 · Verify & report
 - Run the detected verify (lint + tests) ONCE to confirm the wired commands actually work; if wrong, fix them in the agents + `army.conf` + AGENTS.md.
