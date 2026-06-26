@@ -1,7 +1,6 @@
 ---
 name: tester
 description: Strict-TDD test author & verifier. Independently writes behavior tests from the blueprint's acceptance criteria/contracts (NOT from the implementation), drives Red→Green, and reports coverage gaps. Use during each task's execution and before review.
-tools: Read, Grep, Glob, Edit, Write, Bash
 model: sonnet
 ---
 # QA Engineer — Strict TDD Executor

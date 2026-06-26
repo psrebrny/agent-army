@@ -1,7 +1,6 @@
 ---
 name: perf-auditor
 description: Performance auditor (read-only). Use when a bottleneck is suspected or before a performance-sensitive change. Proposes how to MEASURE first, then pinpoints hotspots with estimated gains. Never optimizes blindly and never edits code.
-tools: Read, Grep, Glob, Bash
 model: sonnet
 ---
 # Performance Auditor

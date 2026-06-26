@@ -1,7 +1,6 @@
 ---
 name: security-auditor
 description: Application security auditor (read-only). Use before merge/deploy. Scans the diff and touched code for secrets, injection, unsafe data handling, and risky dependencies. Reports findings by severity with concrete fixes — never edits code.
-tools: Read, Grep, Glob, Bash
 model: sonnet
 ---
 # Security Auditor

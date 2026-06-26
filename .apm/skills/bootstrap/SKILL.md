@@ -4,6 +4,11 @@ description: One-time intelligent setup of the agent team for THIS repo, after i
 ---
 # /bootstrap (apm) — materialize + tailor the agent team to THIS repo
 
+> **OpenCode note:** if `/bootstrap` is not yet a recognised command (skills landed in
+> `.agents/skills/` instead of `.opencode/commands/`), invoke this skill directly:
+> type `@.agents/skills/bootstrap/SKILL.md` in the chat. Bootstrap will then place
+> everything in the right directories so future commands work normally.
+
 `apm install` deployed only the SKILLS (this one, plus `ship`, `new-agent`,
 `context-budget`). It did **not** drop generic agents/hooks into your repo —
 those ride bundled as raw assets in `baseline/` next to this file. Your job: copy

@@ -110,14 +110,26 @@ esac
 IS_CLAUDE=0; [ "$TOOL" = "claude" ] && IS_CLAUDE=1
 COPY_CLAUDE_MD=0; { [ "$TOOL" = "claude" ] || [ "$TOOL" = "auto" ]; } && COPY_CLAUDE_MD=1
 
-SRC="$(cd "$(dirname "$0")" && pwd)/template"
+REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+BASELINE="$REPO_ROOT/.apm/skills/bootstrap/baseline"
+APM_SKILLS="$REPO_ROOT/.apm/skills"
 
 echo "==> Installing Agent Army into: $TARGET   (tool=$TOOL)"
-[ -d "$SRC" ] || { echo "Error: no template/ directory next to install.sh"; exit 1; }
+[ -d "$BASELINE" ] || { echo "Error: no .apm/skills/bootstrap/baseline/ directory next to install.sh"; exit 1; }
 
-# Portable core: agents, templates, skills, barrier scripts (verify/detect shared by git+CI).
+# Portable core: agents, templates, barrier scripts (verify/detect shared by git+CI).
 mkdir -p "$TARGET/.claude"
-cp -R "$SRC/agents/." "$TARGET/.claude/"
+cp -R "$BASELINE/agents"    "$TARGET/.claude/"
+cp -R "$BASELINE/hooks"     "$TARGET/.claude/"
+cp -R "$BASELINE/templates" "$TARGET/.claude/"
+cp -R "$BASELINE/rules"     "$TARGET/.claude/"
+cp    "$BASELINE/settings.json" "$TARGET/.claude/settings.json"
+cp    "$BASELINE/army.conf"     "$TARGET/.claude/army.conf"
+# Skills (ship, new-agent, context-budget, bootstrap)
+mkdir -p "$TARGET/.claude/skills"
+for skill in bootstrap ship new-agent context-budget; do
+  cp -R "$APM_SKILLS/$skill" "$TARGET/.claude/skills/"
+done
 chmod +x "$TARGET/.claude/hooks/"*.sh 2>/dev/null || true
 if [ "$IS_CLAUDE" = "1" ]; then
   echo "    • Claude Code hooks active (.claude/settings.json)"
@@ -139,41 +151,67 @@ elif [ -e "$TARGET/.github/workflows/quality.yml" ]; then
 elif [ -n "$existing_ci" ]; then
   echo "    • Repo already has CI ($(basename "$existing_ci")…) — NOT adding ours (CI_MODE=off). Override in .claude/army.conf."
   [ -f "$CONF" ] && sed -i.bak 's/^CI_MODE=.*/CI_MODE=off/' "$CONF" && rm -f "$CONF.bak"
-elif [ -d "$SRC/.github" ]; then
+elif [ -d "$BASELINE/.github" ]; then
   mkdir -p "$TARGET/.github/workflows"
-  cp "$SRC/.github/workflows/quality.yml" "$TARGET/.github/workflows/quality.yml"
+  cp "$BASELINE/.github/workflows/quality.yml" "$TARGET/.github/workflows/quality.yml"
   echo "    • Added .github/workflows/quality.yml (CI reuses verify.sh)"
 fi
 
 # AGENTS.md — UNIVERSAL entry point (every tool reads it; we inject the tool name).
-if [ -f "$SRC/AGENTS.md" ]; then
+if [ -f "$BASELINE/AGENTS.md" ]; then
   if [ -f "$TARGET/AGENTS.md" ]; then
     echo "    • AGENTS.md already exists — saving the kickoff as AGENTS.army.md (merge manually)"
     DEST_AGENTS="$TARGET/AGENTS.army.md"
   else
     DEST_AGENTS="$TARGET/AGENTS.md"
   fi
-  sed "s/__ARMY_TOOL__/$TOOL/g" "$SRC/AGENTS.md" > "$DEST_AGENTS"
+  sed "s/__ARMY_TOOL__/$TOOL/g" "$BASELINE/AGENTS.md" > "$DEST_AGENTS"
   echo "    • Wrote $(basename "$DEST_AGENTS") (cross-tool entry point → .claude/skills/bootstrap)"
 else
-  echo "    • WARNING: no template/AGENTS.md — skipping kickoff (add it to the package)"
+  echo "    • WARNING: no AGENTS.md in baseline — skipping kickoff"
 fi
 
-# CLAUDE.md — richer native memory; only for claude/auto (a dead file on other tools).
+# CLAUDE.md — richer native memory; only for claude/auto (dead file on other tools).
+# Not stored in baseline — generated here for Claude path only.
 if [ "$COPY_CLAUDE_MD" = "1" ]; then
   if [ -f "$TARGET/CLAUDE.md" ]; then
-    echo "    • CLAUDE.md already exists — saving the template as CLAUDE.army.md (merge manually)"
-    cp "$SRC/CLAUDE.md" "$TARGET/CLAUDE.army.md"
+    echo "    • CLAUDE.md already exists — leaving it as is"
   else
-    cp "$SRC/CLAUDE.md" "$TARGET/CLAUDE.md"
+    cat > "$TARGET/CLAUDE.md" <<'CLAUDEMD'
+# CLAUDE.md — project memory
+
+> All project instructions live in `AGENTS.md` — the single source of truth.
+> Fill in the sections below after running `/bootstrap`.
+
+## Project
+[One-sentence description. Stack/language. Key directories.]
+
+## Run / test / lint
+[Build/test/lint commands. Auto-detected by hooks if left empty.]
+
+## Conventions
+- Small, atomic changes. Plan first, then code.
+- Commits in Conventional Commits format.
+- SDD: plans live in `design-docs/[Task-ID]/`.
+- Tests & rigor: follow **Project policy** below.
+
+## Project policy (`.claude/army.conf`)
+Set by `/bootstrap`. **Security barriers always on.**
+- TEST_POLICY = [strict | pragmatic | light | none]
+- LINT_POLICY = [on | off]
+- CI_MODE = [on | off]
+
+## Team → see AGENTS.md
+CLAUDEMD
+    echo "    • Wrote CLAUDE.md (Claude-specific memory; full instructions in AGENTS.md)"
   fi
 else
-  echo "    • tool=$TOOL → skipping CLAUDE.md (memory lives in the portable AGENTS.md)"
+  echo "    • tool=$TOOL → skipping CLAUDE.md (AGENTS.md is the canonical entry point)"
 fi
 
 # Git pre-commit (hard barrier at the git level — tool-independent)
 if [ -d "$TARGET/.git" ]; then
-  cp "$SRC/agents/hooks/git-pre-commit.sh" "$TARGET/.git/hooks/pre-commit"
+  cp "$BASELINE/hooks/git-pre-commit.sh" "$TARGET/.git/hooks/pre-commit"
   chmod +x "$TARGET/.git/hooks/pre-commit"
   echo "    • Installed git pre-commit (secret scan + lint/tests)"
 else

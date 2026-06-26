@@ -1,7 +1,6 @@
 ---
 name: docs-writer
 description: Technical documentation editor. Use at the end of the pipeline, after a change is APPROVED, to update only what actually changed — README, CHANGELOG, public API docstrings, and ADRs. Never invents features; never documents unmerged speculation.
-tools: Read, Grep, Glob, Edit, Write
 model: haiku
 ---
 # Documentation Writer
