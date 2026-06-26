@@ -33,19 +33,17 @@ Claude Code v2.x · `bash` · `python3` (barriers; a fallback runs without it). 
 
 ## Install (once per repo)
 ```bash
-# unpack the package, then from the repo directory:
-/path/to/claude-agent-army/install.sh .
-# or point at a repo:
-/path/to/claude-agent-army/install.sh ~/projects/my-repo
+cd my-repo
+apm install psrebrny/agent-army --target opencode   # or: claude | cursor | codex | gemini | copilot | windsurf
 ```
-The installer copies `.claude/`, `CLAUDE.md`, CI, installs the git pre-commit hook and appends to `.gitignore`. It's a 1:1 copy — no LLM.
+apm deploys the four skills only. The baseline agents/hooks/templates/CI ride bundled as raw assets inside the `bootstrap` skill — they become live, repo-tailored files only when you run `/bootstrap` below (it also installs the git pre-commit hook and appends to `.gitignore`).
 
 ## STEP 1 — entry point: `/bootstrap`  (run first)
-```bash
-cd my-repo
-claude
+```
+cd my-repo   # open it in your AI tool, then:
 /bootstrap
 ```
+> OpenCode: if `/bootstrap` isn't recognised yet, invoke it directly with `@.agents/skills/bootstrap/SKILL.md`.
 `/bootstrap`:
 1. **reads the repo** (stack, standards, conventions, real test/lint commands),
 2. **asks a few smart questions** (only the gaps; business, architecture, testing, NFR, process),

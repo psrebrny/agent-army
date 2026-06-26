@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Git pre-commit: last barrier before a commit (secret scan + lint/tests).
-# Installed to .git/hooks/pre-commit by install.sh.
+# Installed to .git/hooks/pre-commit by /bootstrap.
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$ROOT" || exit 0
 

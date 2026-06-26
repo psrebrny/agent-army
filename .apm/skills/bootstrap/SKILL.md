@@ -38,10 +38,33 @@ Report what landed where before moving on.
 
 ## Step 1 · Recon (DEEP — read real code before you ask)
 This step decides everything. A shallow recon → generic agents. **Read actual source, not just manifests.**
-- **Detect stack & tooling:** read `package.json` / `pyproject.toml` / `build.gradle(.kts)` / `pom.xml` / `go.mod` / `Cargo.toml`; test & CI configs (jest/vitest/cypress/playwright/pytest/spock…); lint/format config; `.editorconfig`.
-- **Monorepo check:** if there are MULTIPLE manifests in subdirs (e.g. `frontend/package.json` + `backend/pyproject.toml` + root `build.gradle.kts`), map **each stack separately** — its own dir, framework, and exact commands. You'll wire per-stack commands into `army.conf` (chained or per-dir) in Step 3.
-- **Read standards if present:** `AGENTS.md`, nested `*/AGENTS.md`, `CLAUDE.md`, `README`.
-- **Mine conventions from REAL code (mandatory — open ≥3–5 real files):** pick representative source files in each layer and **read them**. Extract, with file paths as evidence:
+
+### 1a · Exhaustive discovery sweep (deterministic — do NOT eyeball the root only)
+Last time bootstrap MISSED a nested `frontend/AGENTS.md`. Don't repeat that: **enumerate every relevant file across the whole tree first, then read.** Run a real search — don't assume root-only:
+```bash
+# Standards & memory files at ANY depth (this is what catches frontend/AGENTS.md, src/AGENTS.md, …)
+find . \( -name node_modules -o -name build -o -name dist -o -name target -o -name .gradle -o -name .git \) -prune -o \
+  -type f \( -iname 'AGENTS.md' -o -iname 'CLAUDE.md' -o -iname 'README*' -o -iname '.cursorrules' -o -iname '*.mdc' \) -print
+# Every build/dependency manifest at ANY depth (this is what catches monorepo sub-stacks)
+find . \( -name node_modules -o -name build -o -name dist -o -name target -o -name .gradle -o -name .git \) -prune -o \
+  -type f \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'build.gradle*' -o -name 'pom.xml' -o -name 'go.mod' -o -name 'Cargo.toml' -o -name '*.csproj' \) -print
+# Test/CI/lint configs
+find . -path ./node_modules -prune -o -type f \( -iname '*jest*' -o -iname '*vitest*' -o -iname 'cypress.config.*' -o -iname 'playwright.config.*' -o -iname 'pytest.ini' -o -iname '*.eslintrc*' -o -iname 'detekt.yml' -o -iname '.editorconfig' \) -print
+find .github/workflows -type f 2>/dev/null
+```
+**Print the full list of what you found, then read EVERY standards file (`AGENTS.md`/`CLAUDE.md` at all depths) and EVERY manifest.** Nested `AGENTS.md` files are authoritative for their subtree — they often hold the real per-stack laws. Missing one = generic agents for that stack.
+
+### 1b · Reason explicitly before concluding (Chain-of-Thought — write this out)
+Don't jump to writing the report. First THINK on paper, briefly:
+1. **How many stacks / deployables are here?** (root + each manifest dir). Name them.
+2. **For each stack, what is the dominant architectural pattern?** State your hypothesis, then **open 2–3 real files that should prove or break it** and confirm. If the code contradicts your guess, revise — evidence wins.
+3. **What would a senior reviewer of THIS repo reject in a PR?** Those rejections are the repo's laws — list them.
+4. **What's genuinely ambiguous and must be ASKED** (vs. answerable from code)?
+Keep it short but real — this reasoning is what turns a scan into understanding.
+
+### 1c · Mine conventions from REAL code
+- **Monorepo:** if 1a found MULTIPLE manifests in subdirs, map **each stack separately** — its own dir, framework, exact commands, and its own nested `AGENTS.md` laws. Per-stack commands get wired into `army.conf` in Step 3.
+- **Mine conventions from REAL code (mandatory — open ≥3–5 real files per stack):** pick representative source files in each layer and **read them**. Extract, with file paths as evidence:
   - the **architectural patterns this repo actually enforces** (e.g. "domain uses `Facade` + `Creator/Editor/Finder`", "Smart/Dumb with `...Ref` service interface", "PrimeFlex only — no custom CSS") — quote the real class/dir that proves it;
   - **naming & layout laws** (package/folder structure, file suffixes, test placement);
   - **error-handling & boundary conventions**;
@@ -87,6 +110,8 @@ The baseline agents are a **CONTRACT (role + guarantees), not a fill-in-the-blan
 > ⛔ **The failure mode to avoid: "localization".** Swapping generic paths for real paths and the stack name into otherwise-untouched baseline rules is NOT specialization — it produces a generic agent wearing this repo's filenames. That is explicitly forbidden.
 > ✅ **What's required instead: "internalization".** Each agent must encode THIS repo's actual **laws** as first-class rules, with proving examples from real code. The reader should be unable to reuse the agent in a different repo without rewriting it.
 
+**Before writing each agent, reason first (CoT — one short paragraph per agent):** "This is the `<role>`. In THIS repo it will mostly be invoked for `<concrete situations from the evidence>`. The laws it must enforce are `<X, Y, Z with proving paths>`. The real assets it should reuse are `<paths>`. The framework idioms its examples must use are `<…>`." Only then write the file. This stops you from defaulting to the baseline's generic phrasing.
+
 For **every** agent:
 - **Bake in 3–6 repo LAWS** from the Recon report as concrete BAD/GOOD rules — e.g. "GOOD: new domain logic goes through `XFacade` + `Creator/Editor/Finder` (see `…/domain/…`); BAD: a controller calling the repository directly." Reference the real proving file. These laws are the difference between localization and internalization.
 - **Name the repo's real anti-reinvention anchors** (the reusable assets) and instruct reuse-over-rewrite by path.
@@ -114,9 +139,25 @@ Then:
 - **Create the `design-docs/` skeleton.**
 - Before overwriting any agent, save the original as `<tool>/agents/<name>.base.md` (reversible).
 
-## Step 4 · Verify & report
-- Run the detected verify (lint + tests) ONCE to confirm the wired commands actually work; if wrong, fix them in the agents + CLAUDE.md.
-- Print a short report: tool detected + where files landed, detected stack, commands wired, which agents were specialized, assumptions made. Suggest next step: `/ship "<first task>"`.
+## Step 4 · Reflection & self-critique (MANDATORY second pass — do not skip)
+First drafts read as "baseline + paths". This pass is where they become repo-authored. Don't trust the first write.
+
+### 4a · Re-look at the repo (fresh eyes)
+Re-open **2–3 files you did NOT read in Step 1** — a different feature, a different layer, another stack's code. Ask: does what I wrote into the agents still hold here, or did I over-fit to the first files I happened to open? Adjust the laws if the second sample disagrees. Also re-check: did I honor **every** nested `AGENTS.md` found in 1a? Name each one and the agent rule it produced — if a nested standards file produced no rule, that's a miss; fix it.
+
+### 4b · Critique each generated agent (write the critique, then revise)
+For each agent, score it honestly against three questions and **write the answers down**:
+1. **Internalization:** "Could this file be dropped into a *different* repo unchanged?" If yes → it's still generic. Name the generic sentences and replace them with repo-law sentences.
+2. **Evidence:** "Does every repo-specific claim cite a real file/command?" Flag any unproven claim → verify it or cut it.
+3. **Coverage & variety:** "Do the `<prompt_examples>` span the real shapes this agent meets (different layers, happy + error, different Testing-Trophy levels)?" If they're three slants on one scenario → replace until varied.
+List concrete defects (file + line/section), THEN revise the files. Loop 4b until each agent passes all three — don't proceed with known defects.
+
+### 4c · Cross-agent consistency
+Check the team agrees with itself: the commands in `architect`, `tester`, `code-reviewer` and `army.conf` are identical; the laws in `code-reviewer`'s checklist match the laws `architect` enforces; no two agents claim the same responsibility. Fix drift.
+
+## Step 5 · Verify & report
+- Run the detected verify (lint + tests) ONCE to confirm the wired commands actually work; if wrong, fix them in the agents + `army.conf` + AGENTS.md.
+- Print a short report: tool detected + where files landed, detected stack(s), commands wired, the repo LAWS you extracted (with proving paths), which agents were specialized, what the reflection pass changed, and assumptions made. Suggest next step: `/ship "<first task>"`.
 
 ## Rules
 - **Do not invent commands** — verify them by running. **Do not weaken** any agent's guarantees while specializing.

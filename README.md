@@ -6,113 +6,48 @@ each other honest — plus deterministic **barriers (hooks)** no agent can bypas
 
 ## Install
 
-Two independent install paths — pick one:
-
-- **A · apm** (cross-tool package manager) — `apm install agent-army`, then `/bootstrap`. Best if you already use [apm](https://microsoft.github.io/apm/) across Claude / Cursor / OpenCode / Codex / Gemini / Windsurf. See [Install via apm](#install-via-apm).
-- **B · bash installer** (`install.sh` / `army`) — self-contained, no apm needed; also covers tools apm doesn't. The original path, documented just below.
-
-Both end the same way: run `/bootstrap` once per repo to specialize the team.
-
-### Install via apm
+Installed via [apm](https://microsoft.github.io/apm/) (Microsoft's cross-tool Agent Package Manager) — one command across Claude / Cursor / OpenCode / Codex / Gemini / Windsurf / Copilot — then `/bootstrap` once per repo to specialize the team.
 
 apm ships only the four **skills** (`bootstrap`, `ship`, `new-agent`, `context-budget`) as live. The baseline agents/hooks/templates ride bundled inside the `bootstrap` skill as raw assets — apm does **not** drop generic agents into your repo. `/bootstrap` materializes them into your tool's directory (not hardcoded to `.claude/`) and specializes them to the codebase.
 
-```bash
-apm install pawel-srebrny/agent-army    # deploys the skills
-# then, inside the target repo, in your AI tool:
-/bootstrap                              # copies baseline → specializes to THIS repo
-```
+**1. Install apm** (if you don't have it): `pipx install apm-cli` (or `pip install apm-cli`).
 
-Package layout: `apm.yml` (manifest) + `.apm/skills/` (the four skills; `bootstrap/baseline/` holds the raw agents/hooks/templates — the single source of truth that `install.sh` reads too).
-
-### Phase 1 — install `army` globally (one time)
-
-**Private repo — use `gh` CLI (recommended while repo is private):**
-```bash
-gh release download --repo pawel-srebrny/agent-army --pattern "*.tar.gz" --dir /tmp/army && \
-  tar xzf /tmp/army/*.tar.gz -C /tmp/army && \
-  /tmp/army/agent-army/install.sh --global
-```
-
-**Public repo — one-liner:**
-```bash
-curl -fsSL https://raw.githubusercontent.com/pawel-srebrny/agent-army/main/.github/scripts/install-latest.sh | bash -s -- --global
-```
-
-**Or clone + install (always works):**
-```bash
-git clone https://github.com/pawel-srebrny/agent-army
-agent-army/install.sh --global
-```
-
-This adds the `army` command to `~/.local/bin/` and stores the toolkit in `~/.local/share/agent-army/`.
-Add `~/.local/bin` to your PATH if it isn't there already (the installer will tell you if it's missing).
-
-### Phase 2 — use from any repo
+**2. Install the package** into your target repo. apm needs a `--target` when it detects more than one harness:
 
 ```bash
-cd ~/my-project    # go to any git repo
-army               # install into current directory, defaults to --tool claude
+cd ~/my-repo
+apm install psrebrny/agent-army --target opencode   # or: claude | cursor | codex | gemini | copilot | windsurf
 ```
 
-**All options:**
+If the repo is **private**, set a token first (fine-grained PAT, `Contents: Read`):
+```bash
+export GITHUB_APM_PAT=github_pat_xxxx
+```
 
-| Flag | Values | Default | Description |
-|------|--------|---------|-------------|
-| `--tool` | `claude` `cursor` `copilot` `codex` `opencode` `gemini` `auto` `other` | `claude` | Which AI tool you use in this repo |
-| `--no-ci` | — | off | Skip adding Agent Army's CI workflow (`quality.yml`) |
+**3. Run bootstrap** inside the repo, in your AI tool:
+```
+/bootstrap
+```
+> **OpenCode:** if `/bootstrap` isn't a recognised command yet (apm landed the skill in `.agents/skills/` rather than `.opencode/commands/`), invoke it directly — type `@.agents/skills/bootstrap/SKILL.md` in the chat. Bootstrap then places everything in the right dirs so future commands work normally.
+
+Pin a version with `psrebrny/agent-army#<tag-or-commit>`. Package layout: `apm.yml` (manifest) + `.apm/` (the four skills + `.apm/commands/` wrappers; `bootstrap/baseline/` holds the raw agents/hooks/templates — the single source of truth).
+
+### Updating
 
 ```bash
-army                          # Claude Code, with CI
-army --tool cursor            # Cursor IDE (hooks inert; barrier = git pre-commit + CI)
-army --tool claude --no-ci    # Claude Code, skip adding CI (repo already has its own)
-army --tool auto              # unknown/mixed — bootstrap will confirm the tool later
+apm update                 # pull the latest pinned versions
+# then, in the repo, re-run to re-specialize against the current code:
+/bootstrap
 ```
-
-**Tool modes:**
-- `claude` — full hook mode: lifecycle barriers (`guard`, `format`, `verify`, `gate`) + slash commands
-- `cursor` / `copilot` / `codex` / `opencode` / `gemini` — hooks inert; hard barrier = git pre-commit + CI; entry point = `AGENTS.md`
-- `auto` — Claude hooks active; bootstrap confirms the actual tool on first run
-- `other` — hooks inert; barrier = git pre-commit + CI
-
-### Manual / pinned version
-
-```bash
-# Specific release:
-VERSION=v0.2.0
-curl -fsSL https://github.com/pawel-srebrny/agent-army/releases/download/$VERSION/agent-army-$VERSION.tar.gz | tar xz
-cd agent-army && ./install.sh --global
-```
-
-### Updating to a new version
-
-The `--global` install just overwrites `~/.local/share/agent-army/` — run the same command again:
-
-```bash
-# Update via one-liner (always fetches latest release):
-curl -fsSL https://raw.githubusercontent.com/pawel-srebrny/agent-army/main/.github/scripts/install-latest.sh | bash -s -- --global
-
-# Or update via git clone:
-git -C agent-army pull && agent-army/install.sh --global
-```
-
-This updates the `army` command itself. **Already-installed repos are not affected** — their `.claude/`
-directories are independent copies. To update an existing repo, re-run `army` inside it:
-
-```bash
-cd ~/my-project
-army --tool claude    # overwrites .claude/ with the new version; preserves CLAUDE.md/AGENTS.md
-```
+Already-specialized agents are your repo's files — re-running `/bootstrap` refreshes them (it saves the prior version as `<agent>.base.md` first).
 
 ### After installing into a repo
 
-```bash
-claude
-/bootstrap         # ONCE: reads the repo, asks your project policy (test rigor, lint, CI), tailors the agents
-/agents            # see the team
-/ship "add a /health endpoint with a test"
 ```
-Requirements: Claude Code v2.x, `bash`, `python3` (security barriers). On Windows: WSL or Git Bash.
+/bootstrap     # ONCE: deep-scans the repo, asks your project policy (test rigor, lint, CI), AUTHORS the team
+/ship "add a /health endpoint with a test"   # then drive tasks through the pipeline
+```
+On Claude Code you also get `/agents` to inspect the team and active lifecycle hooks. On other tools the hard barrier is git pre-commit + CI. Requirements: `bash`, `python3` (security barriers); Claude Code v2.x for full hook mode.
 
 **Before running `/bootstrap`, read the policy section in [GUIDE.md](GUIDE.md)** — it explains the choices `/bootstrap` will ask you (test rigor, lint, CI) so you're ready.
 
@@ -170,15 +105,15 @@ it work in a new repo. You can override the commands in `CLAUDE.md`.
 - Add your own gate: register a hook in `settings.json` (events: PreToolUse, PostToolUse, SubagentStop, Stop, UserPromptSubmit, SessionStart…).
 - Token/context discipline: `.claude/skills/context-budget/SKILL.md` (cheapest adequate model, plan first, short sessions).
 
-## Two layers: copying vs intelligence
-`install.sh` is **deterministic** — it copies finished files 1:1, generates nothing (zero LLM, zero tokens). That gives reproducibility.
+## Two layers: distribution vs intelligence
+`apm install` is **deterministic** — it deploys the four skills 1:1, generates nothing (zero LLM, zero tokens). The baseline agents/hooks/templates ride bundled as raw assets, NOT as live generic agents.
 
-Tailoring to the repo is done by **`/bootstrap`** — a skill run inside a Claude Code session that:
-1. **reads the repo** (stack, standards, conventions, real test/lint commands),
-2. **asks a few smart questions** (only the gaps recon didn't cover),
-3. **generates agents tailored to this repo** (exact commands, test framework, conventions) + `CLAUDE.md`/`AGENTS.md` + a `design-docs/` skeleton, and verifies the commands actually run.
+Tailoring to the repo is done by **`/bootstrap`** — a skill run inside your AI tool that:
+1. **deep-scans the repo** (every nested `AGENTS.md` + manifest, real source, test/lint commands),
+2. **reasons + asks a few smart questions** (only the gaps recon didn't cover),
+3. **authors agents tailored to this repo** (the repo's actual architectural laws, exact commands, test idioms) + a canonical `AGENTS.md` + a `design-docs/` skeleton, then **self-critiques and revises**, and verifies the commands actually run.
 
-So: **install = mechanical baseline**, **/bootstrap = intelligent runtime tailoring**. Run `/bootstrap` once, right after install.
+So: **apm = mechanical distribution**, **/bootstrap = intelligent runtime authoring**. Run `/bootstrap` once, right after install.
 
 ## Hardening
 - **Stop without an infinite loop** — `gate.sh` respects `stop_hook_active`: after a forced fix it lets the model finish instead of blocking in circles.

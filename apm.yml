@@ -6,7 +6,7 @@ description: >-
   per repo: it copies the bundled baseline agents/hooks/templates into your
   tool's directory and specializes them to THIS codebase. Cross-tool (Claude,
   Cursor, OpenCode, Codex, Gemini, Windsurf, Copilot).
-author: pawel-srebrny
+author: psrebrny
 
 # Only skills live under .apm/. The baseline agents/hooks/templates are bundled
 # INSIDE the bootstrap skill (skills/bootstrap/baseline/) as raw assets, so apm
