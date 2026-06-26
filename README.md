@@ -23,7 +23,7 @@ apm install pawel-srebrny/agent-army    # deploys the skills
 /bootstrap                              # copies baseline → specializes to THIS repo
 ```
 
-Package layout: `apm.yml` (manifest) + `.apm/skills/` (the four skills; `bootstrap/baseline/` holds the raw agents/hooks/templates). This path is **separate** from `install.sh`/`template/` — neither touches the other.
+Package layout: `apm.yml` (manifest) + `.apm/skills/` (the four skills; `bootstrap/baseline/` holds the raw agents/hooks/templates — the single source of truth that `install.sh` reads too).
 
 ### Phase 1 — install `army` globally (one time)
 
