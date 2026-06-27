@@ -48,12 +48,20 @@ No build step, no test suite, no installer script — apm is the install mechani
 
 ## Working in this repo
 
-No build step, no test suite. All changes go in `.apm/` (the single source of truth). Test by installing the package into a scratch repo and running `/bootstrap`:
+No build step. All changes go in `.apm/` (the single source of truth).
 
+**Local "unit" checks (deterministic, zero-LLM) — `scripts/check.sh`.** Validate one piece or everything; it checks frontmatter, `_STANDARD.md` sections, cross-tool safety (no string `tools:`), ≥2 prompt examples, and that each agent's Output template link resolves:
 ```bash
-# Local dry-run of placement (no writes):
-apm install psrebrny/agent-army --dry-run --target opencode
-# Or install into a scratch repo and inspect what landed:
+scripts/check.sh architect        # one agent (piece by piece)
+scripts/check.sh tester reviewer  # a few
+scripts/check.sh --skills         # the skills
+scripts/check.sh                  # everything (agents + skills)
+scripts/check.sh --pack           # also `apm pack` if apm is installed
+```
+**End-to-end (the real apm path):**
+```bash
+apm install psrebrny/agent-army --dry-run --target opencode   # preview placement, no writes
+# or install into a scratch repo and run /bootstrap to see the specialized output:
 mkdir /tmp/test-repo && git init -q /tmp/test-repo && cd /tmp/test-repo
 apm install psrebrny/agent-army --target opencode
 ```
