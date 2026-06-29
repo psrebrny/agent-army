@@ -6,13 +6,31 @@
 #   scripts/check.sh tester reviewer # several agents (substring match on name)
 #   scripts/check.sh --skills        # just the skills
 #   scripts/check.sh --pack          # also run `apm pack`/dry-run if apm is installed
+#   scripts/check.sh --target-dir <tooldir>   # validate GENERATED agents (e.g. a target
+#                                              # repo's .claude after /bootstrap), not the baseline
 #
 # Exit non-zero if any FAIL. Warnings (⚠) don't fail the run.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BASE="$ROOT/.apm/skills/bootstrap/baseline"
-AGENTS_DIR="$BASE/agents"
 SKILLS_DIR="$ROOT/.apm/skills"
+
+# --target-dir <dir> retargets the agent + template checks at a GENERATED tool dir
+# (e.g. <repo>/.claude). Default: validate the source baseline. Parsed early so the
+# rest of the script just reads BASE/AGENTS_DIR.
+TARGET_DIR=""
+_args=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --target-dir) TARGET_DIR="${2:?--target-dir needs a path}"; shift 2 ;;
+    *) _args+=("$1"); shift ;;
+  esac
+done
+set -- ${_args[@]+"${_args[@]}"}
+if [ -n "$TARGET_DIR" ]; then
+  BASE="$(cd "$TARGET_DIR" && pwd)"   # templates resolve against the target tool dir
+fi
+AGENTS_DIR="$BASE/agents"
 TEMPLATES_DIR="$BASE/templates"
 
 PASS=0; FAIL=0; WARN=0
@@ -107,7 +125,7 @@ if [ "$do_agents" = 1 ]; then
     match "$(basename "$f" .md)" && check_agent "$f"
   done
 fi
-if [ "$do_skills" = 1 ]; then
+if [ "$do_skills" = 1 ] && [ -z "$TARGET_DIR" ]; then
   for d in "$SKILLS_DIR"/*/; do check_skill "${d%/}"; done
 fi
 if [ "$do_pack" = 1 ]; then

@@ -58,6 +58,9 @@ scripts/check.sh --skills         # the skills
 scripts/check.sh                  # everything (agents + skills)
 scripts/check.sh --pack           # also `apm pack` if apm is installed
 ```
+**e2e smoke test (drives `/bootstrap` headless against a fixture, then asserts the output is
+repo-tailored) — `scripts/smoke.sh`.** See `tests/GUIDE.md` for the full testing guide (both layers).
+
 **End-to-end (the real apm path):**
 ```bash
 apm install psrebrny/agent-army --dry-run --target opencode   # preview placement, no writes
