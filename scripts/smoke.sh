@@ -76,7 +76,7 @@ Discover every stack and every nested AGENTS.md, author the agents, write army.c
 AGENTS.md, then stop. Do not git commit."
   LOG="$WORK/.smoke-bootstrap.log"
   MODEL_ARG=(); [ -n "${SMOKE_MODEL:-}" ] && MODEL_ARG=(--model "$SMOKE_MODEL")
-  RUNNER=(claude -p "$PROMPT" --permission-mode bypassPermissions "${MODEL_ARG[@]}")
+  RUNNER=(claude -p "$PROMPT" --permission-mode bypassPermissions ${MODEL_ARG[@]+"${MODEL_ARG[@]}"})
   command -v timeout >/dev/null && RUNNER=(timeout "${SMOKE_TIMEOUT:-1800}" "${RUNNER[@]}")
   echo "  logging to $LOG"
   ( cd "$WORK" && "${RUNNER[@]}" ) >"$LOG" 2>&1
@@ -128,7 +128,7 @@ if [ "$JUDGE" = 1 ]; then
     f="$A/$agent.md"
     [ -f "$f" ] || { bad "judge: $agent.md not generated"; continue; }
     out="$( { printf '%s\n\n## PLANTED FACTS\n%s\n\n## AGENT FILE (%s)\n' "$RUBRIC" "$FACTS" "$agent"; cat "$f"; } \
-            | claude -p "${JMODEL[@]}" 2>/dev/null )"
+            | claude -p ${JMODEL[@]+"${JMODEL[@]}"} 2>/dev/null )"
     verdict="$(printf '%s' "$out" | grep -oE '"verdict"[[:space:]]*:[[:space:]]*"(PASS|FAIL)"' | grep -oE 'PASS|FAIL' | head -1)"
     scores="$(printf '%s' "$out" | grep -oE '"(internalization|evidence|variety)"[[:space:]]*:[[:space:]]*[0-9]' | tr '\n' ' ')"
     if [ "$verdict" = "PASS" ]; then ok "judge $agent → PASS  [$scores]"; else bad "judge $agent → ${verdict:-NO-VERDICT}  [$scores]"; fi
