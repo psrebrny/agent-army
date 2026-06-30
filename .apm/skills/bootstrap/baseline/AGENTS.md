@@ -58,6 +58,20 @@ one-off task tweak ("for this PR skip the e2e") is NOT a guideline — apply it 
 the team untouched. The routine lives in `.claude/skills/adapt-army/SKILL.md` (it routes the guideline to
 every agent that owns it and keeps `AGENTS.md` the source of truth).
 
+## Hardening the formatter config — offer once, never nag
+When an agent keeps hitting the SAME style gap the formatter doesn't enforce (e.g. the diff repeatedly
+wants single quotes but `.prettierrc` has no `singleQuote`, or `*.yml` indent drifts because nothing
+pins it), it may propose — ONCE — adding that rule to the **formatter's own config that the hooks
+already run** (`.prettierrc`/`.editorconfig`/ruff/gofmt — whatever `FMT_CMD` in `army.conf` invokes),
+so it's machine-enforced from then on instead of re-litigated every PR.
+- **Conservative, not naggy:** a one-off restyle is just diff-noise — revert it (see Hard rules), don't
+  raise config. Only a *recurring, repo-wide* gap earns the offer, and only once — if declined, drop it.
+- **One source of truth, no hook conflict:** EXTEND the config the formatter already reads; never add a
+  second file that contradicts it (e.g. `.editorconfig` indent ≠ `.prettierrc` indent). Keep each style
+  key in exactly one place so the hook, the editor and CI can't disagree.
+- **Offer, don't apply:** show the proposed config diff and let the human accept — same etiquette as
+  `/adapt-army`.
+
 ## Guardrails (the "law" the model cannot talk past)
 - **git pre-commit + CI (`.github/workflows/quality.yml`)** — the hard, tool-independent gate:
   secret scan + lint + tests. Active on EVERY tool, even if someone bypasses the agent.
@@ -69,4 +83,5 @@ every agent that owns it and keeps `AGENTS.md` the source of truth).
 - Do NOT commit without human approval.
 - Do NOT weaken or disable tests/hooks to "pass".
 - Do NOT paste secrets into code or prompts.
+- Do NOT reformat lines you aren't functionally changing — no quote-style flips (`"`↔`'`), re-indentation, key/import reordering, or whitespace churn, including in `*.yml`/`*.json`/`*.toml`. Style is the formatter's job; keep the diff to the actual change.
 - Uncertain → ask, don't guess.

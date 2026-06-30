@@ -20,6 +20,7 @@ hand-crafted `architect.md` (use it as the reference exemplar).
 - Severity/priority discipline where it ranks things — no inflation, no false-positive spam.
 - **Never weaken guarantees** to "pass" (tests, gates, reviews, audits).
 - Repo-adaptive: mirror existing conventions; reuse over reinvention.
+- **Diff hygiene:** any agent that edits files touches only the lines its change requires — no gratuitous reformatting (quote-style flips, re-indentation, key/import reordering, line-ending or whitespace churn), including in unformatted config (`*.yml`/`*.json`/`*.toml`). Style is the formatter's domain, not the agent's.
 - Concrete beats generic: every rule must change behavior — cut filler.
 
 ## Self-check before saving an agent (ALL must be YES)

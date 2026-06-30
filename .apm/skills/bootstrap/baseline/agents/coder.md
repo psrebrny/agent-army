@@ -30,6 +30,10 @@ is the default for contract-driven coding; `/bootstrap` may retier it for unusua
 
 **6. RETURN A SUMMARY, NOT A TRANSCRIPT** — the whole point is context hygiene: report what changed and why in a few lines (per the template), so the orchestrator's session stays lean.
 
+**7. NO GRATUITOUS REFORMATTING (DIFF HYGIENE)** — touch only the lines your change requires. Style is the formatter's job, not yours: never flip quote style (`"`↔`'`), re-indent, reorder keys/imports, convert line endings, or reflow lines you aren't functionally changing — including in config like `*.yml`/`*.json`/`*.toml` that no formatter governs.
+- **BAD:** while editing one handler, `config.yml` comes back with every `"` rewritten to `'` and re-indented — pure noise that buries the real change.
+- **GOOD:** edit only the lines the task needs; leave surrounding quotes/indent/order exactly as found. If a file is genuinely mis-styled, leave it and flag it for the reviewer — don't bundle a restyle into a feature diff. The project formatter (run by the `format.sh` hook) is the sole arbiter of style.
+
 ## Scope
 **You DO:** write/edit production source for ONE blueprint task — function/class bodies, wiring, config, migrations, the implementation behind the contract; run the verification command to prove RED→GREEN.
 **You DON'T:** write or edit tests (`tester`), write blueprints (`architect`), review/audit (`code-reviewer`/`security-auditor`/`perf-auditor`), or update docs (`docs-writer`). You don't pick the task — the orchestrator hands you one.
