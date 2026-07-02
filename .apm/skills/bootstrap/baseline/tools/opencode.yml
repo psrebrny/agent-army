@@ -1,0 +1,45 @@
+# OpenCode (opencode.ai) — first-class descriptor, verified against opencode.ai/docs/agents
+# and opencode.ai/docs/plugins (2026-07-02). CORRECTION: an earlier version of this file said
+# the agents dir was singular ".opencode/agent" — that was wrong. OpenCode's real, documented
+# per-project agent dir is PLURAL: ".opencode/agents/". Filenames become the agent id
+# (review.md -> "review"); frontmatter is description/mode(primary|subagent|all)/model
+# (provider/model-id, e.g. "anthropic/claude-sonnet-4-20250514")/temperature/permission — NOT
+# name/tools like Claude. OpenCode also has a REAL plugin system (JS/TS modules, 25+ lifecycle
+# events) at ".opencode/plugins/" (also plural) — that is a genuine native hook mechanism we do
+# NOT use yet (our hooks are bash, plugins must be JS/TS); hook_mechanism stays git-only until
+# someone writes a thin JS/TS plugin that shells out to verify.sh. That gap is real, not solved
+# by a directory rename — track it before claiming hook_mechanism: opencode-plugin.
+tool: opencode
+status: first-class
+
+dirs:
+  agents: .opencode/agents         # PLURAL — verified 2026-07-02, corrects an earlier typo
+  skills: .agents/skills           # apm's cross-client skills location, NOT .opencode/command
+  hooks: .opencode/hooks           # our own bash-script storage only — NOT opencode's native
+                                    # ".opencode/plugins/" dir; opencode never reads this path itself,
+                                    # only OUR git-pre-commit.sh (via its self-locating loop) does
+  config_root: .opencode
+
+frontmatter:
+  accepts_tools_field: false        # OpenCode has no Claude-style string 'tools:' field at all
+  model_field: "provider/model-id string, e.g. 'anthropic/claude-sonnet-4-20250514' (confirmed)"
+  # KNOWN GAP: OpenCode's real schema wants `mode: subagent` (not `name:`/`tools:`) and has no
+  # exact equivalent of Claude's bare `model:` tier string — assemble.sh does NOT yet inject
+  # `mode:` or reshape `model:` into provider/id form; bootstrap must add these by hand until
+  # the assembler grows real per-tool frontmatter remapping (today it only substitutes path
+  # placeholders and strips/keeps a string tools: field).
+
+capabilities:
+  subagents: true
+  hook_mechanism: git-only          # OpenCode does not read .claude/settings.json — lifecycle hooks are inert;
+                                     # its OWN plugin system could fire hooks natively but we don't emit plugins yet
+  auto_loads_skills: false          # apm does not yet route skills to a native OpenCode command dir (0.19)
+  commands_dir: null
+  skill_invocation: invoke-by-path  # "@.agents/skills/<skill>/SKILL.md" until apm wires native routing
+
+# Only the hooks that can actually fire without settings.json: the git-commit barrier
+# and what it calls, plus command auto-detection.
+hooks_live:
+  - verify.sh
+  - detect.sh
+  - git-pre-commit.sh

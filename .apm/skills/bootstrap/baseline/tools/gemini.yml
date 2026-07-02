@@ -1,0 +1,32 @@
+# Gemini CLI — UPGRADED to first-class 2026-07-02. Real subagents: markdown files with YAML
+# frontmatter in ".gemini/agents/*.md" (project) or "~/.gemini/agents/*.md" (user); the
+# markdown body becomes the agent's system prompt. An earlier version of this descriptor
+# marked Gemini subagents:false/agents:null — that was WRONG (written before verifying against
+# real docs). Verified via geminicli.com/docs/core/subagents.
+# KNOWN GAP: exact frontmatter field names beyond "description" are not confirmed here — don't
+# assume Claude's name/model/tools shape carries over unchanged; bootstrap should check the
+# installed Gemini CLI's own docs/`--help` before hand-editing frontmatter.
+tool: gemini
+status: first-class
+
+dirs:
+  agents: .gemini/agents
+  skills: .agents/skills
+  hooks: .gemini/hooks
+  config_root: .gemini
+
+frontmatter:
+  accepts_tools_field: false   # unconfirmed either way — default to the safe (no bare string) choice
+  model_field: null            # unconfirmed — do not guess a format
+
+capabilities:
+  subagents: true
+  hook_mechanism: git-only     # no evidence of a settings.json-equivalent lifecycle-hook file; git/CI barrier only
+  auto_loads_skills: false
+  commands_dir: null
+  skill_invocation: invoke-by-path
+
+hooks_live:
+  - verify.sh
+  - detect.sh
+  - git-pre-commit.sh

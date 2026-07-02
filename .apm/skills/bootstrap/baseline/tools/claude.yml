@@ -1,0 +1,29 @@
+# Claude Code — first-class descriptor (dirs confirmed from a real apm install).
+tool: claude
+status: first-class
+
+dirs:
+  agents: .claude/agents
+  skills: .claude/skills
+  hooks: .claude/hooks
+  config_root: .claude
+
+frontmatter:
+  accepts_tools_field: true
+  model_field: "plain tier/model string in 'model:' (e.g. opus/sonnet/haiku, or a concrete model id)"
+
+capabilities:
+  subagents: true
+  hook_mechanism: claude-settings   # lifecycle hooks fire via .claude/settings.json
+  auto_loads_skills: true            # .claude/skills/*/SKILL.md become native slash commands
+  commands_dir: null                 # skills dir doubles as the commands dir
+  skill_invocation: native-command
+
+# Only Claude reads settings.json, so ALL lifecycle hooks are live here.
+hooks_live:
+  - guard.sh
+  - format.sh
+  - gate.sh
+  - verify.sh
+  - detect.sh
+  - git-pre-commit.sh

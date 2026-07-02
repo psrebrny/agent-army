@@ -1,0 +1,29 @@
+# Fallback for any tool name that has no tools/<tool>.yml — used when assemble.sh is invoked
+# with an unrecognized <tool>. Honest degraded mode ONLY: the tool-independent guarantees
+# (AGENTS.md + the git pre-commit/CI barrier) plus agents/skills in the neutral .agents/ dir.
+# Never invents a tool's native dirs — that would re-introduce the soft-if guessing this whole
+# refactor removes. assemble.sh prints a WARN pointing at this file when it falls back here.
+tool: _default
+status: fallback
+
+dirs:
+  agents: .agents/agents
+  skills: .agents/skills
+  hooks: .agents/hooks
+  config_root: .agents
+
+frontmatter:
+  accepts_tools_field: false
+  model_field: null
+
+capabilities:
+  subagents: false
+  hook_mechanism: git-only
+  auto_loads_skills: false
+  commands_dir: null
+  skill_invocation: invoke-by-path
+
+hooks_live:
+  - verify.sh
+  - detect.sh
+  - git-pre-commit.sh

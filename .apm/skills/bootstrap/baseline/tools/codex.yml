@@ -1,0 +1,33 @@
+# Codex (OpenAI) — STUB, but for a DIFFERENT reason than "unconfirmed": verified 2026-07-02
+# that Codex custom agents ARE a real feature, but they're defined as **TOML files**
+# (~/.codex/agents/*.toml, user-level), not Markdown-with-YAML-frontmatter like every other
+# tool here. Our assembler only knows how to materialize Markdown agent files (path-placeholder
+# substitution + a frontmatter tools: rule) — it cannot produce TOML. Flipping subagents:true
+# here would be a lie: assemble.sh has no code path that emits a working Codex agent. Fixing
+# this needs a dedicated TOML materialization path in assemble.sh, not a one-line descriptor
+# edit — until that exists, stay honest and degrade to AGENTS.md + git/CI only. Codex DOES read
+# AGENTS.md natively (walks up from cwd to the project root), so that guarantee is real.
+tool: codex
+status: stub
+
+dirs:
+  agents: null       # real mechanism exists but is TOML, incompatible with our Markdown assembler — do not guess a Markdown path that doesn't exist
+  skills: .agents/skills
+  hooks: .codex/hooks
+  config_root: .codex
+
+frontmatter:
+  accepts_tools_field: false
+  model_field: null
+
+capabilities:
+  subagents: false   # true in Codex itself, but false HERE because our assembler cannot emit the required TOML format yet
+  hook_mechanism: git-only
+  auto_loads_skills: false
+  commands_dir: null
+  skill_invocation: invoke-by-path
+
+hooks_live:
+  - verify.sh
+  - detect.sh
+  - git-pre-commit.sh

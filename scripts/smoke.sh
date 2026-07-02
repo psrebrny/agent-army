@@ -44,6 +44,58 @@ ok(){ printf '  \033[32m✓\033[0m %s\n' "$1"; PASS=$((PASS+1)); }
 bad(){ printf '  \033[31m✗ %s\033[0m\n' "$1"; FAIL=$((FAIL+1)); }
 PASS=0; FAIL=0
 
+# --- 0. GATE 0: assembler (deterministic, zero-LLM) -------------------------
+# Exercises assemble.sh directly for claude + opencode: correct per-tool layout, non-clobber
+# on re-run (a hand-edit survives), husky idempotency, and no cross-tool leakage. Independent
+# of the LLM-driven bootstrap flow below (which needs `claude` CLI) — always runs, gates CI.
+run_assembler_gate() {
+  bold "GATE 0 · assembler (deterministic, zero-LLM)"
+  local t d cfg
+  for t in claude opencode; do
+    cfg=".claude"; [ "$t" = "opencode" ] && cfg=".opencode"
+    d="$(mktemp -d "${TMPDIR:-/tmp}/army-smoke-asm.XXXXXX")"
+    ( cd "$d" && git init -q && git config user.email smoke@test && git config user.name smoke )
+    ( cd "$d" && bash "$ROOT/.apm/skills/bootstrap/assemble.sh" "$t" >/dev/null 2>&1 )
+
+    if "$ROOT/scripts/check.sh" --target-dir "$d/$cfg" >/dev/null 2>&1; then
+      ok "$t: assemble + check.sh GREEN"
+    else
+      bad "$t: assemble + check.sh FAILED (repro: cd a scratch git repo && bash $ROOT/.apm/skills/bootstrap/assemble.sh $t && $ROOT/scripts/check.sh --target-dir \$PWD/$cfg)"
+    fi
+
+    if [ "$t" = "opencode" ]; then
+      if [ -e "$d/.claude" ]; then bad "opencode: leaked a .claude/ dir into non-Claude output"
+      else ok "opencode: no .claude/ leakage"; fi
+    fi
+
+    # non-clobber: hand-edit the architect agent, re-run assemble, assert the edit survived.
+    local afile; afile="$(ls "$d/$cfg"/agent*/architect* 2>/dev/null | head -1)"
+    if [ -n "$afile" ] && [ -f "$afile" ]; then
+      local marker="SMOKE-MARKER-$$-$t"
+      echo "$marker" >> "$afile"
+      ( cd "$d" && bash "$ROOT/.apm/skills/bootstrap/assemble.sh" "$t" >/dev/null 2>&1 )
+      grep -q "$marker" "$afile" && ok "$t: non-clobber preserved a hand-edit on re-run" || bad "$t: re-run CLOBBERED a hand-edited agent"
+    else
+      bad "$t: expected an architect agent file under $d/$cfg/agent(s)/ — none found"
+    fi
+    [ "$KEEP" = 1 ] || rm -rf "$d"
+  done
+
+  # husky idempotency: a hook-manager repo (core.hooksPath set) must get the barrier line
+  # exactly once even after two assemble runs, and .git/hooks/pre-commit must stay untouched.
+  local hd; hd="$(mktemp -d "${TMPDIR:-/tmp}/army-smoke-husky.XXXXXX")"
+  ( cd "$hd" && git init -q && git config user.email smoke@test && git config user.name smoke \
+      && mkdir -p .husky && git config core.hooksPath .husky )
+  ( cd "$hd" && bash "$ROOT/.apm/skills/bootstrap/assemble.sh" opencode >/dev/null 2>&1 )
+  ( cd "$hd" && bash "$ROOT/.apm/skills/bootstrap/assemble.sh" opencode >/dev/null 2>&1 )
+  local barrier_count; barrier_count="$(grep -c 'git-pre-commit.sh' "$hd/.husky/pre-commit" 2>/dev/null || echo 0)"
+  [ "$barrier_count" = "1" ] && ok "husky: barrier line idempotent across two assemble runs" || bad "husky: barrier line count=$barrier_count (expected 1)"
+  if [ -f "$hd/.git/hooks/pre-commit" ]; then bad "husky: .git/hooks/pre-commit should stay untouched when core.hooksPath is set"
+  else ok "husky: .git/hooks/pre-commit untouched"; fi
+  [ "$KEEP" = 1 ] || rm -rf "$hd"
+}
+run_assembler_gate
+
 # --- 1+2. setup work dir + hermetic install --------------------------------
 if [ -z "$WORK" ]; then
   WORK="$(mktemp -d "${TMPDIR:-/tmp}/army-smoke.XXXXXX")"

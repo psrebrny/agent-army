@@ -1,0 +1,31 @@
+# Windsurf (Cascade) — STUB, and verified as a genuine stub (not just "not yet checked").
+# Searched 2026-07-02: Cascade's only documented customization file is a plain "AGENTS.md" /
+# "agents.md" (directory-scoped instructions, no special frontmatter) — there is no discrete
+# per-agent markdown/TOML file format or dedicated subagent-loading directory like Cursor/
+# Gemini/OpenCode/Copilot now have. If Windsurf ships real subagents later, re-verify before
+# flipping this — don't assume "still true" indefinitely (see cursor.yml/gemini.yml/copilot.yml,
+# all of which were WRONGLY marked no-subagents in an earlier pass and had to be corrected).
+tool: windsurf
+status: stub
+
+dirs:
+  agents: null       # confirmed: no per-agent file mechanism exists to target
+  skills: .agents/skills
+  hooks: .windsurf/hooks
+  config_root: .windsurf
+
+frontmatter:
+  accepts_tools_field: false
+  model_field: null
+
+capabilities:
+  subagents: false
+  hook_mechanism: git-only
+  auto_loads_skills: false
+  commands_dir: null
+  skill_invocation: invoke-by-path
+
+hooks_live:
+  - verify.sh
+  - detect.sh
+  - git-pre-commit.sh

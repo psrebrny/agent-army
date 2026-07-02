@@ -1,0 +1,37 @@
+# GitHub Copilot — UPGRADED to first-class 2026-07-02. Real custom agents (formerly "custom
+# chat modes"): markdown files with YAML frontmatter (name/description/tools/model, all
+# optional) in ".github/agents/" — works in VS Code, the Copilot CLI, and cloud/background
+# agents. Supports true subagent delegation (the `agents` frontmatter property + an `agent`
+# tool) and "handoffs" between agents. An earlier version of this descriptor said Copilot has
+# "no subagent-loading mechanism at all" — that was WRONG (the old assumption predates this
+# feature shipping; verified 2026-07-02 against code.visualstudio.com/docs/agent-customization
+# and docs.github.com/copilot). Filed as the original stub before Copilot had this feature —
+# always re-verify a "no subagents" claim against current docs before trusting it.
+# HARD REQUIREMENT: files MUST use the ".agent.md" suffix (e.g. "architect.agent.md"), not
+# bare ".md" — Copilot will not discover a plain "architect.md". See dirs.agent_file_suffix;
+# assemble.sh must rename on materialization, not just copy.
+tool: copilot
+status: first-class
+
+dirs:
+  agents: .github/agents
+  agent_file_suffix: .agent.md   # REQUIRED — Copilot only discovers *.agent.md, not *.md
+  skills: .agents/skills
+  hooks: .github/hooks           # our own bash-script storage only, not a Copilot-native dir
+  config_root: .github
+
+frontmatter:
+  accepts_tools_field: false   # Copilot's tools: is an ARRAY, not the bare string our agents avoid — our baseline never sets one, so this stays inert either way
+  model_field: null            # optional field, exact accepted values unconfirmed — do not guess
+
+capabilities:
+  subagents: true
+  hook_mechanism: git-only     # Copilot has no settings.json-equivalent lifecycle-hook file; git/CI barrier only
+  auto_loads_skills: false
+  commands_dir: null
+  skill_invocation: invoke-by-path
+
+hooks_live:
+  - verify.sh
+  - detect.sh
+  - git-pre-commit.sh

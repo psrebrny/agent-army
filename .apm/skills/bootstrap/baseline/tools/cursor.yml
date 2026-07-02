@@ -1,0 +1,32 @@
+# Cursor — UPGRADED to first-class 2026-07-02. Cursor 2.4+ (Jan 2026) ships real subagents:
+# markdown files with YAML frontmatter (name/description/model) in ".cursor/agents/" (project)
+# or "~/.cursor/agents/" (user). An earlier version of this descriptor marked Cursor
+# subagents:false/agents:null — that was WRONG (written before verifying against Cursor's
+# actual docs). Verified via cursor.com/docs/subagents.
+# Note: Cursor also reads ".claude/agents/" and ".codex/agents/" directly for cross-tool
+# compatibility (its own precedence: .cursor/ > .claude/ > .codex/) — irrelevant to us since we
+# always materialize into the tool's own native dir, never rely on a foreign one.
+tool: cursor
+status: first-class
+
+dirs:
+  agents: .cursor/agents
+  skills: .agents/skills
+  hooks: .cursor/hooks
+  config_root: .cursor
+
+frontmatter:
+  accepts_tools_field: false   # Cursor's confirmed fields are name/description/model — no tools: array/string seen in docs; don't add one
+  model_field: "'inherit' or a concrete model id (confirmed)"
+
+capabilities:
+  subagents: true
+  hook_mechanism: git-only     # no evidence of a settings.json-equivalent lifecycle-hook file; git/CI barrier only
+  auto_loads_skills: false
+  commands_dir: null
+  skill_invocation: invoke-by-path
+
+hooks_live:
+  - verify.sh
+  - detect.sh
+  - git-pre-commit.sh

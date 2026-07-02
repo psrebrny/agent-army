@@ -6,7 +6,7 @@
 **Objective:** Make CI/dev catch any regression in the new pipeline without an LLM: assembler output is correct per tool, no placeholders leak, existing files survive re-runs. (Depends on PR#2–#4.)
 
 ---
-// zauważyłem tez że mamy 1 task na pr  docelowy architekt powinien potrafić zrobic kilka tasków na pr ok? jeśli jest to niedoprecyzowane to prosze popraw to w archtekcie np dodając wiecej prompt examples
+
 ### Task 5.1: Extend `check.sh` + `smoke.sh` to exercise the assembler per tool
 
 **Action:**

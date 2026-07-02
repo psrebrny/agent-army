@@ -1,59 +1,42 @@
 ---
 name: bootstrap
-description: One-time intelligent setup of the agent team for THIS repo, after installing via apm. Materializes the bundled baseline (agents, hooks) into your tool's directory, then AUTHORS repo-tailored agents from a deep code scan (real laws, exact commands, test idioms) plus a canonical AGENTS.md and the design-docs skeleton. Run /bootstrap once, right after `apm install agent-army`.
+description: One-time intelligent setup of the agent team for THIS repo, after installing via apm. Calls the deterministic assembler to materialize the bundled baseline (agents, hooks) into your tool's directory, then AUTHORS repo-tailored agents from a deep code scan (real laws, exact commands, test idioms) plus a canonical AGENTS.md and the design-docs skeleton. Run /bootstrap once, right after `apm install agent-army`.
 ---
-# /bootstrap (apm) — materialize + tailor the agent team to THIS repo
+# /bootstrap (apm) — assemble + tailor the agent team to THIS repo
 
 > **Non-Claude tools (OpenCode, Cursor, Codex, Gemini, Windsurf, Copilot):** apm lands the skills in
 > `.agents/skills/` (its cross-client location), not your tool's native command dir — so `/bootstrap`
 > may not be a recognised slash-command yet. Invoke it directly: type `@.agents/skills/bootstrap/SKILL.md`
 > in the chat (run `/ship`, `/new-agent`, `/adapt-army` the same way: `@.agents/skills/<skill>/SKILL.md`).
-> `.agents/skills/` is the apm-managed package, like `node_modules`: this skill gitignores it (Step 0) and
-> `apm install` restores it — it is NOT a leftover to delete for real, and it holds all four skills, not just this one.
+> `.agents/skills/` is the apm-managed package, like `node_modules`: the assembler gitignores it (Step 0)
+> and `apm install` restores it — it is NOT a leftover to delete for real, and it holds all four skills,
+> not just this one.
 
 `apm install` deployed only the SKILLS (this one, plus `ship`, `new-agent`,
 `adapt-army`). It did **not** drop generic agents/hooks into your repo —
-those ride bundled as raw assets in `baseline/` next to this file. Your job: copy
-them into the right place for THIS tool, then specialize them to THIS codebase.
-You (the lead) do the thinking and write the files — apm did none of it.
+those ride bundled as raw assets in `baseline/` next to this file, and `assemble.sh` (also next
+to this file) is the deterministic tool that materializes them. Your job as the lead: run the
+assembler, then do the thinking a script can't — specialize the team to THIS codebase. Packaging
+is code; specialization is you.
 
-## Step 0 · Materialize the baseline into the right directory (tool-aware)
-The baseline is NOT hardcoded to `.claude/`. Detect the tool and pick its dir:
-
-| Tool | Agents dir | Skills/commands | Hooks wiring |
-|---|---|---|---|
-| Claude Code | `.claude/agents/` | `.claude/skills/` (apm already placed these) | `.claude/settings.json` (active) |
-| OpenCode | `.opencode/agent/` | `.opencode/command/` | git pre-commit + CI (Claude hooks inert) |
-| Cursor / Copilot / Codex / Gemini / Windsurf | per-tool dir | per-tool | git pre-commit + CI (Claude hooks inert) |
-
-- Detect from existing config (`.claude/`, `.opencode/`, `.cursor/` …) or ask the user **once** which tool this repo uses; default to Claude Code if it's the only one present.
-- Copy from this skill's `baseline/` into the chosen tool dir:
-  - `baseline/agents/` → `<tool>/agents/` (the seven `*.md` + `_STANDARD.md`). Each agent already embeds its own output skeleton in its `## Output` section — there is no separate templates dir to copy.
-  - **Hooks (tool-aware — don't materialize what can't fire):**
-    - **Claude Code** → copy all of `baseline/hooks/` → `.claude/hooks/`, `chmod +x` the `*.sh` (the lifecycle hooks `guard`/`format`/`gate`/`verify` are wired by `settings.json`).
-    - **Any other tool** → the lifecycle hooks never fire (no `settings.json` is read), so copy ONLY `baseline/hooks/verify.sh`, `baseline/hooks/detect.sh` and `baseline/hooks/git-pre-commit.sh` → `<tool>/hooks/`, `chmod +x`. These are what the git commit barrier and CI actually call; skip the inert `guard`/`format`/`gate`.
-  - `baseline/settings.json` → `.claude/settings.json` **only if** the tool is Claude Code (otherwise hooks are inert; skip).
-  - `baseline/army.conf` → `<tool>/army.conf`
-- **Git commit barrier (tool-independent) — register it WITHOUT clobbering an existing hook, and never twice.** The barrier script lives at `<tool>/hooks/git-pre-commit.sh` (secret-scan + it locates and runs `verify.sh`). Wire it in based on what the repo already uses:
-  - **A hook manager already owns commits** — detect with `git config core.hooksPath` (husky/lefthook set it, e.g. `.husky` or a monorepo `frontend/.husky`; a pre-existing `.husky/` dir counts too). Do NOT touch `.git/hooks`. Append ONE idempotent line to that manager's `pre-commit` file (create it if missing) that runs the barrier — `sh "$(git rev-parse --show-toplevel)/<tool>/hooks/git-pre-commit.sh" || exit 1` — but FIRST `grep` the file so you don't add it if it's already there. This chains cleanly with their existing lint-staged/prettier step and survives `git clone` (the manager file is committed).
-  - **Plain repo, no `.git/hooks/pre-commit`** — write a thin shim at `.git/hooks/pre-commit` that runs the barrier script, `chmod +x`.
-  - **Plain repo but `.git/hooks/pre-commit` already exists** (hand-written, no manager) — do NOT overwrite it; show the user the exact one line to add (the same `sh …/git-pre-commit.sh || exit 1`) and let them place it, or ask.
-  - **No `.git`** — skip with a note.
-  Report which path you took, so it's visible in review that nothing was silently replaced.
-- **CI:** if the repo has no existing workflow, offer to add a `quality.yml` that re-runs `verify.sh`; if it already has CI, leave it and set `CI_MODE=off` in `army.conf`.
-- **Update `.gitignore`:** add `.claude/settings.local.json` (and the chosen tool's local-state file), AND the apm-managed skills dir — `.agents/skills/` for non-Claude tools, `.claude/skills/` for Claude Code. Those skills are restored by `apm install` (like `node_modules`), so they don't belong in git; the specialized team (`<tool>/agents/`, hooks, `army.conf`, `AGENTS.md`) IS committed. (apm already gitignores `apm_modules/` itself.)
-- **Resolve the path placeholders (do this right after copying — for EVERY tool, including Claude).** The baseline agents and `AGENTS.md` are tool-neutral: they use placeholders, not a hardcoded `.claude/`. Substitute them with THIS repo's real dirs. The three families deliberately land in DIFFERENT places, so they are separate placeholders (a blanket single-dir substitution would be WRONG):
-  - `<SKILLS_DIR>` → `.claude/skills` for Claude, **`.agents/skills`** for every other tool (apm's cross-client skills dir, NOT `<tool>/skills`).
-  - `<AGENTS_DIR>` → the tool's agent dir: `.claude/agents` (Claude), `.opencode/agent` (OpenCode), …
-  - `<TOOL_DIR>` → the tool's config root for `army.conf`/hooks: `.claude`, `.opencode`, …
-  ```bash
-  # OpenCode:
-  sed -i '' -e 's#<SKILLS_DIR>#.agents/skills#g' -e 's#<AGENTS_DIR>#.opencode/agent#g' -e 's#<TOOL_DIR>#.opencode#g' .opencode/agent/*.md AGENTS.md
-  # Claude:
-  sed -i '' -e 's#<SKILLS_DIR>#.claude/skills#g' -e 's#<AGENTS_DIR>#.claude/agents#g' -e 's#<TOOL_DIR>#.claude#g' .claude/agents/*.md AGENTS.md
-  ```
-  `.claude/settings.json` stays literal (it appears only in the Claude-only hooks note). Output skeletons live inline in each agent, so there's no template path to touch. (Hook scripts self-locate `verify.sh`/`army.conf`, so this is about keeping the *documented* paths honest, not about wiring.)
-Report what landed where before moving on.
+## Step 0 · Assemble the baseline (deterministic — no packaging decisions here)
+Detect the tool from existing config (`.claude/`, `.opencode/`, `.cursor/` …) or ask the user
+**once** which tool this repo uses; default to Claude Code if it's the only one present. Then
+call the assembler — it is the SOLE owner of every packaging decision (which dirs, which hooks
+actually fire, `settings.json`, `.gitignore`, the git commit barrier, path placeholders):
+```bash
+bash .agents/skills/bootstrap/assemble.sh <tool>
+```
+Read its output line by line — it reports exactly what happened: `+ path` (written), `kept path`
+(already there, untouched — an existing agent is treated as specialized and never clobbered), and
+any `WARN` (the tool isn't in `baseline/tools/`, so it fell back to `_default.yml` — a degraded,
+honest AGENTS.md + git/CI-only mode; see `baseline/tools/README.md`). Re-running later (e.g. after
+a version bump) is always safe — the assembler skips existing agent files; pass `--reconcile` if
+you only need to refresh packaging (frontmatter/paths) on already-specialized agents without
+touching their bodies. `--dry-run` previews the plan without writing anything.
+That's it — there is no more tool-branching prose here. Every dir/hook/placeholder decision for
+every tool lives as data in `baseline/tools/<tool>.yml`; adding a new tool means adding one such
+file, not editing this skill.
 
 ## Step 1 · Recon (DEEP — read real code before you ask)
 This step decides everything. A shallow recon → generic agents. **Read actual source, not just manifests.**
@@ -126,13 +109,17 @@ Ask a short, grouped, numbered batch — only what recon couldn't settle:
   Default everything to the strict end if the user doesn't care.
 "Assume and go" → record **ASSUMPTIONS** explicitly. **Greenfield** (empty repo): skip code-recon, ask the full set, and choose the stack together with the user.
 
-## Step 3 · Generate the tailored team (write files)
+## Step 3 · Specialize the assembled team (bootstrap's PRIMARY job — write files)
+`assemble.sh` already scaffolded a tool-native, generic team in Step 0. Everything from here on
+is judgment work only a model can do: turn that generic scaffold into a team that actually knows
+THIS repo.
+
 **FIRST read `references/agent-worked-examples.md`** (next to this file) — full `Recon → produced agent`
 transformations for `architect`, `tester`, `code-reviewer` and the auditors (across two very different repos).
 They show the target depth, the localization-vs-internalization move, and how the SAME recon report yields a
 different slice per agent. Read them as METHOD, not template (your repo's laws will differ entirely).
 
-The baseline agents are a **CONTRACT (role + guarantees), not a fill-in-the-blanks form.** Rewrite each in place, AUTHORED for this repo from the Recon Evidence Report.
+The assembled agents are a **CONTRACT (role + guarantees), not a fill-in-the-blanks form.** Edit each IN PLACE, AUTHORED for this repo from the Recon Evidence Report.
 
 > ⛔ **The failure mode to avoid: "localization".** Swapping generic paths for real paths and the stack name into otherwise-untouched baseline rules is NOT specialization — it produces a generic agent wearing this repo's filenames. That is explicitly forbidden.
 > ✅ **What's required instead: "internalization".** Each agent must encode THIS repo's actual **laws** as first-class rules, with proving examples from real code. The reader should be unable to reuse the agent in a different repo without rewriting it.
@@ -142,7 +129,7 @@ The baseline agents are a **CONTRACT (role + guarantees), not a fill-in-the-blan
 For **every** agent:
 - **Bake in 3–6 repo LAWS** from the Recon report as concrete BAD/GOOD rules — e.g. "GOOD: new domain logic goes through `XFacade` + `Creator/Editor/Finder` (see `…/domain/…`); BAD: a controller calling the repository directly." Reference the real proving file. These laws are the difference between localization and internalization.
 - **Name the repo's real anti-reinvention anchors** (the reusable assets) and instruct reuse-over-rewrite by path.
-- Replace `model:` with the concrete model for that tier (Step 2); if defaults kept, document the tier label + reasoning. (Drop `tools:` if the tool rejects a string `tools` field — e.g. OpenCode; keep it only where the tool accepts it.)
+- Replace `model:` with the concrete model for that tier (Step 2); if defaults kept, document the tier label + reasoning. (`assemble.sh` already dropped/kept `tools:` per the tool's `accepts_tools_field` — don't reintroduce it against the descriptor.)
 - **Exact verification commands** (lint/test/integration/e2e) + single-test invocation — per stack if monorepo.
 - **Test framework + file naming/placement** mirrored from the real test files you opened; Testing-Trophy mix appropriate to the stack.
 - Per role, go beyond paths:
@@ -160,15 +147,15 @@ For **every** agent:
   If you can't find enough distinct real scenarios, say so rather than padding with filler.
 Then:
 - **Make the formatter the sole style authority (kills diff-noise at the source).** Agents are told not to hand-restyle (`AGENTS.md` Hard rules + `_STANDARD.md` diff-hygiene), but the durable fix is machine-enforcement so `format.sh` reverts any stray restyle automatically. From the Step-1a config scan: if the repo's formatter config already pins quote-style, indent width and trailing-comma, leave it. If it does NOT — or there's no `.editorconfig` — **offer** (don't silently impose) to add a minimal `.editorconfig` and/or extend the existing formatter config (e.g. Prettier `singleQuote`, `endOfLine`) to match the repo's *already-dominant* convention detected in Step 1c, covering `*.yml`/`*.json` where the formatter supports them (the files agents most often wreck and no formatter governs by default). Never flip the repo's prevailing style — encode what's already there.
-- **Write `army.conf`** from the Step-2 policy answers (`TEST_POLICY` / `LINT_POLICY` / `CI_MODE`) **plus the exact commands discovered in Step 1** (`FMT_CMD` / `LINT_CMD` / `TEST_CMD`). These override `detect.sh` — hooks read `army.conf` last. Only write a command after you verified it runs (Step 4). **Monorepo:** chain per-stack commands so the barrier covers ALL stacks, e.g. `TEST_CMD=cd frontend && npm test && cd ../backend && pytest` (or document per-stack `*_FRONTEND`/`*_BACKEND` vars if the hooks support them). If `CI_MODE=off`, remove any copied `quality.yml`. Honor `TEST_POLICY` everywhere: at `none` the team SKIPS the `tester`/TDD steps; at `light`/`pragmatic` scale the Testing-Trophy mix down. Never relax security barriers.
-- **Write/refresh `AGENTS.md` — the single canonical entry point** (every tool reads it, including Claude Code): stack(s), exact commands, the mined laws & conventions, testing strategy, team roster, guardrails (hooks), and a **`## Project policy`** block summarizing `army.conf`. This is where the real content lives. Its placeholders (`<SKILLS_DIR>`/`<AGENTS_DIR>`/`<TOOL_DIR>`) were already resolved to real dirs in Step 0 — as you refresh/extend the file keep them resolved and tool-correct; never reintroduce a `.claude/` path unless the tool IS Claude.
+- **Fill in `army.conf`** (already materialized at `<TOOL_DIR>/army.conf` by Step 0) from the Step-2 policy answers (`TEST_POLICY` / `LINT_POLICY` / `CI_MODE`) **plus the exact commands discovered in Step 1** (`FMT_CMD` / `LINT_CMD` / `TEST_CMD`). These override `detect.sh` — hooks read `army.conf` last. Only write a command after you verified it runs (Step 4). **Monorepo:** chain per-stack commands so the barrier covers ALL stacks, e.g. `TEST_CMD=cd frontend && npm test && cd ../backend && pytest` (or document per-stack `*_FRONTEND`/`*_BACKEND` vars if the hooks support them). If `CI_MODE=off`, remove any copied `quality.yml`. Honor `TEST_POLICY` everywhere: at `none` the team SKIPS the `tester`/TDD steps; at `light`/`pragmatic` scale the Testing-Trophy mix down. Never relax security barriers.
+- **Write/refresh `AGENTS.md` — the single canonical entry point** (every tool reads it, including Claude Code): stack(s), exact commands, the mined laws & conventions, testing strategy, team roster, guardrails (hooks), and a **`## Project policy`** block summarizing `army.conf`. This is where the real content lives. Its placeholders (`<SKILLS_DIR>`/`<AGENTS_DIR>`/`<TOOL_DIR>`) were already resolved to real dirs by `assemble.sh` in Step 0 — as you refresh/extend the file keep them resolved and tool-correct; never reintroduce a `.claude/` path unless the tool IS Claude.
   - **`CLAUDE.md` only for Claude Code, and keep it THIN** — a few lines that point to `AGENTS.md` as the source of truth (so Claude's native auto-load finds it) plus the `## Project policy` summary. Do NOT duplicate AGENTS.md into it. For OpenCode/Cursor/etc. skip `CLAUDE.md` entirely — `AGENTS.md` is enough.
 - **Specialize the blueprint skeletons embedded in `architect`'s `## Output` section** to this repo — AND keep them in lockstep with the rest of the agent:
   - The two skeletons (`00_CORE_MANIFEST` + PR file) live inline in `architect.md`; bake in real test commands, framework assertion syntax and the repo's manifest fields.
   - Whatever sections/idioms you change must match what `architect`'s `<prompt_examples>` show it producing — example output and skeleton structure cannot diverge.
   - `tester` and `ship` also rely on the PR skeleton's TDD/auto-critic block — if you change that block, update those agents too. (See `references/agent-worked-examples.md`: the example architect output = these skeletons filled.)
 - **Create the `design-docs/` skeleton.**
-- **Re-run = refresh in place.** Overwrite the existing `<tool>/agents/*.md` directly — do NOT leave `*.base.md` backups. Rollback is git: on a re-run, if the working tree has uncommitted changes to the tool dir, tell the user to commit or stash first so `git diff` / `git checkout` is their clean before/after. No extra backup files.
+- **Re-run = re-specialize in place.** `assemble.sh` (Step 0) already skips any agent file that exists — so on a re-run it hands you the SAME specialized files you edited last time; keep editing them in place, do NOT leave `*.base.md` backups. Rollback is git: if the working tree has uncommitted changes to the tool dir, tell the user to commit or stash first so `git diff` / `git checkout` is their clean before/after.
 
 ## Step 4 · Reflection & self-critique (MANDATORY second pass — do not skip)
 First drafts read as "baseline + paths". This pass is where they become repo-authored. Don't trust the first write.
@@ -191,11 +178,12 @@ Check the team agrees with itself: the commands in `architect`, `tester`, `code-
 > Record the chosen mode in `army.conf` as `BOOTSTRAP_MODE` so re-runs remember it.
 
 ## Step 5 · Verify & report
-- **No leftover placeholders** — grep the materialized files for any unresolved `<SKILLS_DIR>`, `<AGENTS_DIR>` or `<TOOL_DIR>`; if any remain, Step 0's substitution was incomplete — fix before finishing:
+- **No leftover placeholders** — grep the materialized files for any unresolved `<SKILLS_DIR>`, `<AGENTS_DIR>` or `<TOOL_DIR>` (Step 0's assembler resolves these on write; this catches anything you reintroduced while specializing):
   ```bash
   grep -rn '<SKILLS_DIR>\|<AGENTS_DIR>\|<TOOL_DIR>' <tool>/agents/ AGENTS.md CLAUDE.md 2>/dev/null && echo "↑ unresolved — substitute them" || echo "placeholders clean"
   ```
 - Run the detected verify (lint + tests) ONCE to confirm the wired commands actually work; if wrong, fix them in the agents + `army.conf` + AGENTS.md.
+- Optionally run `bash .agents/skills/bootstrap/assemble.sh <tool> --reconcile` if you changed a packaging convention (not the agents' specialized content) and want the assembler to re-sync frontmatter/paths.
 - Print a short report: tool detected + where files landed, detected stack(s), commands wired, the repo LAWS you extracted (with proving paths), which agents were specialized, what the reflection pass changed, and assumptions made. Suggest next step: `/ship "<first task>"`.
 
 ## Rules
@@ -203,7 +191,7 @@ Check the team agrees with itself: the commands in `architect`, `tester`, `code-
 - If a materialized file looks hand-edited (diverges from baseline), ASK before overwriting.
 
 ## Quality bar (non-negotiable)
-Every agent you write or specialize MUST conform to `<tool>/agents/_STANDARD.md` and pass its
+Every agent you write or specialize MUST conform to `<TOOL_DIR>/_STANDARD.md` and pass its
 self-check. Match the depth of `architect.md`. Two hard gates on top of `_STANDARD.md`:
 - **Evidence gate:** every repo-specific claim in an agent traces to a real file/command from the Recon Evidence Report — no invented paths, no guessed commands (verify in Step 4).
 - **Internalization gate:** each agent fails review if its repo-specificity is "just the paths". It must carry this repo's laws, real reusable anchors, and real test idioms. If you can't reach that bar for an agent, STOP and say exactly what's missing — don't ship a localized-but-generic file.
