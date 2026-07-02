@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: One-time intelligent setup of the agent team for THIS repo, after installing via apm. Materializes the bundled baseline (agents, hooks, templates) into your tool's directory, then AUTHORS repo-tailored agents from a deep code scan (real laws, exact commands, test idioms) plus a canonical AGENTS.md and the design-docs skeleton. Run /bootstrap once, right after `apm install agent-army`.
+description: One-time intelligent setup of the agent team for THIS repo, after installing via apm. Materializes the bundled baseline (agents, hooks) into your tool's directory, then AUTHORS repo-tailored agents from a deep code scan (real laws, exact commands, test idioms) plus a canonical AGENTS.md and the design-docs skeleton. Run /bootstrap once, right after `apm install agent-army`.
 ---
 # /bootstrap (apm) — materialize + tailor the agent team to THIS repo
 
@@ -26,20 +26,21 @@ The baseline is NOT hardcoded to `.claude/`. Detect the tool and pick its dir:
 
 - Detect from existing config (`.claude/`, `.opencode/`, `.cursor/` …) or ask the user **once** which tool this repo uses; default to Claude Code if it's the only one present.
 - Copy from this skill's `baseline/` into the chosen tool dir:
-  - `baseline/agents/` → `<tool>/agents/` (the seven `*.md` + `_STANDARD.md`)
-  - `baseline/templates/` → `<tool>/templates/`
-  - `baseline/hooks/` → `<tool>/hooks/` and `chmod +x` the `*.sh`
+  - `baseline/agents/` → `<tool>/agents/` (the seven `*.md` + `_STANDARD.md`). Each agent already embeds its own output skeleton in its `## Output` section — there is no separate templates dir to copy.
+  - **Hooks (tool-aware — don't materialize what can't fire):**
+    - **Claude Code** → copy all of `baseline/hooks/` → `.claude/hooks/`, `chmod +x` the `*.sh` (the lifecycle hooks `guard`/`format`/`gate`/`verify` are wired by `settings.json`).
+    - **Any other tool** → the lifecycle hooks never fire (no `settings.json` is read), so copy ONLY `baseline/hooks/verify.sh` + `baseline/hooks/detect.sh` → `<tool>/hooks/`, `chmod +x`. These two are what the git pre-commit barrier and CI actually call; skip the inert `guard`/`format`/`gate`.
   - `baseline/settings.json` → `.claude/settings.json` **only if** the tool is Claude Code (otherwise hooks are inert; skip).
   - `baseline/army.conf` → `<tool>/army.conf`
 - **Git pre-commit (tool-independent hard barrier):** copy `baseline/hooks/git-pre-commit.sh` → `.git/hooks/pre-commit`, `chmod +x`. Skip with a note if there's no `.git`.
 - **CI:** if the repo has no existing workflow, offer to add a `quality.yml` that re-runs `verify.sh`; if it already has CI, leave it and set `CI_MODE=off` in `army.conf`.
 - Add `.claude/settings.local.json` (and the chosen tool's local-state file) to `.gitignore`.
-- **Normalize hardcoded paths (do this right after copying — it keeps every agent linked to its real files).** The baseline agents reference `.claude/agents/`, `.claude/templates/…`, `.claude/army.conf` as defaults. If the tool dir is NOT `.claude/`, rewrite those references across the copied agent files to the actual dir, e.g.:
+- **Normalize hardcoded paths (do this right after copying — it keeps every agent's cross-references valid).** The baseline agents reference `.claude/agents/` and `.claude/army.conf` as defaults. If the tool dir is NOT `.claude/`, rewrite those references across the copied agent files to the actual dir, e.g.:
   ```bash
   # example for OpenCode (tool dir = .opencode):
-  sed -i '' 's#\.claude/templates/#.opencode/templates/#g; s#\.claude/army.conf#.opencode/army.conf#g; s#\.claude/agents/#.opencode/agent/#g; s#<TOOL_DIR>/#.opencode/#g' .opencode/agent/*.md
+  sed -i '' 's#\.claude/army.conf#.opencode/army.conf#g; s#\.claude/agents/#.opencode/agent/#g' .opencode/agent/*.md
   ```
-  This is what makes "the architect FILLS the template" actually resolve — the link in each agent's `Output` section must point at the templates that really exist. Leave `.claude/settings.json` references only where the tool is Claude (hooks are Claude-only).
+  This keeps each agent's cross-references (to sibling agents, `_STANDARD.md`, `army.conf`) pointing at files that really exist. Output skeletons live inline in each agent now, so there is nothing template-path to rewrite. Leave `.claude/settings.json` references only where the tool is Claude (hooks are Claude-only).
 Report what landed where before moving on.
 
 ## Step 1 · Recon (DEEP — read real code before you ask)
@@ -150,12 +151,12 @@ Then:
 - **Write `army.conf`** from the Step-2 policy answers (`TEST_POLICY` / `LINT_POLICY` / `CI_MODE`) **plus the exact commands discovered in Step 1** (`FMT_CMD` / `LINT_CMD` / `TEST_CMD`). These override `detect.sh` — hooks read `army.conf` last. Only write a command after you verified it runs (Step 4). **Monorepo:** chain per-stack commands so the barrier covers ALL stacks, e.g. `TEST_CMD=cd frontend && npm test && cd ../backend && pytest` (or document per-stack `*_FRONTEND`/`*_BACKEND` vars if the hooks support them). If `CI_MODE=off`, remove any copied `quality.yml`. Honor `TEST_POLICY` everywhere: at `none` the team SKIPS the `tester`/TDD steps; at `light`/`pragmatic` scale the Testing-Trophy mix down. Never relax security barriers.
 - **Write/refresh `AGENTS.md` — the single canonical entry point** (every tool reads it, including Claude Code): stack(s), exact commands, the mined laws & conventions, testing strategy, team roster, guardrails (hooks), and a **`## Project policy`** block summarizing `army.conf`. This is where the real content lives.
   - **`CLAUDE.md` only for Claude Code, and keep it THIN** — a few lines that point to `AGENTS.md` as the source of truth (so Claude's native auto-load finds it) plus the `## Project policy` summary. Do NOT duplicate AGENTS.md into it. For OpenCode/Cursor/etc. skip `CLAUDE.md` entirely — `AGENTS.md` is enough.
-- **Specialize the blueprint templates** in `<tool>/templates/blueprint/` to this repo — AND keep them linked to `architect` in lockstep:
-  - The `architect`'s `Output` section IS the contract for these templates: it must point at `<tool>/templates/blueprint/` (the real tool dir — replace the baseline's `<TOOL_DIR>`/`.claude/` with this repo's actual one, e.g. `.opencode/templates/blueprint/`).
-  - Whatever sections/idioms you bake into the templates (real test commands, framework assertion syntax, repo's manifest fields) must match what `architect`'s `<prompt_examples>` show it producing — example output and template structure cannot diverge.
-  - `tester` and `ship` also consume the PR template's TDD/auto-critic block — if you change that block, update those agents too. (See `references/agent-worked-examples.md`: the example architect output = these templates filled.)
+- **Specialize the blueprint skeletons embedded in `architect`'s `## Output` section** to this repo — AND keep them in lockstep with the rest of the agent:
+  - The two skeletons (`00_CORE_MANIFEST` + PR file) live inline in `architect.md`; bake in real test commands, framework assertion syntax and the repo's manifest fields.
+  - Whatever sections/idioms you change must match what `architect`'s `<prompt_examples>` show it producing — example output and skeleton structure cannot diverge.
+  - `tester` and `ship` also rely on the PR skeleton's TDD/auto-critic block — if you change that block, update those agents too. (See `references/agent-worked-examples.md`: the example architect output = these skeletons filled.)
 - **Create the `design-docs/` skeleton.**
-- Before overwriting any agent, save the original as `<tool>/agents/<name>.base.md` (reversible).
+- **Re-run = refresh in place.** Overwrite the existing `<tool>/agents/*.md` directly — do NOT leave `*.base.md` backups. Rollback is git: on a re-run, if the working tree has uncommitted changes to the tool dir, tell the user to commit or stash first so `git diff` / `git checkout` is their clean before/after. No extra backup files.
 
 ## Step 4 · Reflection & self-critique (MANDATORY second pass — do not skip)
 First drafts read as "baseline + paths". This pass is where they become repo-authored. Don't trust the first write.

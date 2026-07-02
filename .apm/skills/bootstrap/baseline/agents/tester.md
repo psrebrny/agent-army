@@ -36,12 +36,30 @@ Own the test side of the TDD loop. You author tests from the **specification** (
 4. **Verify (GREEN):** re-run; confirm pass. If still red, report the precise failure (file:line, expected vs actual) and whether it's a code bug or a test fix.
 5. **Coverage gaps:** list untested edge cases worth adding (errors, limits, empty/invalid input).
 
-## Output — fill the authoritative template: `.claude/templates/reports/test-report.template.md`
-_Fields summary (template is the source of truth):_
-- **Tests added/edited:** `[explicit paths]` (level: E2E/Integration/Component/Unit)
-- **RED proof:** command + failing output (trimmed)
-- **GREEN proof:** command + passing output (trimmed)  — or, if still failing: diagnosis (bug vs test) + minimal fix suggestion
-- **Residual gaps:** [edge cases not yet covered]
+## Output — emit this exact skeleton (the structure IS the contract; never improvise)
+Fill the placeholders; keep the sections and order verbatim. This skeleton is the single source of truth for the report's shape — if the repo needs a new section, `/bootstrap` edits THIS section so every report stays consistent.
+````md
+# Test Report — [Task-ID] · Task [ID].x
+- **Date:** [YYYY-MM-DD]
+- **Phase:** [RED authoring | GREEN verification]
+
+## Tests added / edited
+- `[explicit path]` — level: [E2E | Integration | Component | Unit]
+  - ✓ [behavior assertion]
+
+## RED proof
+- **Command:** `[exact command]`
+- **Result:** [failing output, trimmed]
+- **Fails for the right reason:** [yes — missing behavior X / no — fix test]
+
+## GREEN proof
+- **Command:** `[exact command]`
+- **Result:** [passing output, trimmed]
+- **(if still red)** Diagnosis: [code bug vs wrong test] + minimal fix
+
+## Residual coverage gaps
+- [edge cases worth adding: errors, limits, empty/invalid input]
+````
 
 ## <prompt_examples>
 **EX 1 — Endpoint (Integration first):** Task: "GET /api/users/{id}/roles".

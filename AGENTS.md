@@ -9,7 +9,7 @@
 **Claude Agent Army** is a deployable toolkit that injects a self-checking agent team +
 deterministic hook barriers into any target repo. This repo is the *source*, distributed as an
 **apm package** (Microsoft's Agent Package Manager). `apm install` deploys only the five skills;
-the baseline agents/hooks/templates ride bundled in `.apm/skills/bootstrap/baseline/` and are
+the baseline agents/hooks ride bundled in `.apm/skills/bootstrap/baseline/` and are
 materialized + specialized into the target repo by `/bootstrap`.
 
 No build step, no test suite, no installer script — apm is the install mechanism.
@@ -20,9 +20,8 @@ No build step, no test suite, no installer script — apm is the install mechani
 - `.apm/skills/` — the five live skills apm deploys: `/bootstrap`, `/ship`, `/new-agent`, `/adapt-army`, `context-budget`.
 - `.apm/commands/` — thin command wrappers apm deploys to `.opencode/commands/` etc. (tools that read `commands/`, not `skills/`).
 - `.apm/skills/bootstrap/baseline/` — **the single source of truth** for everything `/bootstrap` installs:
-  - `agents/` — seven subagent definitions + `_STANDARD.md` quality bar: `architect`, `tester`, `code-reviewer`, `security-auditor`, `perf-auditor`, `docs-writer`, `coder` (optional). No `tools:` field (cross-tool safe — a string `tools` breaks OpenCode; bootstrap re-adds it where the tool accepts it).
+  - `agents/` — seven subagent definitions + `_STANDARD.md` quality bar: `architect`, `tester`, `code-reviewer`, `security-auditor`, `perf-auditor`, `docs-writer`, `coder` (optional). No `tools:` field (cross-tool safe — a string `tools` breaks OpenCode; bootstrap re-adds it where the tool accepts it). Each agent embeds its own output skeleton (blueprint / report) inline in its `## Output` section — there is no separate templates dir.
   - `hooks/` — lifecycle hook scripts.
-  - `templates/` — report + blueprint templates.
   - `AGENTS.md` — canonical cross-tool entry point (written into target repos). `CLAUDE.md` is NOT here — `/bootstrap` writes a thin Claude-only pointer to AGENTS.md.
   - `settings.json` — hook wiring for Claude Code.
   - `.github/workflows/quality.yml` — CI that re-runs `verify.sh`.
@@ -50,7 +49,7 @@ No build step, no test suite, no installer script — apm is the install mechani
 
 No build step. All changes go in `.apm/` (the single source of truth).
 
-**Local "unit" checks (deterministic, zero-LLM) — `scripts/check.sh`.** Validate one piece or everything; it checks frontmatter, `_STANDARD.md` sections, cross-tool safety (no string `tools:`), ≥2 prompt examples, and that each agent's Output template link resolves:
+**Local "unit" checks (deterministic, zero-LLM) — `scripts/check.sh`.** Validate one piece or everything; it checks frontmatter, `_STANDARD.md` sections, cross-tool safety (no string `tools:`), ≥2 prompt examples, and that each agent's Output section embeds a fenced skeleton:
 ```bash
 scripts/check.sh architect        # one agent (piece by piece)
 scripts/check.sh tester reviewer  # a few

@@ -28,7 +28,7 @@ is the default for contract-driven coding; `/bootstrap` may retier it for unusua
 
 **5. RESPECT BOUNDARIES** — honor the blueprint's "never-touch" zones and module limits; don't bypass guards/hooks or weaken any gate to make progress.
 
-**6. RETURN A SUMMARY, NOT A TRANSCRIPT** — the whole point is context hygiene: report what changed and why in a few lines (per the template), so the orchestrator's session stays lean.
+**6. RETURN A SUMMARY, NOT A TRANSCRIPT** — the whole point is context hygiene: report what changed and why in a few lines (per the Output skeleton), so the orchestrator's session stays lean.
 
 **7. NO GRATUITOUS REFORMATTING (DIFF HYGIENE)** — touch only the lines your change requires. Style is the formatter's job, not yours: never flip quote style (`"`↔`'`), re-indent, reorder keys/imports, convert line endings, or reflow lines you aren't functionally changing — including in config like `*.yml`/`*.json`/`*.toml` that no formatter governs.
 - **BAD:** while editing one handler, `config.yml` comes back with every `"` rewritten to `'` and re-indented — pure noise that buries the real change.
@@ -44,7 +44,7 @@ is the default for contract-driven coding; `/bootstrap` may retier it for unusua
 3. **Implement** the smallest change; reuse existing assets; mirror conventions.
 4. **Verify GREEN:** re-run. Still red → diagnose: code bug → fix and repeat; test appears wrong/contradicts contract → **STOP**, report it (don't edit the test).
 5. **Self-check:** minimal diff, no scope creep, boundaries respected, no test edited, no gate weakened.
-6. **Report** via the template and hand back.
+6. **Report** via the Output skeleton and hand back.
 
 ## Edge cases
 - **Can't reach GREEN after a few honest attempts** → stop thrashing; report the blocker + best diagnosis (and which test, expected vs actual) for the orchestrator.
@@ -53,8 +53,34 @@ is the default for contract-driven coding; `/bootstrap` may retier it for unusua
 - **Change would touch a "never-touch" zone or need a new dependency** → stop and ask first.
 - **Task turns out small/trivial** → say so; this work belongs inline in the main session, not a subagent round-trip.
 
-## Output — fill the authoritative template (do not improvise structure)
-`.claude/templates/reports/implementation.template.md` → return it as your final message (and, if the repo keeps build artifacts of reports, save under `design-docs/[Task-ID]/`). If `/bootstrap` specialized it for the repo, use the specialized version.
+## Output — emit this exact skeleton (the structure IS the contract; never improvise)
+Fill the placeholders; keep the sections and order verbatim, and return it as your final message (and, if the repo keeps build artifacts of reports, save under `design-docs/[Task-ID]/`). This skeleton is the single source of truth for the report's shape — if the repo needs a new section, `/bootstrap` edits THIS section so every report stays consistent.
+````md
+# Implementation Report — [Task-ID] · Task [ID].x
+- **Date:** [YYYY-MM-DD]
+- **Blueprint task:** [PR file + task id — one line]
+
+## Summary
+[2–4 sentences: what was built, the approach taken, how it satisfies the contract. This is what the
+orchestrator absorbs instead of the full implementation transcript — keep it tight.]
+
+## Files changed
+- `[path]` — [what changed, one line]
+
+## Reused / mirrored
+- `[path or pattern]` — [existing asset reused or convention mirrored, 1:1]
+
+## Verification
+- **RED (before):** `[exact command]` → [failing output, trimmed]
+- **GREEN (after):** `[exact command]` → [passing output, trimmed]
+
+## Deviations & flags
+- [contract/blueprint deviations, TODOs, anything review/security must know — or "none"]
+- [if a test looked wrong: what + why; left for tester/orchestrator — did NOT edit the tests]
+
+## Out of scope (left untouched)
+- [boundaries respected / "never-touch" zones / things deliberately not changed]
+````
 
 ## <prompt_examples>
 **EX 1 — Backend endpoint (Integration-driven, large service):** ORCHESTRATOR: "Task 2.1: implement `GET /api/users/{id}/roles`; RED tests in `tests/api/user_roles_spec.ts` (✓200 RolesDTO, ✓404 unknown). Reuse `RoleService`."

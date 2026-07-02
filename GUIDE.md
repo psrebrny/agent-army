@@ -36,7 +36,7 @@ Claude Code v2.x · `bash` · `python3` (barriers; a fallback runs without it). 
 cd my-repo
 apm install psrebrny/agent-army --target opencode   # or: claude | cursor | codex | gemini | copilot | windsurf
 ```
-apm deploys the five skills only. The baseline agents/hooks/templates/CI ride bundled as raw assets inside the `bootstrap` skill — they become live, repo-tailored files only when you run `/bootstrap` below (it also installs the git pre-commit hook and appends to `.gitignore`).
+apm deploys the five skills only. The baseline agents/hooks/CI ride bundled as raw assets inside the `bootstrap` skill — they become live, repo-tailored files only when you run `/bootstrap` below (it also installs the git pre-commit hook and appends to `.gitignore`).
 
 ## STEP 1 — entry point: `/bootstrap`  (run first)
 ```
@@ -47,7 +47,7 @@ cd my-repo   # open it in your AI tool, then:
 `/bootstrap`:
 1. **reads the repo** (stack, standards, conventions, real test/lint commands),
 2. **asks a few smart questions** (only the gaps; business, architecture, testing, NFR, process),
-3. **creates/specializes the whole team for this repo** (exact commands, test framework, conventions) + a tailored `CLAUDE.md`/`AGENTS.md` + a `design-docs/` skeleton + specialized templates,
+3. **creates/specializes the whole team for this repo** (exact commands, test framework, conventions) + a tailored `CLAUDE.md`/`AGENTS.md` + a `design-docs/` skeleton (each agent's inline output skeleton specialized to the repo),
 4. **verifies** (runs lint+tests once) and reports.
 Greenfield (empty repo) → full interview + bootstrap of the foundations. Quality is held by `.claude/agents/_STANDARD.md`.
 
@@ -75,11 +75,9 @@ Switch on the fly: "switch to autonomous/supervised".
   settings.json                 # hook registration (barriers)
   agents/                       # the team (architect, tester, code-reviewer, security-auditor, perf-auditor, docs-writer; + optional coder)
     _STANDARD.md                # the quality bar for EVERY agent
+                                # each agent embeds its own output skeleton (blueprint / report) in its ## Output section
   hooks/                        # guard / format / verify / gate / detect / git-pre-commit
   skills/                       # bootstrap · ship · new-agent · adapt-army · context-budget
-  templates/
-    blueprint/                  # 00_CORE_MANIFEST + 0X_PR (the architect fills these)
-    reports/                    # code-review / security / perf / docs / adr / test-report
 CLAUDE.md                       # project memory (tailored to the repo after /bootstrap)
 .github/workflows/quality.yml   # CI: the same verify.sh
 ```

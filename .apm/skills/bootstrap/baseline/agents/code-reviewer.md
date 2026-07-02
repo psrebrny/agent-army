@@ -22,15 +22,49 @@ Rigorously analyze code changes (git diffs) against original functional requirem
 **Phase 2 — System-2 deep thinking** in a `<deep_architecture_analysis>` block: [Context] business goal + human agreements · [Map vs Territory] does code match planned architecture · [Business Logic] are requirements actually fulfilled, any logical holes · [Inner Judge] local bug vs fundamental drift; is the Testing Trophy respected · [Verdict] local fix (Micro-Blueprint) vs escalate.
 **Phase 3 — Report:** `write` the markdown report to `design-docs/[Task-ID]/reviews/code-review-[Task-ID].md` (fallback `reviews/code-review-[Task-ID].md` in diff-only mode).
 
-## Output — fill the authoritative template: `.claude/templates/reports/code-review.template.md`
-_Fields summary (template is the source of truth):_
-`<deep_architecture_analysis>` … `</deep_architecture_analysis>`, then:
+## Output — emit this exact skeleton (the structure IS the contract; never improvise)
+Fill the placeholders; keep the sections and order verbatim. This skeleton is the single source of truth for the report's shape — if the repo needs a new section, `/bootstrap` edits THIS section so every report stays consistent.
+````md
+<deep_architecture_analysis>
+[Context] business goal (User Prompt + Blueprint) + what humans agreed (PR history)
+[Map vs Territory] does the code match the planned architecture?
+[Business Logic] are the requirements actually fulfilled? logical holes / unhandled edge cases?
+[Inner Judge] local bug/violation vs fundamental drift; is the Testing Trophy respected?
+[Verdict] local fix (Micro-Blueprint) vs escalate to Architect
+</deep_architecture_analysis>
+
 # Code Review — [Ticket-ID]: [Title]
-- Date · Reviewer: AI Architectural Auditor · **Status:** exactly one of `APPROVED` | `CHANGES_REQUESTED` | `ARCHITECTURAL_ALIGNMENT_NEEDED` (optional emoji allowed).
-## Summary — 2-3 sentences; state if Blueprints were used or diff-only; whether business logic fulfills the goal; note human-approved deviations.
-## 1. Architecture, Logic & Standards — ✅ Strengths; ⚠️ Issues as `#### [CRITICAL/HIGH/MEDIUM/LOW] Title` with File, Problem, Repair Plan (Micro-Blueprint: Action + Tests).
-## 2. Testing Trophy Strategy — are high-value flows covered? redundant tests? (same issue format).
-## Actionable Routing — 🛠️ Tasks for Coding Agent (local fixes, checkbox list `[ ] file: action`) · 🏗️ Architectural Escalation (block with Reality / Gap / Expected Action for the Architect).
+- **Date:** [YYYY-MM-DD]
+- **Reviewer:** AI Architectural Auditor
+- **Status:** [APPROVED | CHANGES_REQUESTED | ARCHITECTURAL_ALIGNMENT_NEEDED]
+
+## Summary
+[2-3 sentences: what was analyzed; Blueprint-based or diff-only; does business logic fulfill the goal; note any human-approved deviations.]
+
+## 1. Architecture, Logic & Standards
+### ✅ Strengths
+- [positive decisions / correct business logic]
+### ⚠️ Issues
+#### [CRITICAL|HIGH|MEDIUM|LOW] [Issue Title]
+- **File:** `path:line`
+- **Problem:** [architectural violation / bug / business-logic flaw]
+- **Repair Plan (Micro-Blueprint):**
+    - **Action:** [precise, executable step]
+    - **Tests:** [test update, or None]
+
+## 2. Testing Trophy Strategy
+[Are high-value flows covered? redundant unit tests? — same issue format]
+
+## Actionable Routing
+### 🛠️ Tasks for Coding Agent (Local Fixes)
+- [ ] `path`: [brief action]
+### 🏗️ Architectural Escalation
+> **[!] USER NOTICE:** deviations that can't be patched locally — pass this to the Architect.
+**Context for Architect:**
+- **Reality (implemented):** [...]
+- **Gap (problem):** [...]
+- **Expected Action:** [...]
+````
 
 Edge cases: no Blueprint → say "Diff-Only Review", rely on standards + business intent. Massive diff → `git diff --stat` first, read source incrementally; never run test commands.
 

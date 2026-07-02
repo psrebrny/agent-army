@@ -8,7 +8,7 @@ Two layers of test, cheapest first:
 
 | Layer | Command | Cost | Catches |
 |---|---|---|---|
-| **Unit** (structure) | `scripts/check.sh` | instant, zero-LLM | malformed frontmatter, missing `_STANDARD.md` sections, <2 prompt examples, broken template links, cross-tool-unsafe `tools:` |
+| **Unit** (structure) | `scripts/check.sh` | instant, zero-LLM | malformed frontmatter, missing `_STANDARD.md` sections, <2 prompt examples, missing embedded Output skeleton, cross-tool-unsafe `tools:` |
 | **e2e** (behaviour) | `scripts/smoke.sh` | minutes + tokens | does `/bootstrap` actually produce a *good, repo-tailored* team |
 
 ---
@@ -29,7 +29,7 @@ scripts/check.sh --pack           # also `apm pack`, if apm is installed
 It can also validate **generated** output (used by the e2e harness):
 
 ```bash
-scripts/check.sh --target-dir <repo>/.claude   # checks <repo>/.claude/agents + templates
+scripts/check.sh --target-dir <repo>/.claude   # checks <repo>/.claude/agents
 ```
 
 Exit non-zero on any ✗. Warnings (⚠) don't fail the run.

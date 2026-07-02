@@ -15,7 +15,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BASE="$ROOT/.apm/skills/bootstrap/baseline"
 SKILLS_DIR="$ROOT/.apm/skills"
 
-# --target-dir <dir> retargets the agent + template checks at a GENERATED tool dir
+# --target-dir <dir> retargets the agent checks at a GENERATED tool dir
 # (e.g. <repo>/.claude). Default: validate the source baseline. Parsed early so the
 # rest of the script just reads BASE/AGENTS_DIR.
 TARGET_DIR=""
@@ -28,10 +28,9 @@ while [ $# -gt 0 ]; do
 done
 set -- ${_args[@]+"${_args[@]}"}
 if [ -n "$TARGET_DIR" ]; then
-  BASE="$(cd "$TARGET_DIR" && pwd)"   # templates resolve against the target tool dir
+  BASE="$(cd "$TARGET_DIR" && pwd)"   # agents resolve against the target tool dir
 fi
 AGENTS_DIR="$BASE/agents"
-TEMPLATES_DIR="$BASE/templates"
 
 PASS=0; FAIL=0; WARN=0
 ok(){ printf '  \033[32m✓\033[0m %s\n' "$1"; PASS=$((PASS+1)); }
@@ -74,7 +73,7 @@ PY
   grep -qiE '## .*(Role|Purpose|Objective)' "$f" && ok "Role/Purpose/Objective" || bad "missing Role/Purpose/Objective section"
   grep -qiE 'Principles|Core Principles|Rules' "$f" && ok "Principles/Rules" || bad "missing Principles/Rules"
   grep -qiE '## .*Workflow'              "$f" && ok "Workflow"            || warn "no Workflow section"
-  grep -qiE '## .*Output'                "$f" && ok "Output→template"     || bad "missing Output section"
+  grep -qiE '## .*Output'                "$f" && ok "Output section"      || bad "missing Output section"
   grep -qiE 'Edge cases'                 "$f" && ok "Edge cases"          || warn "no Edge cases section"
 
   # 4. >=2 prompt examples
@@ -83,14 +82,13 @@ PY
     [ "$n" -ge 2 ] && ok "$n prompt examples (>=2)" || bad "only $n prompt example(s) (need >=2)"
   else bad "no <prompt_examples> block"; fi
 
-  # 5. Output template reference resolves to a real file
-  local tmpl
-  tmpl="$(grep -oE '[A-Za-z0-9_./-]*templates/[A-Za-z0-9_./-]+\.template\.md' "$f" | head -1)"
-  if [ -n "$tmpl" ]; then
-    local leaf="templates/${tmpl#*templates/}"
-    if [ -f "$BASE/$leaf" ]; then ok "template link resolves ($leaf)"
-    else bad "template link BROKEN: $tmpl (no $BASE/$leaf)"; fi
-  else warn "no template link found in Output"; fi
+  # 5. Output section embeds a fenced skeleton (no external template files anymore)
+  if awk '
+      /^## /   { inout = ($0 ~ /[Oo]utput/) ? 1 : 0 }
+      inout && /^```/ { found=1 }
+      END { exit(found?0:1) }
+    ' "$f"; then ok "Output embeds a fenced skeleton"
+  else bad "Output section has no embedded skeleton (fenced block)"; fi
 }
 
 check_skill() {

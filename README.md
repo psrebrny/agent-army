@@ -8,7 +8,7 @@ each other honest — plus deterministic **barriers (hooks)** no agent can bypas
 
 Installed via [apm](https://microsoft.github.io/apm/) (Microsoft's cross-tool Agent Package Manager) — one command across Claude / Cursor / OpenCode / Codex / Gemini / Windsurf / Copilot — then `/bootstrap` once per repo to specialize the team.
 
-apm ships only the five **skills** (`bootstrap`, `ship`, `new-agent`, `adapt-army`, `context-budget`) as live. The baseline agents/hooks/templates ride bundled inside the `bootstrap` skill as raw assets — apm does **not** drop generic agents into your repo. `/bootstrap` materializes them into your tool's directory (not hardcoded to `.claude/`) and specializes them to the codebase.
+apm ships only the five **skills** (`bootstrap`, `ship`, `new-agent`, `adapt-army`, `context-budget`) as live. The baseline agents/hooks ride bundled inside the `bootstrap` skill as raw assets — apm does **not** drop generic agents into your repo. `/bootstrap` materializes them into your tool's directory (not hardcoded to `.claude/`) and specializes them to the codebase.
 
 **1. Install apm** (if you don't have it): `pipx install apm-cli` (or `pip install apm-cli`).
 
@@ -30,7 +30,7 @@ export GITHUB_APM_PAT=github_pat_xxxx
 ```
 > **OpenCode:** if `/bootstrap` isn't a recognised command yet (apm landed the skill in `.agents/skills/` rather than `.opencode/commands/`), invoke it directly — type `@.agents/skills/bootstrap/SKILL.md` in the chat. Bootstrap then places everything in the right dirs so future commands work normally.
 
-Pin a version with `psrebrny/agent-army#<tag-or-commit>`. Package layout: `apm.yml` (manifest) + `.apm/` (the five skills + `.apm/commands/` wrappers; `bootstrap/baseline/` holds the raw agents/hooks/templates — the single source of truth).
+Pin a version with `psrebrny/agent-army#<tag-or-commit>`. Package layout: `apm.yml` (manifest) + `.apm/` (the five skills + `.apm/commands/` wrappers; `bootstrap/baseline/` holds the raw agents/hooks — the single source of truth).
 
 ### Updating
 
@@ -39,7 +39,7 @@ apm update                 # pull the latest pinned versions
 # then, in the repo, re-run to re-specialize against the current code:
 /bootstrap
 ```
-Already-specialized agents are your repo's files — re-running `/bootstrap` refreshes them (it saves the prior version as `<agent>.base.md` first).
+Already-specialized agents are your repo's files — re-running `/bootstrap` refreshes them in place. Commit before a re-run so `git diff` / `git checkout` is your rollback (no backup files are left behind).
 
 ### After installing into a repo
 
@@ -72,7 +72,6 @@ On Claude Code you also get `/agents` to inspect the team and active lifecycle h
     detect.sh            #  stack detection (npm/pnpm/yarn, pytest/ruff, go, cargo)
     git-pre-commit.sh    #  git barrier: secret scan + lint/tests (installed to .git/hooks)
   skills/                # bootstrap · ship · new-agent · adapt-army · context-budget
-  templates/             # blueprint + report templates the agents must use
   rules/                 # path-scoped rules (optional)
 CLAUDE.md                # project memory (universal template)
 .github/workflows/quality.yml  # CI: the same gate (verify.sh) on push/PR
@@ -106,7 +105,7 @@ it work in a new repo. You can override the commands in `CLAUDE.md`.
 - Token/context discipline: `.claude/skills/context-budget/SKILL.md` (cheapest adequate model, plan first, short sessions).
 
 ## Two layers: distribution vs intelligence
-`apm install` is **deterministic** — it deploys the five skills 1:1, generates nothing (zero LLM, zero tokens). The baseline agents/hooks/templates ride bundled as raw assets, NOT as live generic agents.
+`apm install` is **deterministic** — it deploys the five skills 1:1, generates nothing (zero LLM, zero tokens). The baseline agents/hooks ride bundled as raw assets, NOT as live generic agents.
 
 Tailoring to the repo is done by **`/bootstrap`** — a skill run inside your AI tool that:
 1. **deep-scans the repo** (every nested `AGENTS.md` + manifest, real source, test/lint commands),

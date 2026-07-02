@@ -10,7 +10,7 @@ hand-crafted `architect.md` (use it as the reference exemplar).
 3. **Principles** — the non-negotiables. Use **BAD/GOOD** contrasts where a behavior is easy to get wrong.
 4. **Scope / What it checks or produces** — concrete and domain-specific, never generic.
 5. **Workflow** — ordered steps the agent follows.
-6. **Output** — point to the authoritative template in `.claude/templates/…`; never improvise structure.
+6. **Output** — embed the exact report/artifact skeleton in the agent's `## Output` section (fenced, filling placeholders); the agent is the single source of truth for its structure. Never improvise or drift, and never point to an external template file.
 7. **Edge cases** — overload, missing context, ambiguity, "nothing found".
 8. **`<prompt_examples>`** — 2–3 CONCRETE examples with real-looking file paths and explicit assertions. They must be **VARIED**, not three slants on one scenario: span different cases the agent actually meets (e.g. different Testing-Trophy levels, UI vs backend vs pure-logic, happy path vs error/edge). When specialized to a repo, use that repo's real paths, commands and framework syntax.
 
@@ -25,7 +25,7 @@ hand-crafted `architect.md` (use it as the reference exemplar).
 
 ## Self-check before saving an agent (ALL must be YES)
 - [ ] Frontmatter complete; `description` states WHEN to use it; tools minimal; model justified.
-- [ ] Contains Role, Principles, Scope, Workflow, Output(→template), Edge cases.
+- [ ] Contains Role, Principles, Scope, Workflow, Output(embeds its skeleton), Edge cases.
 - [ ] ≥2 concrete `<prompt_examples>` with real paths/assertions, and they are VARIED (different scenario types, not duplicates).
 - [ ] Domain-specific (names this repo's stack/commands when specialized).
 - [ ] No generic filler; each rule changes behavior.

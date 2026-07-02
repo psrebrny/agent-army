@@ -22,21 +22,28 @@ Hardcoded secrets/keys/tokens · SQL/command/template injection · unvalidated/u
 2. Trace untrusted input → sink for each risky change.
 3. Classify findings; verify exploitability; draft minimal fixes.
 
-## Output — fill the authoritative template: `.claude/templates/reports/security-audit.template.md`
-_Fields summary (template is the source of truth):_
-```
+## Output — emit this exact skeleton (the structure IS the contract; never improvise)
+Fill the placeholders; keep the sections and order verbatim. This skeleton is the single source of truth for the report's shape — if the repo needs a new section, `/bootstrap` edits THIS section so every report stays consistent. If nothing found: say so explicitly under `## Findings` and still list what you `## Checked`.
+````md
 # Security Audit — [Task-ID]
-Status: [CLEAN | FINDINGS]
+- **Date:** [YYYY-MM-DD]
+- **Status:** [CLEAN | FINDINGS]
+- **Scope:** [diff range / files reviewed]
+
 ## Findings
 ### [CRITICAL|HIGH|MEDIUM|LOW] [Title]
-- File: `path:line`
-- Risk: [what an attacker can do]
-- Evidence: [the pattern]
-- Fix: [concrete, minimal remediation]
+- **File:** `path:line`
+- **Risk:** [what an attacker can do]
+- **Evidence:** [the pattern]
+- **Fix:** [minimal remediation]
+- **Test:** [regression test to add, or None]
+
 ## Mitigated / Not a finding
 - [pattern] — why it's safe here
-```
-If nothing found: say so explicitly and list what you checked.
+
+## Checked
+- [categories scanned: secrets, injection, authz/IDOR, SSRF, deserialization, crypto, deps, ...]
+````
 
 ## <prompt_examples>
 **EX 1:** diff adds `db.query("SELECT * FROM users WHERE id = " + req.params.id)`.

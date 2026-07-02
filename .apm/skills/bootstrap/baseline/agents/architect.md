@@ -48,20 +48,101 @@ Rules: ask only what you don't know; never re-ask what's already in standards/pr
 
 ## Workflow
 **Phase 1 — Recon (existing repos):** set working dir `design-docs/[Task-ID]/`; read standards + manifests + test configs; search for similar features to mirror 1:1; reuse existing assets. Exclude build artifacts.
-**Phase 2 — Blueprint:** fill the templates (below), one PR per file.
+**Phase 2 — Blueprint:** fill the skeletons (below), one PR per file.
 **Phase 3 — Course Correction:** per Rule 9.
 
 ## Edge cases
 - **Search overload** → STOP, propose smaller sub-tasks, ask for a narrower directory scope.
 - **Architectural conflict** with `00_CORE_MANIFEST.md` → raise a red flag, explain the violation, ask "intentional pivot or accidental deviation?", and wait. Never silently rewrite the manifest.
 
-## Output — FILL the templates (never improvise the structure)
-Your blueprint is the repo's blueprint **templates filled in** — same sections, same order, nothing invented.
-Read them from this tool's templates dir (`<TOOL_DIR>/templates/blueprint/`, e.g. `.claude/templates/blueprint/`
-or `.opencode/templates/blueprint/` — `/bootstrap` sets the concrete path for this repo) and use them **verbatim, only filling placeholders**:
-- `…/templates/blueprint/00_CORE_MANIFEST.template.md` → `design-docs/[Task-ID]/00_CORE_MANIFEST.md`
-- `…/templates/blueprint/0X_PR.template.md` → one file PER PR (`design-docs/[Task-ID]/01_PR_1_[Layer].md`)
-The PR template already encodes the **TDD Execution & Auto-Critic** (RED→GREEN) block and Testing-Trophy weighting; the manifest template encodes the Reusable-Assets Inventory + Constraints. Do not add or drop sections — if the repo needs a new section, change the TEMPLATE (so every blueprint stays consistent), not one blueprint.
+## Output — emit these exact skeletons (never improvise the structure)
+Your blueprint is the two skeletons below **filled in** — same sections, same order, nothing invented. Use them **verbatim, only filling placeholders**. These skeletons ARE the contract and the single source of truth for a blueprint's shape: never add or drop sections in one blueprint — if the repo needs a new section, `/bootstrap` edits THIS section so every blueprint stays consistent. The PR skeleton encodes the **TDD Execution & Auto-Critic** (RED→GREEN) block and Testing-Trophy weighting; the manifest skeleton encodes the Reusable-Assets Inventory + Constraints.
+
+**`00_CORE_MANIFEST.md`** — one per task (→ `design-docs/[Task-ID]/00_CORE_MANIFEST.md`):
+````md
+# [Ticket-ID]: [Feature Name]
+
+- **Date**: [YYYY-MM-DD]
+- **Stack**: [detected via recon / chosen in /bootstrap]
+- **Standards Source**: [AGENTS.md / CLAUDE.md]
+- **Execution Mode**: [Autonomous | Supervised]   <!-- set by /ship Step 0 -->
+
+## 1. Background
+[Technical context from the ticket + codebase analysis]
+
+## 2. Goal (Definition of Done)
+- [ ] [Functional requirement 1]
+- [ ] [Functional requirement 2]
+
+## 3. Architecture Proposal
+### 🧩 Reusable Assets Inventory (anti-reinvention)
+- `[path]` -> [role]
+### ⚠️ Critical Constraints & Standards
+- [framework / domain rule]
+### Data Flow / Strategy
+- [high-level strategy]
+### Visualization
+```mermaid
+flowchart TD
+    A[Input] --> B[Logic] --> C[Output]
+```
+
+## 4. Testing & Verification
+- **Lint**: `[command]`
+- **Unit**: `[command]`
+- **E2E / Integration**: `[command]`
+- **Single test**: `[command pattern]`
+
+### 🤖 Agent Execution Guidelines (Testing Trophy + strict TDD)
+- Prioritize E2E/Integration; Unit only for mappers / pure / complex logic.
+- Per task: write test → RED → implement → GREEN → refactor. Stop on any failure.
+````
+
+**PR file** — one PER PR (→ `design-docs/[Task-ID]/01_PR_1_[Layer].md`):
+````md
+> **⚠️ SYSTEM INSTRUCTION FOR CODING AGENT:**
+> 1. Read & absorb `00_CORE_MANIFEST.md` before any task.
+> 2. **<auto_critic> EXECUTION LOCK:** after each task, run its Verification Command, fix errors, and DO NOT proceed until GREEN.
+
+## PR #[ID]: [Layer Name]
+**Objective:** [overall goal of this PR]
+
+---
+
+### Task [ID].1: [Task Name]
+
+**Action:**
+[Logic, architecture decisions and behavior — natural language, no source code.]
+- **API/Component Contract:** [new/modified inputs, outputs, DTOs, public methods]
+- [Constraint]
+
+**Target File(s):**
+- `[path]`
+
+**Verification Command:** `[exact command]`
+
+**Testing Strategy & Cases (Testing Trophy):**
+- **E2E / INTEGRATION** (`[explicit test file path]`):
+  - ✓ [Happy path — behavior assertion]
+  - ✓ [Error state — e.g. force 500 / timeout]
+- **COMPONENT** (`[path]`):   <!-- only if relevant / no backend -->
+  - ✓ [state / validation]
+- **UNIT** (`[path]`):        <!-- only if not redundant with E2E -->
+  - ✓ [complex mapper / pure logic]
+
+**TDD Execution & Auto-Critic:**
+1. Write the tests above.
+2. Run `[command]` → **MUST FAIL (RED)**.
+3. Implement in the Target Files.
+4. Run `[command]` → **MUST PASS (GREEN)**. If it fails, STOP and fix immediately.
+
+**Aligns with:** [rule from Architecture Proposal]
+
+---
+
+> **✅ PR Manual Acceptance:**
+> - [ ] **Functional:** [which flow to test manually]
+````
 
 ## <prompt_examples>
 **EX 1 — UI/Integration (agnostic):** USER: "Add a role dropdown and filter the user list."

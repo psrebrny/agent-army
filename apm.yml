@@ -3,12 +3,12 @@ version: 0.1.0
 description: >-
   Self-checking agent team + deterministic barriers for any repo. Installs four
   live skills (bootstrap, ship, new-agent, context-budget, adapt-army). Run /bootstrap once
-  per repo: it copies the bundled baseline agents/hooks/templates into your
+  per repo: it copies the bundled baseline agents/hooks into your
   tool's directory and specializes them to THIS codebase. Cross-tool (Claude,
   Cursor, OpenCode, Codex, Gemini, Windsurf, Copilot).
 author: psrebrny
 
-# Only skills live under .apm/. The baseline agents/hooks/templates are bundled
+# Only skills live under .apm/. The baseline agents/hooks are bundled
 # INSIDE the bootstrap skill (skills/bootstrap/baseline/) as raw assets, so apm
 # does NOT deploy them as live, generic agents. /bootstrap materializes and
 # specializes them per-repo. `auto` deploys everything in .apm/ (= the 4 skills).

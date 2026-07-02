@@ -9,8 +9,12 @@ if git diff --cached --name-only | grep -Eq '(^|/)(\.env($|\.)|.*\.pem$|.*\.key$
   exit 1
 fi
 
-if [ -x "$ROOT/.claude/hooks/verify.sh" ]; then
-  CLAUDE_PROJECT_DIR="$ROOT" "$ROOT/.claude/hooks/verify.sh" \
-    || { echo "pre-commit: lint/tests are failing — commit halted." >&2; exit 1; }
-fi
+# Locate verify.sh in whichever tool dir /bootstrap materialized it into (tool-agnostic).
+for d in .claude .opencode .cursor .codex .gemini .windsurf .agents; do
+  if [ -x "$ROOT/$d/hooks/verify.sh" ]; then
+    CLAUDE_PROJECT_DIR="$ROOT" "$ROOT/$d/hooks/verify.sh" \
+      || { echo "pre-commit: lint/tests are failing — commit halted." >&2; exit 1; }
+    break
+  fi
+done
 exit 0

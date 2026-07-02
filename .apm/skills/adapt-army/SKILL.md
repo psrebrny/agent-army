@@ -17,7 +17,7 @@ If unsure which it is, ASK the user: "Should this hold for the whole repo going 
 ## Step 2 · Classify
 Put the guideline in a bucket — it decides where it lands:
 - **Architectural law** (boundaries, patterns, forbidden moves) → agents' rules/checklists + `AGENTS.md`.
-- **Test idiom / strategy** (framework, layer weighting, base classes) → `tester`, `architect`, PR template.
+- **Test idiom / strategy** (framework, layer weighting, base classes) → `tester`, `architect` (its inline PR/manifest Output skeleton).
 - **Naming / layout convention** → `architect` + `code-reviewer` + `AGENTS.md`.
 - **Security / perf rule** → `security-auditor` / `perf-auditor` (+ `code-reviewer` if it's a review gate).
 - **Project policy** (test rigor / lint / CI) → `army.conf` knob (`TEST_POLICY`/`LINT_POLICY`/`CI_MODE`), not agent prose. **Security barriers are never a knob.**
@@ -32,7 +32,7 @@ Touches:
   code-reviewer  → <checklist item to add>               [yes/no]
   security/perf  → <sink/check to add>                   [yes/no]
   AGENTS.md      → <law/convention section>              [yes/no]
-  templates      → <blueprint/report template change>    [yes/no]
+  Output skeleton→ <blueprint/report skeleton change, in its owning agent>  [yes/no]
   army.conf      → <policy knob>                          [yes/no]
 ```
 If you can only find one owner, double-check: is there really no reviewer rule that should enforce what the architect now plans? Single-owner guidelines are rare.
@@ -43,8 +43,8 @@ Show the routing table from Step 3 and get the user's "ok / adjust". Don't silen
 ## Step 5 · Apply (source of truth first, then sync)
 1. **`AGENTS.md` is the canonical record** — update its laws/conventions/policy section FIRST. Everything else is derived from it.
 2. **Sync each owning agent** to match: bake the law into `architect`'s rules, `code-reviewer`'s checklist, `tester`'s idioms, the auditors' sinks — using the same depth and BAD/GOOD style as `references/agent-worked-examples.md`. Update each agent's `<prompt_examples>` if the change affects what they'd produce.
-3. **Templates / `army.conf`** if Step 3 flagged them (e.g. add a section to the PR template; flip `TEST_POLICY`).
-4. **Save a `.base`/timestamped backup** of every file before overwriting (reversible).
+3. **Output skeletons / `army.conf`** if Step 3 flagged them — a skeleton change is just an edit to the owning agent's `## Output` section (e.g. add a section to `architect`'s PR skeleton); flip `TEST_POLICY` in `army.conf`.
+4. **Rollback is git** — before overwriting, make sure the tool dir is committed (ask the user to commit or stash if it's dirty). No `.base`/backup files.
 5. **Cross-agent consistency check** (same as bootstrap Step 4c): the law as `architect` plans it == the law as `code-reviewer` rejects it; commands stay identical across agents + `army.conf`; no two agents now contradict each other.
 
 ## Step 6 · Report
@@ -58,7 +58,7 @@ List exactly what changed (file → what), confirm the team is consistent, and n
 
 ## <prompt_examples>
 **EX 1 — architectural law, multi-owner.** USER (mid-task): "From now on no service may call a repository directly — always through a Facade."
-→ Qualify: durable, repo-wide. Classify: architectural law. Route → `architect` (plan rule: tasks name the Facade), `code-reviewer` (checklist: reject `*Repository` calls outside a Facade), `tester` (example specs target the Facade), `AGENTS.md` (Laws section). Confirm → apply → backups → consistency check. Report: 4 files updated, team consistent.
+→ Qualify: durable, repo-wide. Classify: architectural law. Route → `architect` (plan rule: tasks name the Facade), `code-reviewer` (checklist: reject `*Repository` calls outside a Facade), `tester` (example specs target the Facade), `AGENTS.md` (Laws section). Confirm → apply → consistency check. Report: 4 files updated, team consistent.
 
 **EX 2 — policy knob, not prose.** USER: "We're done prototyping — turn on strict TDD."
 → Classify: project policy. Route → `army.conf` (`TEST_POLICY=strict`) + a one-line note in `AGENTS.md`'s Project-policy block. Do NOT rewrite agent rules (they already honor `TEST_POLICY`). Report the new `army.conf`.

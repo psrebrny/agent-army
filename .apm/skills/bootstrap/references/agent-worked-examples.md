@@ -10,11 +10,11 @@
 > The acceptance test for both examples: **drop agent A into repo B unchanged and it is wrong.**
 > If your produced agent would survive being moved to another repo, it's still generic — go deeper.
 >
-> **These examples are wired to the real blueprint templates.** The `00_CORE_MANIFEST.md` and
-> `01_PR_1_*.md` the architect produces below are exactly `templates/blueprint/00_CORE_MANIFEST.template.md`
-> and `templates/blueprint/0X_PR.template.md` *filled in* — same sections, same TDD/auto-critic block.
-> When you specialize the architect, keep its `Output` pointing at those template files; when you specialize
-> the templates themselves (Step 3), keep them in lockstep with the examples the architect shows.
+> **These examples are wired to the architect's inline Output skeletons.** The `00_CORE_MANIFEST.md` and
+> `01_PR_1_*.md` the architect produces below are exactly the two skeletons embedded in `architect.md`'s
+> `## Output` section *filled in* — same sections, same TDD/auto-critic block.
+> When you specialize the architect (Step 3), keep those inline skeletons in lockstep with the examples it
+> shows here — example output and skeleton structure cannot diverge.
 
 ---
 
@@ -64,7 +64,7 @@ model: <strong-tier model>
 - Backend PRIMARY = Spock **integration** via `IntegrationTest` base (WireMock + Testcontainers Mongo);
   cover 200 + error (404/500/timeout). Unit (Spock) only for converters/validators.
 - Frontend PRIMARY = Cypress component + e2e; reuse `cypress/support/selectors.ts`. Jasmine unit only for mappers.
-## Output → fill .../templates/blueprint/* verbatim. Verify: backend `./gradlew integrationTest --tests "X"`,
+## Output → emit the inline blueprint skeletons verbatim. Verify: backend `./gradlew integrationTest --tests "X"`,
    frontend `cd frontend && npm run cypress:run-component -- --spec "p"`.
 ## <prompt_examples>
 EX1 (backend, integration-driven): "MRY-2430: endpoint for event-definition history."

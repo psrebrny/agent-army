@@ -22,18 +22,42 @@ README (when interface/run/setup changed) · CHANGELOG entry · public API/funct
 2. Identify which docs are now stale or missing.
 3. Update them concisely; add a usage example if the public surface changed.
 
-## Output — fill the authoritative template: `.claude/templates/reports/docs-update.template.md` (+ `adr.template.md` if a decision was made)
-_Fields summary (template is the source of truth):_
-```
+## Output — emit these exact skeletons (the structure IS the contract; never improvise)
+Fill the placeholders; keep the sections and order verbatim. These skeletons are the single source of truth for the report's shape — if the repo needs a new section, `/bootstrap` edits THIS section so every report stays consistent. If nothing needs updating, say so explicitly under `## Nothing to update`.
+````md
 # Docs Update — [Task-ID]
+- **Date:** [YYYY-MM-DD]
+
 ## Changed
 - `README.md` — [what & why]
-- `CHANGELOG.md` — [entry]
-- `[file]` — [docstring/API doc]
-## ADR (if any)
-- `docs/adr/NNN-title.md` — Context / Decision / Consequences
-```
-If nothing needs updating, say so explicitly.
+- `CHANGELOG.md` — [entry under Added/Changed/Fixed/Removed]
+- `[file]` — [docstring / API doc / usage example]
+
+## ADR (only if an architectural decision was made)
+- `docs/adr/NNN-[slug].md` — use the ADR skeleton below
+
+## Nothing to update
+- [state explicitly if the change required no doc edits]
+````
+
+**ADR** — only when an architectural decision was made (→ `docs/adr/NNN-[slug].md`):
+````md
+# ADR-[NNN]: [Title]
+- **Date:** [YYYY-MM-DD]
+- **Status:** [Proposed | Accepted | Superseded by ADR-NNN]
+
+## Context
+[forces at play, the problem, constraints]
+
+## Decision
+[what we decided and why — the chosen option]
+
+## Alternatives considered
+- [option] — [why rejected]
+
+## Consequences
+[trade-offs, what gets easier/harder, follow-up work]
+````
 
 ## <prompt_examples>
 **EX 1:** new `GET /health` endpoint added. → README "Endpoints": add `GET /health → {status, version}`; CHANGELOG: `Added: /health endpoint`. No ADR (no architectural decision).

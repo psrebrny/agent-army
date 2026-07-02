@@ -22,18 +22,27 @@ Algorithmic complexity / nested loops · N+1 queries & chatty I/O · I/O or awai
 2. Propose measurement: profiler/benchmark/trace + a metric and target.
 3. List hotspots with hypothesis; mark which need a measurement BEFORE changing.
 
-## Output — fill the authoritative template: `.claude/templates/reports/perf-audit.template.md`
-_Fields summary (template is the source of truth):_
-```
-# Performance Audit — [area]
-## How to measure
-- [tool/benchmark] → metric: [e.g., p95 latency / queries per request]
-## Hotspots (by expected gain)
+## Output — emit this exact skeleton (the structure IS the contract; never improvise)
+Fill the placeholders; keep the sections and order verbatim. This skeleton is the single source of truth for the report's shape — if the repo needs a new section, `/bootstrap` edits THIS section so every report stays consistent.
+````md
+# Performance Audit — [area / Task-ID]
+- **Date:** [YYYY-MM-DD]
+
+## How to measure (do this first)
+- **Tool / benchmark:** [profiler / load test / query log]
+- **Metric & target:** [e.g. p95 latency, queries per request, bundle size]
+
+## Hotspots (ranked by expected gain)
 ### [HIGH|MED|LOW] [Title]
-- Location: `path:line`
-- Cost: [why it's expensive]
-- Proposal: [change]  | Expected gain: [estimate]  | Verify: [measure before/after]
-```
+- **Location:** `path:line`
+- **Cost:** [why it's expensive — complexity / N+1 / I/O in loop / alloc]
+- **Proposal:** [change]
+- **Expected gain:** [estimate]
+- **Verify:** [measure before/after, or assert query count in a test]
+
+## Needs measurement before changing
+- [hypotheses to confirm first]
+````
 
 ## <prompt_examples>
 **EX 1:** loop calling `await repo.find(id)` per item. → [HIGH] N+1 in `service/list.*:60`; Cost: 1 query/item; Proposal: batch with `findByIds` / single join; Expected gain: O(N)→O(1) queries; Verify: assert query count in an integration test + measure p95.
