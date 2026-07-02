@@ -30,11 +30,16 @@ if [ -f Cargo.toml ]; then
   FMT_CMD="${FMT_CMD:-cargo fmt}"; LINT_CMD="${LINT_CMD:-cargo clippy -q}"; TEST_CMD="${TEST_CMD:-cargo test -q}"
 fi
 
-# Project policy (.claude/army.conf) — relaxes QUALITY rigor only; security barriers are separate.
+# Project policy (army.conf) — relaxes QUALITY rigor only; security barriers are separate.
 # Absent file → defaults (strict tests, lint on), so existing installs are unchanged.
-CONF="$ROOT/.claude/army.conf"
-# shellcheck disable=SC1090
-[ -f "$CONF" ] && . "$CONF"
+# Locate army.conf in whichever tool dir /bootstrap materialized it into (tool-agnostic).
+for d in .claude .opencode .cursor .codex .gemini .windsurf .agents; do
+  if [ -f "$ROOT/$d/army.conf" ]; then
+    # shellcheck disable=SC1090
+    . "$ROOT/$d/army.conf"
+    break
+  fi
+done
 case "${TEST_POLICY:-strict}" in none) TEST_CMD="" ;; esac   # 'none' → no test gate
 case "${LINT_POLICY:-on}"     in off)  LINT_CMD="" ;; esac   # 'off'  → no lint gate
 

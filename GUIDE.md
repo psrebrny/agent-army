@@ -43,7 +43,7 @@ apm deploys the five skills only. The baseline agents/hooks/CI ride bundled as r
 cd my-repo   # open it in your AI tool, then:
 /bootstrap
 ```
-> Non-Claude tools (OpenCode, Cursor, Codex, Gemini, Windsurf, Copilot): apm currently lands the skills in `.agents/skills/` rather than your tool's native dir, so `/bootstrap` may not be recognised yet — invoke it directly with `@.agents/skills/bootstrap/SKILL.md`. Once `/bootstrap` has finished and `/bootstrap`, `/ship` etc. work as native commands, `.agents/skills/` is a leftover copy — safe to delete it yourself (`rm -rf .agents/skills/`).
+> Non-Claude tools (OpenCode, Cursor, Codex, Gemini, Windsurf, Copilot): apm lands the skills in `.agents/skills/` (its cross-client location), not your tool's native command dir, so `/bootstrap` may not be a recognised slash-command — invoke it directly with `@.agents/skills/bootstrap/SKILL.md` (same for `/ship` etc.). `.agents/skills/` is the apm-managed package, like `node_modules`: `/bootstrap` gitignores it and `apm install` restores it — so it never clutters git, and anyone re-running `/bootstrap` or `/ship` from a fresh clone runs `apm install` first. Don't `rm` it expecting native commands to appear — bootstrap does not relocate skills into your tool's command dir.
 `/bootstrap`:
 1. **reads the repo** (stack, standards, conventions, real test/lint commands),
 2. **asks a few smart questions** (only the gaps; business, architecture, testing, NFR, process),

@@ -4,13 +4,15 @@ description: One-time intelligent setup of the agent team for THIS repo, after i
 ---
 # /bootstrap (apm) — materialize + tailor the agent team to THIS repo
 
-> **OpenCode note:** if `/bootstrap` is not yet a recognised command (skills landed in
-> `.agents/skills/` instead of `.opencode/commands/`), invoke this skill directly:
-> type `@.agents/skills/bootstrap/SKILL.md` in the chat. Bootstrap will then place
-> everything in the right directories so future commands work normally.
+> **Non-Claude tools (OpenCode, Cursor, Codex, Gemini, Windsurf, Copilot):** apm lands the skills in
+> `.agents/skills/` (its cross-client location), not your tool's native command dir — so `/bootstrap`
+> may not be a recognised slash-command yet. Invoke it directly: type `@.agents/skills/bootstrap/SKILL.md`
+> in the chat (run `/ship`, `/new-agent`, `/adapt-army` the same way: `@.agents/skills/<skill>/SKILL.md`).
+> `.agents/skills/` is the apm-managed package, like `node_modules`: this skill gitignores it (Step 0) and
+> `apm install` restores it — it is NOT a leftover to delete for real, and it holds all five skills, not just this one.
 
 `apm install` deployed only the SKILLS (this one, plus `ship`, `new-agent`,
-`context-budget`). It did **not** drop generic agents/hooks into your repo —
+`adapt-army`, `context-budget`). It did **not** drop generic agents/hooks into your repo —
 those ride bundled as raw assets in `baseline/` next to this file. Your job: copy
 them into the right place for THIS tool, then specialize them to THIS codebase.
 You (the lead) do the thinking and write the files — apm did none of it.
@@ -34,7 +36,7 @@ The baseline is NOT hardcoded to `.claude/`. Detect the tool and pick its dir:
   - `baseline/army.conf` → `<tool>/army.conf`
 - **Git pre-commit (tool-independent hard barrier):** copy `baseline/hooks/git-pre-commit.sh` → `.git/hooks/pre-commit`, `chmod +x`. Skip with a note if there's no `.git`.
 - **CI:** if the repo has no existing workflow, offer to add a `quality.yml` that re-runs `verify.sh`; if it already has CI, leave it and set `CI_MODE=off` in `army.conf`.
-- Add `.claude/settings.local.json` (and the chosen tool's local-state file) to `.gitignore`.
+- **Update `.gitignore`:** add `.claude/settings.local.json` (and the chosen tool's local-state file), AND the apm-managed skills dir — `.agents/skills/` for non-Claude tools, `.claude/skills/` for Claude Code. Those skills are restored by `apm install` (like `node_modules`), so they don't belong in git; the specialized team (`<tool>/agents/`, hooks, `army.conf`, `AGENTS.md`) IS committed. (apm already gitignores `apm_modules/` itself.)
 - **Normalize hardcoded paths (do this right after copying — it keeps every agent's cross-references valid).** The baseline agents reference `.claude/agents/` and `.claude/army.conf` as defaults. If the tool dir is NOT `.claude/`, rewrite those references across the copied agent files to the actual dir, e.g.:
   ```bash
   # example for OpenCode (tool dir = .opencode):

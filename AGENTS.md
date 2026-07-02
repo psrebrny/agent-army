@@ -18,7 +18,7 @@ No build step, no test suite, no installer script — apm is the install mechani
 
 - `apm.yml` — apm manifest (name, version, `includes`, deps).
 - `.apm/skills/` — the five live skills apm deploys: `/bootstrap`, `/ship`, `/new-agent`, `/adapt-army`, `context-budget`.
-- `.apm/commands/` — thin command wrappers apm deploys to `.opencode/commands/` etc. (tools that read `commands/`, not `skills/`).
+- `.apm/commands/` — thin command wrappers for tools that surface a `command/` dir rather than `skills/`; each just points at the matching `.agents/skills/<skill>/SKILL.md`. (apm's own placement varies by tool/version; when a native command isn't registered, invoke the skill directly by its `.agents/skills/…/SKILL.md` path.)
 - `.apm/skills/bootstrap/baseline/` — **the single source of truth** for everything `/bootstrap` installs:
   - `agents/` — seven subagent definitions + `_STANDARD.md` quality bar: `architect`, `tester`, `code-reviewer`, `security-auditor`, `perf-auditor`, `docs-writer`, `coder` (optional). No `tools:` field (cross-tool safe — a string `tools` breaks OpenCode; bootstrap re-adds it where the tool accepts it). Each agent embeds its own output skeleton (blueprint / report) inline in its `## Output` section — there is no separate templates dir.
   - `hooks/` — lifecycle hook scripts.

@@ -28,7 +28,7 @@ export GITHUB_APM_PAT=github_pat_xxxx
 ```
 /bootstrap
 ```
-> **OpenCode:** if `/bootstrap` isn't a recognised command yet (apm landed the skill in `.agents/skills/` rather than `.opencode/commands/`), invoke it directly — type `@.agents/skills/bootstrap/SKILL.md` in the chat. Bootstrap then places everything in the right dirs so future commands work normally.
+> **Non-Claude tools (OpenCode, Cursor, Codex, Gemini, Windsurf, Copilot):** apm lands the skills in `.agents/skills/` (its cross-client location), not your tool's native command dir — so `/bootstrap` may not be a recognised slash-command. Invoke it directly: type `@.agents/skills/bootstrap/SKILL.md` in the chat (same for `/ship` etc.: `@.agents/skills/<skill>/SKILL.md`). `.agents/skills/` is the apm-managed package, like `node_modules` — `/bootstrap` gitignores it and `apm install` restores it. To re-run `/bootstrap` or `/ship` from a fresh clone, run `apm install` first.
 
 Pin a version with `psrebrny/agent-army#<tag-or-commit>`. Package layout: `apm.yml` (manifest) + `.apm/` (the five skills + `.apm/commands/` wrappers; `bootstrap/baseline/` holds the raw agents/hooks — the single source of truth).
 
