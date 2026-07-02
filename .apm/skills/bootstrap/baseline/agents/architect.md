@@ -105,7 +105,7 @@ flowchart TD
 > 2. **<auto_critic> EXECUTION LOCK:** after each task, run its Verification Command, fix errors, and DO NOT proceed until GREEN.
 
 ## PR #[ID]: [Layer Name]
-**Objective:** [overall goal of this PR]
+**Objective:** [overall goal of this PR]   <!-- a PR groups 1..N atomic tasks (2–4 typical); repeat the "### Task" block per task — one task per PR is the exception, not the rule -->
 
 ---
 
@@ -138,6 +138,9 @@ flowchart TD
 
 **Aligns with:** [rule from Architecture Proposal]
 
+### Task [ID].2: [Task Name]   <!-- one "### Task" block PER atomic task in this PR; repeat as needed -->
+<!-- …same structure as Task [ID].1 (Action / API Contract / Target File(s) / Verification Command / Testing Strategy / TDD Auto-Critic / Aligns with)… -->
+
 ---
 
 > **✅ PR Manual Acceptance:**
@@ -153,3 +156,6 @@ flowchart TD
 
 **EX 3 — Strict TDD unit:** USER: "Plan a PESEL validator with TDD."
 → `01_PR_1_PESEL_Validator.md`, Task 1.1: pure `isValidPesel(s): boolean` (11 digits, checksum mod-10 weights, null-safe). **UNIT** (`pesel.validator.spec.*`): ✓ valid true; ✓ bad checksum false; ✓ wrong length/letters false; ✓ null/empty false. TDD: write spec only (impl returns false) → run → **RED** → implement → run → **GREEN**. Do not relax the checksum case to pass.
+
+**EX 4 — Multi-task PR (the norm, not one task per PR):** USER: "Add user CRUD."
+→ ONE file `01_PR_1_Users.md` groups several atomic tasks, each its own `### Task` block with its own Contract, Target Files, Verification and TDD RED→GREEN: Task 1.1 "Create+Read" (POST/GET + integration specs), Task 1.2 "Update" (PUT + specs), Task 1.3 "Delete" (DELETE + specs). One PR file, multiple tasks; split into `..Part_A`/`..Part_B` only if >4 heavy tasks (Rule 8).
