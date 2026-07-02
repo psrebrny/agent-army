@@ -89,6 +89,13 @@ PY
       END { exit(found?0:1) }
     ' "$f"; then ok "Output embeds a fenced skeleton"
   else bad "Output section has no embedded skeleton (fenced block)"; fi
+
+  # 6. (materialized output only) no unresolved path placeholders leaked through /bootstrap
+  if [ -n "$TARGET_DIR" ]; then
+    if grep -qE '<(SKILLS|AGENTS|TOOL)_DIR>' "$f"; then
+      bad "unresolved placeholder(s): $(grep -oE '<(SKILLS|AGENTS|TOOL)_DIR>' "$f" | sort -u | tr '\n' ' ')— /bootstrap must substitute these"
+    else ok "no unresolved path placeholders"; fi
+  fi
 }
 
 check_skill() {
@@ -121,6 +128,16 @@ if [ "$do_agents" = 1 ]; then
   for f in "$AGENTS_DIR"/*.md; do
     [ "$(basename "$f")" = "_STANDARD.md" ] && continue
     match "$(basename "$f" .md)" && check_agent "$f"
+  done
+fi
+# In materialized output, _STANDARD.md and the repo AGENTS.md also carry placeholders — verify they resolved.
+if [ -n "$TARGET_DIR" ]; then
+  printf '\n\033[1m• materialized placeholders\033[0m\n'
+  for extra in "$AGENTS_DIR/_STANDARD.md" "$BASE/../AGENTS.md"; do
+    [ -f "$extra" ] || continue
+    if grep -qE '<(SKILLS|AGENTS|TOOL)_DIR>' "$extra"; then
+      bad "unresolved placeholder in $(basename "$extra"): $(grep -oE '<(SKILLS|AGENTS|TOOL)_DIR>' "$extra" | sort -u | tr '\n' ' ')"
+    else ok "$(basename "$extra"): placeholders resolved"; fi
   done
 fi
 if [ "$do_skills" = 1 ] && [ -z "$TARGET_DIR" ]; then

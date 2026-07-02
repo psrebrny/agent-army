@@ -36,7 +36,7 @@ Claude Code v2.x · `bash` · `python3` (barriers; a fallback runs without it). 
 cd my-repo
 apm install psrebrny/agent-army --target opencode   # or: claude | cursor | codex | gemini | copilot | windsurf
 ```
-apm deploys the five skills only. The baseline agents/hooks/CI ride bundled as raw assets inside the `bootstrap` skill — they become live, repo-tailored files only when you run `/bootstrap` below (it also installs the git pre-commit hook and appends to `.gitignore`).
+apm deploys the four skills only. The baseline agents/hooks/CI ride bundled as raw assets inside the `bootstrap` skill — they become live, repo-tailored files only when you run `/bootstrap` below (it also installs the git pre-commit hook and appends to `.gitignore`).
 
 ## STEP 1 — entry point: `/bootstrap`  (run first)
 ```
@@ -77,7 +77,7 @@ Switch on the fly: "switch to autonomous/supervised".
     _STANDARD.md                # the quality bar for EVERY agent
                                 # each agent embeds its own output skeleton (blueprint / report) in its ## Output section
   hooks/                        # guard / format / verify / gate / detect / git-pre-commit
-  skills/                       # bootstrap · ship · new-agent · adapt-army · context-budget
+  skills/                       # bootstrap · ship · new-agent · adapt-army
 CLAUDE.md                       # project memory (tailored to the repo after /bootstrap)
 .github/workflows/quality.yml   # CI: the same verify.sh
 ```

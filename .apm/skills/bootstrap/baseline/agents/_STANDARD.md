@@ -1,6 +1,6 @@
 # Agent Authoring Standard — the quality bar
 
-Every agent in `.claude/agents/` — shipped, repo-specialized by `/bootstrap`, or created by
+Every agent in `<AGENTS_DIR>/` — shipped, repo-specialized by `/bootstrap`, or created by
 `/new-agent` — MUST meet this bar. Hold each generated agent to the same care and depth as the
 hand-crafted `architect.md` (use it as the reference exemplar).
 

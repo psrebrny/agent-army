@@ -9,10 +9,10 @@ description: One-time intelligent setup of the agent team for THIS repo, after i
 > may not be a recognised slash-command yet. Invoke it directly: type `@.agents/skills/bootstrap/SKILL.md`
 > in the chat (run `/ship`, `/new-agent`, `/adapt-army` the same way: `@.agents/skills/<skill>/SKILL.md`).
 > `.agents/skills/` is the apm-managed package, like `node_modules`: this skill gitignores it (Step 0) and
-> `apm install` restores it — it is NOT a leftover to delete for real, and it holds all five skills, not just this one.
+> `apm install` restores it — it is NOT a leftover to delete for real, and it holds all four skills, not just this one.
 
 `apm install` deployed only the SKILLS (this one, plus `ship`, `new-agent`,
-`adapt-army`, `context-budget`). It did **not** drop generic agents/hooks into your repo —
+`adapt-army`). It did **not** drop generic agents/hooks into your repo —
 those ride bundled as raw assets in `baseline/` next to this file. Your job: copy
 them into the right place for THIS tool, then specialize them to THIS codebase.
 You (the lead) do the thinking and write the files — apm did none of it.
@@ -42,12 +42,17 @@ The baseline is NOT hardcoded to `.claude/`. Detect the tool and pick its dir:
   Report which path you took, so it's visible in review that nothing was silently replaced.
 - **CI:** if the repo has no existing workflow, offer to add a `quality.yml` that re-runs `verify.sh`; if it already has CI, leave it and set `CI_MODE=off` in `army.conf`.
 - **Update `.gitignore`:** add `.claude/settings.local.json` (and the chosen tool's local-state file), AND the apm-managed skills dir — `.agents/skills/` for non-Claude tools, `.claude/skills/` for Claude Code. Those skills are restored by `apm install` (like `node_modules`), so they don't belong in git; the specialized team (`<tool>/agents/`, hooks, `army.conf`, `AGENTS.md`) IS committed. (apm already gitignores `apm_modules/` itself.)
-- **Normalize hardcoded paths (do this right after copying — it keeps every agent's cross-references valid).** The baseline agents reference `.claude/agents/` and `.claude/army.conf` as defaults. If the tool dir is NOT `.claude/`, rewrite those references across the copied agent files to the actual dir, e.g.:
+- **Resolve the path placeholders (do this right after copying — for EVERY tool, including Claude).** The baseline agents and `AGENTS.md` are tool-neutral: they use placeholders, not a hardcoded `.claude/`. Substitute them with THIS repo's real dirs. The three families deliberately land in DIFFERENT places, so they are separate placeholders (a blanket single-dir substitution would be WRONG):
+  - `<SKILLS_DIR>` → `.claude/skills` for Claude, **`.agents/skills`** for every other tool (apm's cross-client skills dir, NOT `<tool>/skills`).
+  - `<AGENTS_DIR>` → the tool's agent dir: `.claude/agents` (Claude), `.opencode/agent` (OpenCode), …
+  - `<TOOL_DIR>` → the tool's config root for `army.conf`/hooks: `.claude`, `.opencode`, …
   ```bash
-  # example for OpenCode (tool dir = .opencode):
-  sed -i '' 's#\.claude/army.conf#.opencode/army.conf#g; s#\.claude/agents/#.opencode/agent/#g' .opencode/agent/*.md
+  # OpenCode:
+  sed -i '' -e 's#<SKILLS_DIR>#.agents/skills#g' -e 's#<AGENTS_DIR>#.opencode/agent#g' -e 's#<TOOL_DIR>#.opencode#g' .opencode/agent/*.md AGENTS.md
+  # Claude:
+  sed -i '' -e 's#<SKILLS_DIR>#.claude/skills#g' -e 's#<AGENTS_DIR>#.claude/agents#g' -e 's#<TOOL_DIR>#.claude#g' .claude/agents/*.md AGENTS.md
   ```
-  This keeps each agent's cross-references (to sibling agents, `_STANDARD.md`, `army.conf`) pointing at files that really exist. Output skeletons live inline in each agent now, so there is nothing template-path to rewrite. Leave `.claude/settings.json` references only where the tool is Claude (hooks are Claude-only).
+  `.claude/settings.json` stays literal (it appears only in the Claude-only hooks note). Output skeletons live inline in each agent, so there's no template path to touch. (Hook scripts self-locate `verify.sh`/`army.conf`, so this is about keeping the *documented* paths honest, not about wiring.)
 Report what landed where before moving on.
 
 ## Step 1 · Recon (DEEP — read real code before you ask)
@@ -156,7 +161,7 @@ For **every** agent:
 Then:
 - **Make the formatter the sole style authority (kills diff-noise at the source).** Agents are told not to hand-restyle (`AGENTS.md` Hard rules + `_STANDARD.md` diff-hygiene), but the durable fix is machine-enforcement so `format.sh` reverts any stray restyle automatically. From the Step-1a config scan: if the repo's formatter config already pins quote-style, indent width and trailing-comma, leave it. If it does NOT — or there's no `.editorconfig` — **offer** (don't silently impose) to add a minimal `.editorconfig` and/or extend the existing formatter config (e.g. Prettier `singleQuote`, `endOfLine`) to match the repo's *already-dominant* convention detected in Step 1c, covering `*.yml`/`*.json` where the formatter supports them (the files agents most often wreck and no formatter governs by default). Never flip the repo's prevailing style — encode what's already there.
 - **Write `army.conf`** from the Step-2 policy answers (`TEST_POLICY` / `LINT_POLICY` / `CI_MODE`) **plus the exact commands discovered in Step 1** (`FMT_CMD` / `LINT_CMD` / `TEST_CMD`). These override `detect.sh` — hooks read `army.conf` last. Only write a command after you verified it runs (Step 4). **Monorepo:** chain per-stack commands so the barrier covers ALL stacks, e.g. `TEST_CMD=cd frontend && npm test && cd ../backend && pytest` (or document per-stack `*_FRONTEND`/`*_BACKEND` vars if the hooks support them). If `CI_MODE=off`, remove any copied `quality.yml`. Honor `TEST_POLICY` everywhere: at `none` the team SKIPS the `tester`/TDD steps; at `light`/`pragmatic` scale the Testing-Trophy mix down. Never relax security barriers.
-- **Write/refresh `AGENTS.md` — the single canonical entry point** (every tool reads it, including Claude Code): stack(s), exact commands, the mined laws & conventions, testing strategy, team roster, guardrails (hooks), and a **`## Project policy`** block summarizing `army.conf`. This is where the real content lives.
+- **Write/refresh `AGENTS.md` — the single canonical entry point** (every tool reads it, including Claude Code): stack(s), exact commands, the mined laws & conventions, testing strategy, team roster, guardrails (hooks), and a **`## Project policy`** block summarizing `army.conf`. This is where the real content lives. Its placeholders (`<SKILLS_DIR>`/`<AGENTS_DIR>`/`<TOOL_DIR>`) were already resolved to real dirs in Step 0 — as you refresh/extend the file keep them resolved and tool-correct; never reintroduce a `.claude/` path unless the tool IS Claude.
   - **`CLAUDE.md` only for Claude Code, and keep it THIN** — a few lines that point to `AGENTS.md` as the source of truth (so Claude's native auto-load finds it) plus the `## Project policy` summary. Do NOT duplicate AGENTS.md into it. For OpenCode/Cursor/etc. skip `CLAUDE.md` entirely — `AGENTS.md` is enough.
 - **Specialize the blueprint skeletons embedded in `architect`'s `## Output` section** to this repo — AND keep them in lockstep with the rest of the agent:
   - The two skeletons (`00_CORE_MANIFEST` + PR file) live inline in `architect.md`; bake in real test commands, framework assertion syntax and the repo's manifest fields.
@@ -186,6 +191,10 @@ Check the team agrees with itself: the commands in `architect`, `tester`, `code-
 > Record the chosen mode in `army.conf` as `BOOTSTRAP_MODE` so re-runs remember it.
 
 ## Step 5 · Verify & report
+- **No leftover placeholders** — grep the materialized files for any unresolved `<SKILLS_DIR>`, `<AGENTS_DIR>` or `<TOOL_DIR>`; if any remain, Step 0's substitution was incomplete — fix before finishing:
+  ```bash
+  grep -rn '<SKILLS_DIR>\|<AGENTS_DIR>\|<TOOL_DIR>' <tool>/agents/ AGENTS.md CLAUDE.md 2>/dev/null && echo "↑ unresolved — substitute them" || echo "placeholders clean"
+  ```
 - Run the detected verify (lint + tests) ONCE to confirm the wired commands actually work; if wrong, fix them in the agents + `army.conf` + AGENTS.md.
 - Print a short report: tool detected + where files landed, detected stack(s), commands wired, the repo LAWS you extracted (with proving paths), which agents were specialized, what the reflection pass changed, and assumptions made. Suggest next step: `/ship "<first task>"`.
 

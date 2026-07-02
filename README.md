@@ -8,7 +8,7 @@ each other honest — plus deterministic **barriers (hooks)** no agent can bypas
 
 Installed via [apm](https://microsoft.github.io/apm/) (Microsoft's cross-tool Agent Package Manager) — one command across Claude / Cursor / OpenCode / Codex / Gemini / Windsurf / Copilot — then `/bootstrap` once per repo to specialize the team.
 
-apm ships only the five **skills** (`bootstrap`, `ship`, `new-agent`, `adapt-army`, `context-budget`) as live. The baseline agents/hooks ride bundled inside the `bootstrap` skill as raw assets — apm does **not** drop generic agents into your repo. `/bootstrap` materializes them into your tool's directory (not hardcoded to `.claude/`) and specializes them to the codebase.
+apm ships only the four **skills** (`bootstrap`, `ship`, `new-agent`, `adapt-army`) as live. The baseline agents/hooks ride bundled inside the `bootstrap` skill as raw assets — apm does **not** drop generic agents into your repo. `/bootstrap` materializes them into your tool's directory (not hardcoded to `.claude/`) and specializes them to the codebase.
 
 **1. Install apm** (if you don't have it): `pipx install apm-cli` (or `pip install apm-cli`).
 
@@ -30,7 +30,7 @@ export GITHUB_APM_PAT=github_pat_xxxx
 ```
 > **Non-Claude tools (OpenCode, Cursor, Codex, Gemini, Windsurf, Copilot):** apm lands the skills in `.agents/skills/` (its cross-client location), not your tool's native command dir — so `/bootstrap` may not be a recognised slash-command. Invoke it directly: type `@.agents/skills/bootstrap/SKILL.md` in the chat (same for `/ship` etc.: `@.agents/skills/<skill>/SKILL.md`). `.agents/skills/` is the apm-managed package, like `node_modules` — `/bootstrap` gitignores it and `apm install` restores it. To re-run `/bootstrap` or `/ship` from a fresh clone, run `apm install` first.
 
-Pin a version with `psrebrny/agent-army#<tag-or-commit>`. Package layout: `apm.yml` (manifest) + `.apm/` (the five skills + `.apm/commands/` wrappers; `bootstrap/baseline/` holds the raw agents/hooks — the single source of truth).
+Pin a version with `psrebrny/agent-army#<tag-or-commit>`. Package layout: `apm.yml` (manifest) + `.apm/` (the four skills + `.apm/commands/` wrappers; `bootstrap/baseline/` holds the raw agents/hooks — the single source of truth).
 
 ### Updating
 
@@ -71,7 +71,7 @@ On Claude Code you also get `/agents` to inspect the team and active lifecycle h
     gate.sh              #  Stop        → won't finish until tests/lint are green
     detect.sh            #  stack detection (npm/pnpm/yarn, pytest/ruff, go, cargo)
     git-pre-commit.sh    #  git barrier: secret scan + lint/tests (installed to .git/hooks)
-  skills/                # bootstrap · ship · new-agent · adapt-army · context-budget
+  skills/                # bootstrap · ship · new-agent · adapt-army
   rules/                 # path-scoped rules (optional)
 CLAUDE.md                # project memory (universal template)
 .github/workflows/quality.yml  # CI: the same gate (verify.sh) on push/PR
@@ -102,10 +102,10 @@ it work in a new repo. You can override the commands in `CLAUDE.md`.
 - Add an agent: a new `.claude/agents/<name>.md` (frontmatter `name/description/tools/model` + prompt), or run `/new-agent` to hold it to `_STANDARD.md`.
 - Tighten/loosen a barrier: edit the patterns in `hooks/guard.sh`.
 - Add your own gate: register a hook in `settings.json` (events: PreToolUse, PostToolUse, SubagentStop, Stop, UserPromptSubmit, SessionStart…).
-- Token/context discipline: `.claude/skills/context-budget/SKILL.md` (cheapest adequate model, plan first, short sessions).
+- Token/context discipline: `AGENTS.md` → "Cost & context discipline" (cheapest adequate model, pointers not payloads, plan first, short sessions).
 
 ## Two layers: distribution vs intelligence
-`apm install` is **deterministic** — it deploys the five skills 1:1, generates nothing (zero LLM, zero tokens). The baseline agents/hooks ride bundled as raw assets, NOT as live generic agents.
+`apm install` is **deterministic** — it deploys the four skills 1:1, generates nothing (zero LLM, zero tokens). The baseline agents/hooks ride bundled as raw assets, NOT as live generic agents.
 
 Tailoring to the repo is done by **`/bootstrap`** — a skill run inside your AI tool that:
 1. **deep-scans the repo** (every nested `AGENTS.md` + manifest, real source, test/lint commands),

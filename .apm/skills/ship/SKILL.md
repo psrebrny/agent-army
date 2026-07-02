@@ -4,9 +4,9 @@ description: Full SDD pipeline with the agent team — discovery/interview, blue
 ---
 # /ship — SDD pipeline + Testing Trophy + strict TDD
 
-> Token discipline for every step lives in `.claude/skills/context-budget/SKILL.md`
+> Token discipline for every step lives in `AGENTS.md` → "Cost & context discipline"
 > (cheapest adequate model, pointers not payloads, match the fan-out to task size).
-> This pipeline honors the repo's **Project policy** (`.claude/army.conf`): at `TEST_POLICY=none`
+> This pipeline honors the repo's **Project policy** (`army.conf`): at `TEST_POLICY=none`
 > skip step 2's tester/TDD loop entirely (implement → security → docs); at `light`/`pragmatic`
 > scale the tests down. Security barriers stay on at every level.
 
@@ -25,7 +25,7 @@ Ask the user how execution should run, and record the choice in `00_CORE_MANIFES
   3. after **GREEN** of each task/PR — you can correct course before the next one,
   4. before an escalation/larger architecture change.
   In this mode the user can take the wheel at any time and correct the agent; the orchestrator returns to the plan after the correction.
-  **If a correction is a durable, repo-wide convention** (not a one-off for this task) — "always do X", "we never do Y", "change the test policy" — OFFER to bake it into the whole team via `.claude/skills/adapt-army/SKILL.md` (`/adapt-army`) before resuming. Don't rewrite agents silently; a one-off tweak stays task-local.
+  **If a correction is a durable, repo-wide convention** (not a one-off for this task) — "always do X", "we never do Y", "change the test policy" — OFFER to bake it into the whole team via the `/adapt-army` skill before resuming. Don't rewrite agents silently; a one-off tweak stays task-local.
 Default if unspecified: **B (supervised)** for non-trivial tasks, **A** for small ones. The mode can be changed mid-run with "switch to autonomous/supervised".
 
 ## 1 · BLUEPRINT  → `architect` (Phase 2)
@@ -37,7 +37,7 @@ For EACH task in the blueprint:
 1. **`tester` writes the tests (RED)** — independently, from the contract/acceptance criteria (not from the implementation), in Testing-Trophy weighting. Runs them → **MUST FAIL (RED)** for the right reason.
 2. **The main session implements** the smallest change that satisfies the task (does not rewrite the tests).
 3. **`tester` verifies (GREEN)** — runs again → **MUST PASS**. Still red → diagnose (bug vs test), fix and repeat. Never weaken the assertions.
-No batching without verification. *Exception:* for trivial tasks the main session may do the whole Red→Green cycle inline, without a round-trip to the subagent (the cheaper default — see context-budget). Either way the `SubagentStop`/`Stop` hooks enforce green deterministically.
+No batching without verification. *Exception:* for trivial tasks the main session may do the whole Red→Green cycle inline, without a round-trip to the subagent (the cheaper default — see AGENTS.md "Cost & context discipline"). Either way the `SubagentStop`/`Stop` hooks enforce green deterministically.
 **In Supervised mode:** after RED show the tests and wait for "ok/fix" before implementing; after GREEN stop before the next task. **In Autonomous mode:** keep going without pauses (except the hook gates).
 
 ## 3 · REVIEW  → `code-reviewer` (Architectural Auditor)

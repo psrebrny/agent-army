@@ -3,8 +3,8 @@
 > Portable instruction file read natively by 20+ agentic coding tools (OpenAI Codex, Cursor,
 > GitHub Copilot, Gemini/Antigravity, Aider, Windsurf, Zed, Factory, Jules, Devin, Amp, VS Code,
 > JetBrains Junie …; Claude Code reads it too). This is the kickoff for the self-checking Agent
-> Army installed in this repo. Keep it focused — deep detail lives in `.claude/skills/` and
-> `.claude/agents/`.
+> Army installed in this repo. Keep it focused — deep detail lives in `<SKILLS_DIR>/` and
+> `<AGENTS_DIR>/`.
 
 ## Target tool
 Set at install time: **__ARMY_TOOL__**. If this says `auto` or `other`, the bootstrap will ask
@@ -14,10 +14,10 @@ once which tool is in use and adapt; otherwise treat it as already chosen (do no
 The team shipped here is a generic, tool-agnostic baseline. Before real work, specialize it to
 THIS repo and emit it in this tool's native format.
 
-**Run the bootstrap routine in `.claude/skills/bootstrap/SKILL.md`.**
+**Run the bootstrap routine in `<SKILLS_DIR>/bootstrap/SKILL.md`.**
 - **Claude Code:** type `/bootstrap`.
 - **Other tools (no slash command):** start a task and paste the Kickoff prompt below, or tell the
-  agent: "Follow `.claude/skills/bootstrap/SKILL.md` against this repo."
+  agent: "Follow `<SKILLS_DIR>/bootstrap/SKILL.md` against this repo."
 
 Bootstrap will: confirm the tool and resolve its Adapter Contract (agent format/location, memory
 file, guardrail mechanism, command format, model tiers), read the codebase, ask a few gap
@@ -26,16 +26,16 @@ questions, then emit a repo-tailored team in this tool's native format, refresh 
 it once.
 
 ### Kickoff prompt (copy-paste for tools without slash commands)
-> Read `.claude/skills/bootstrap/SKILL.md` and run it against this repository. The target tool is
-> __ARMY_TOOL__. Honor `.claude/agents/_STANDARD.md` and `.claude/skills/context-budget/SKILL.md`.
+> Read `<SKILLS_DIR>/bootstrap/SKILL.md` and run it against this repository. The target tool is
+> __ARMY_TOOL__. Honor `<AGENTS_DIR>/_STANDARD.md` and the "Cost & context discipline" section below.
 > Ask only for gaps recon can't settle, then specialize the team in this tool's native format.
 
 ## Day-to-day — ship a task
-For each feature/fix, run the pipeline in `.claude/skills/ship/SKILL.md`:
+For each feature/fix, run the pipeline in `<SKILLS_DIR>/ship/SKILL.md`:
 discovery/interview → blueprint in `design-docs/` → strict TDD (Red → Green) → architectural
 review → security → docs → commit (only with your approval).
 - **Claude Code:** `/ship "<task>"`.
-- **Other tools:** "Follow `.claude/skills/ship/SKILL.md` for this task: <task>."
+- **Other tools:** "Follow `<SKILLS_DIR>/ship/SKILL.md` for this task: <task>."
 
 ## The team (delegate by role)
 - `architect` — interview (greenfield/existing) + blueprint in `design-docs/` (never writes source)
@@ -44,9 +44,15 @@ review → security → docs → commit (only with your approval).
 - `security-auditor` — read-only security audit (secrets, injection, unsafe data handling)
 - `perf-auditor` — read-only performance audit (measure first, then hotspots)
 - `docs-writer` — minimal, truthful documentation updates
-**Who writes what code:** `tester` writes and runs the **test** code (never production). **Production code** is written by the `/ship` orchestrator (main session) by default — it holds the warm context (blueprint + RED tests + your conversation), so small/medium tasks need no extra hop. For **large, file-heavy, or parallel-PR** tasks, delegate production coding to the `coder` subagent (ships off the default `/ship` pipeline; `/bootstrap` tailors it): its exploration stays in its own throwaway context window and it returns a short summary, which keeps the orchestrator's session lean (see `context-budget` → "avoid infinite sessions").
-Quality bar for every agent: `.claude/agents/_STANDARD.md`. Context discipline (pass pointers, read
-scoped, cache the stable prefix, cheapest adequate model tier): `.claude/skills/context-budget/SKILL.md`.
+**Who writes what code:** `tester` writes and runs the **test** code (never production). **Production code** is written by the `/ship` orchestrator (main session) by default — it holds the warm context (blueprint + RED tests + your conversation), so small/medium tasks need no extra hop. For **large, file-heavy, or parallel-PR** tasks, delegate production coding to the `coder` subagent (ships off the default `/ship` pipeline; `/bootstrap` tailors it): its exploration stays in its own throwaway context window and it returns a short summary, which keeps the orchestrator's session lean (see "Cost & context discipline" below).
+Quality bar for every agent: `<AGENTS_DIR>/_STANDARD.md`.
+
+## Cost & context discipline
+The team already bakes most cost control into its parts (model tiers in `_STANDARD.md`; plan-before-code in `architect`; trivial-task-inline + parallel read-only audits in `ship`; delegate-and-summarize in `coder`). On top of that, every agent honors:
+- **Pointers, not payloads** — hand subagents file paths + the blueprint section, not pasted file bodies; read the slice you need (`offset`/`limit`, the touched function), not whole files "for safety".
+- **Keep the stable prefix cached** — `AGENTS.md`, `CLAUDE.md` and agent defs stay stable and pointer-shaped (not encyclopedias), so volatile detail loads on demand instead of re-paying tokens every turn.
+- **Script, don't prompt, for bulk** — never ask a model to map/filter/transform a large file in chat; write a script and run it locally (~0 tokens). Mechanical checks belong in a hook/script, not a prompt.
+- **English + right-sized model** — agent-facing text in English (Polish morphology costs ~1.5× the tokens); prefer a local/open model when it's adequate for routine, low-judgment work.
 
 ## Keeping the team current — offer `/adapt-army` (do not auto-apply)
 The team is only as good as it stays current. When, during ANY conversation, the user states a
@@ -55,7 +61,7 @@ current task — e.g. "from now on always X", "we never do Y", "switch to strict
 **offer to propagate it into the whole team**: "That sounds like a new repo convention — want me to bake
 it into the army? (`/adapt-army`)". Only OFFER; never rewrite agents silently. Be conservative: a
 one-off task tweak ("for this PR skip the e2e") is NOT a guideline — apply it to the task only and leave
-the team untouched. The routine lives in `.claude/skills/adapt-army/SKILL.md` (it routes the guideline to
+the team untouched. The routine lives in `<SKILLS_DIR>/adapt-army/SKILL.md` (it routes the guideline to
 every agent that owns it and keeps `AGENTS.md` the source of truth).
 
 ## Hardening the formatter config — offer once, never nag
