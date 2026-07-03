@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # assemble.sh <tool> [--dry-run] [--reconcile]
+# assemble.sh --detect          # deterministic tool detection, no <tool> needed
 #
 # Deterministic tool-native team assembler. NO LLM, NO soft-ifs: everything that
 # differs per tool is read from tools/<tool>.yml (see baseline/tools/README.md for the
@@ -7,9 +8,9 @@
 # core/. Never clobbers an existing (specialized) target file; git is the only
 # rollback (no *.base backups are ever written).
 #
-# Order in the real pipeline: assemble (this script, scaffold) -> bootstrap (LLM)
-# specializes the materialized team in place -> verify. Re-running assemble skips
-# existing agent files (reports "kept"); --reconcile refreshes ONLY packaging
+# Order in the real pipeline: detect (--detect) -> assemble (this script, scaffold) ->
+# bootstrap (LLM) specializes the materialized team in place -> verify. Re-running assemble
+# skips existing agent files (reports "kept"); --reconcile refreshes ONLY packaging
 # (frontmatter/paths) on existing files without touching their specialized body.
 set -uo pipefail
 
@@ -20,7 +21,37 @@ SOURCE_AGENTS_DIR="$BASE_DIR/core/agents"
 HOOKS_SRC_DIR="$BASE_DIR/hooks"
 ARMY_CONF_SRC="$BASE_DIR/army.conf"
 
-usage() { echo "usage: assemble.sh <tool> [--dry-run] [--reconcile]" >&2; exit 2; }
+usage() { echo "usage: assemble.sh <tool> [--dry-run] [--reconcile]  |  assemble.sh --detect" >&2; exit 2; }
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+command -v python3 >/dev/null 2>&1 || { echo "FATAL: python3 required to parse tools/*.yml" >&2; exit 1; }
+
+# --detect: which first-class tool is this repo already using? Purely mechanical (does a known
+# config_root dir exist) — the only judgment left for the LLM is what to do with an ambiguous or
+# empty result (ask the user), never re-deriving the directory-existence check itself.
+if [ "${1:-}" = "--detect" ]; then
+  MATCHES=""
+  for f in "$TOOLS_DIR"/*.yml; do
+    name="$(basename "$f" .yml)"
+    [ "$name" = "_default" ] && continue
+    cr="$(python3 - "$f" <<'PY'
+import sys, yaml
+d = yaml.safe_load(open(sys.argv[1])) or {}
+print((d.get('dirs') or {}).get('config_root') or '')
+PY
+)"
+    [ -n "$cr" ] && [ -e "$ROOT/$cr" ] && MATCHES="$MATCHES $name"
+  done
+  MATCHES="${MATCHES# }"
+  # shellcheck disable=SC2206
+  MATCH_ARR=($MATCHES)
+  case "${#MATCH_ARR[@]}" in
+    1) echo "DETECTED=${MATCH_ARR[0]}" ;;
+    0) echo "NONE=1" ;;
+    *) echo "AMBIGUOUS=$MATCHES" ;;
+  esac
+  exit 0
+fi
 
 TOOL="${1:-}"
 [ -n "$TOOL" ] || usage
@@ -34,10 +65,6 @@ for a in "$@"; do
     *) echo "unknown flag: $a" >&2; usage ;;
   esac
 done
-
-ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-
-command -v python3 >/dev/null 2>&1 || { echo "FATAL: python3 required to parse tools/*.yml" >&2; exit 1; }
 
 DESC="$TOOLS_DIR/$TOOL.yml"
 if [ ! -f "$DESC" ]; then
@@ -297,5 +324,35 @@ update_gitignore() {
   if [ "$added" = 1 ]; then land ".gitignore (updated)"; else keep ".gitignore (already covers it)"; fi
 }
 update_gitignore
+
+# --- 7. design-docs/ skeleton — tool-independent, purely mechanical (mkdir + a pointer file).
+# Never touches an existing design-docs/ (a repo that already has blueprints owns its content).
+create_design_docs_skeleton() {
+  local dd="$ROOT/design-docs"
+  if [ -e "$dd" ]; then
+    keep "design-docs/ (already exists)"
+    return
+  fi
+  if [ "$DRY_RUN" = 1 ]; then
+    plan "design-docs/README.md -> new skeleton (architect writes design-docs/<Task-ID>/ under it)"
+    return
+  fi
+  mkdir -p "$dd"
+  cat > "$dd/README.md" <<'EOF'
+# design-docs/
+
+Blueprints written by the `architect` agent, one directory per Task-ID:
+
+```
+design-docs/<Task-ID>/00_CORE_MANIFEST.md
+design-docs/<Task-ID>/01_PR_1_<Layer>.md
+design-docs/<Task-ID>/0N_PR_N_<Layer>.md
+```
+
+See the `architect` agent's definition (or `AGENTS.md`) for the exact skeleton each file follows.
+EOF
+  land "design-docs/README.md (skeleton created)"
+}
+create_design_docs_skeleton
 
 echo "== done =="

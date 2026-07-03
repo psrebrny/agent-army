@@ -20,10 +20,21 @@ assembler, then do the thinking a script can't — specialize the team to THIS c
 is code; specialization is you.
 
 ## Step 0 · Assemble the baseline (deterministic — no packaging decisions here)
-Detect the tool from existing config (`.claude/`, `.opencode/`, `.cursor/` …) or ask the user
-**once** which tool this repo uses; default to Claude Code if it's the only one present. Then
-call the assembler — it is the SOLE owner of every packaging decision (which dirs, which hooks
-actually fire, `settings.json`, `.gitignore`, the git commit barrier, path placeholders):
+**Detect the tool — run the detector, don't eyeball directories:**
+```bash
+bash .agents/skills/bootstrap/assemble.sh --detect
+```
+It prints exactly one of:
+- `DETECTED=<tool>` — unambiguous, use it directly, no question needed.
+- `AMBIGUOUS=<tool1> <tool2> …` — more than one tool's config dir exists; ask the user **once**
+  which one this repo actually uses.
+- `NONE=1` — no known tool config dir found; ask the user **once** which tool this repo uses,
+  default to Claude Code if they have no preference.
+This is the only judgment call left in Step 0 — everything else is mechanical.
+
+Then call the assembler — it is the SOLE owner of every packaging decision (which dirs, which hooks
+actually fire, `settings.json`, `.gitignore`, the git commit barrier, path placeholders, the
+`design-docs/` skeleton):
 ```bash
 bash .agents/skills/bootstrap/assemble.sh <tool>
 ```
@@ -154,7 +165,6 @@ Then:
   - The two skeletons (`00_CORE_MANIFEST` + PR file) live inline in `architect.md`; bake in real test commands, framework assertion syntax and the repo's manifest fields.
   - Whatever sections/idioms you change must match what `architect`'s `<prompt_examples>` show it producing — example output and skeleton structure cannot diverge.
   - `tester` and `ship` also rely on the PR skeleton's TDD/auto-critic block — if you change that block, update those agents too. (See `references/agent-worked-examples.md`: the example architect output = these skeletons filled.)
-- **Create the `design-docs/` skeleton.**
 - **Re-run = re-specialize in place.** `assemble.sh` (Step 0) already skips any agent file that exists — so on a re-run it hands you the SAME specialized files you edited last time; keep editing them in place, do NOT leave `*.base.md` backups. Rollback is git: if the working tree has uncommitted changes to the tool dir, tell the user to commit or stash first so `git diff` / `git checkout` is their clean before/after.
 
 ## Step 4 · Reflection & self-critique (MANDATORY second pass — do not skip)
@@ -178,10 +188,16 @@ Check the team agrees with itself: the commands in `architect`, `tester`, `code-
 > Record the chosen mode in `army.conf` as `BOOTSTRAP_MODE` so re-runs remember it.
 
 ## Step 5 · Verify & report
-- **No leftover placeholders** — grep the materialized files for any unresolved `<SKILLS_DIR>`, `<AGENTS_DIR>` or `<TOOL_DIR>` (Step 0's assembler resolves these on write; this catches anything you reintroduced while specializing):
+- **Run the deterministic gate — don't hand-roll a check that already exists:**
   ```bash
-  grep -rn '<SKILLS_DIR>\|<AGENTS_DIR>\|<TOOL_DIR>' <tool>/agents/ AGENTS.md CLAUDE.md 2>/dev/null && echo "↑ unresolved — substitute them" || echo "placeholders clean"
+  bash scripts/check.sh --target-dir <tool-config-root>   # e.g. .claude, .opencode, .github (Copilot)
   ```
+  This is the SAME assertion `assemble.sh`'s own tests run against — it catches unresolved
+  `<SKILLS_DIR>`/`<AGENTS_DIR>`/`<TOOL_DIR>` placeholders you reintroduced while specializing
+  (in the agents, `AGENTS.md`, and `CLAUDE.md`), the correct per-tool agents dir, the exact
+  `hooks_live` set (inert hooks absent), `settings.json` iff `claude-settings`, and the
+  frontmatter `tools:` rule — all in one shot, from the same descriptor data `assemble.sh` used.
+  If it fails, fix the flagged files; never relax the check to make it pass.
 - Run the detected verify (lint + tests) ONCE to confirm the wired commands actually work; if wrong, fix them in the agents + `army.conf` + AGENTS.md.
 - Optionally run `bash .agents/skills/bootstrap/assemble.sh <tool> --reconcile` if you changed a packaging convention (not the agents' specialized content) and want the assembler to re-sync frontmatter/paths.
 - Print a short report: tool detected + where files landed, detected stack(s), commands wired, the repo LAWS you extracted (with proving paths), which agents were specialized, what the reflection pass changed, and assumptions made. Suggest next step: `/ship "<first task>"`.

@@ -284,7 +284,7 @@ check_tool_packaging
 # In materialized output, _STANDARD.md and the repo AGENTS.md also carry placeholders — verify they resolved.
 if [ -n "$TARGET_DIR" ]; then
   printf '\n\033[1m• materialized placeholders\033[0m\n'
-  for extra in "$BASE/_STANDARD.md" "$BASE/../AGENTS.md"; do
+  for extra in "$BASE/_STANDARD.md" "$BASE/../AGENTS.md" "$BASE/../CLAUDE.md"; do
     [ -f "$extra" ] || continue
     if grep -qE '<(SKILLS|AGENTS|TOOL)_DIR>' "$extra"; then
       bad "unresolved placeholder in $(basename "$extra"): $(grep -oE '<(SKILLS|AGENTS|TOOL)_DIR>' "$extra" | sort -u | tr '\n' ' ')"
