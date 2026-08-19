@@ -19,6 +19,7 @@ SKILLS_DIR="$ROOT/.apm/skills"
 # (e.g. <repo>/.claude). Default: validate the source baseline. Parsed early so the
 # rest of the script just reads BASE/AGENTS_DIR.
 TARGET_DIR=""
+V2_TARGET=0
 _args=()
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -32,6 +33,10 @@ TOOL_NAME=""
 if [ -n "$TARGET_DIR" ]; then
   BASE="$(cd "$TARGET_DIR" && pwd)"   # agents resolve against the target tool dir
   AGENTS_DIR="$BASE/agents"           # fallback; overridden below once the descriptor is read
+  if [ -f "$BASE/.agent-army/config.json" ]; then
+    V2_TARGET=1
+    AGENTS_DIR="$BASE/.apm/agents"
+  fi
 else
   AGENTS_DIR="$BASE/core/agents"       # source of truth: baseline/core/agents (assemble.sh materializes it per tool)
 fi
@@ -40,7 +45,7 @@ fi
 # _default.yml if unrecognized) so per-tool assertions (agents dir, hooks_live, settings.json,
 # tools: field rule) are driven by the SAME data assemble.sh uses — never re-guessed here.
 DESC_AGENTS_SUB=""; DESC_AGENT_SUFFIX=".md"; DESC_HOOKS_SUB=""; DESC_ACCEPTS_TOOLS=""; DESC_SUBAGENTS=""; DESC_HOOK_MECH=""; DESC_HOOKS_LIVE=""
-if [ -n "$TARGET_DIR" ] && command -v python3 >/dev/null 2>&1; then
+if [ -n "$TARGET_DIR" ] && [ "$V2_TARGET" = 0 ] && command -v python3 >/dev/null 2>&1; then
   DIR_BASENAME="$(basename "$BASE")"; DIR_BASENAME="${DIR_BASENAME#.}"
   # Basename-as-tool-name (.opencode -> opencode) holds for most tools, but NOT Copilot
   # (config_root .github, tool name copilot) — so reverse-lookup by dirs.config_root first;
@@ -215,6 +220,7 @@ PY
 }
 
 check_tool_packaging() {
+  [ "$V2_TARGET" = 1 ] && return
   [ -n "$DESC_HOOK_MECH" ] || return   # only meaningful in target-dir mode with a resolved descriptor
   printf '\n\033[1m• tool packaging: %s\033[0m\n' "$TOOL_NAME"
 
@@ -245,6 +251,64 @@ check_tool_packaging() {
     else
       ok "capabilities.subagents=false and no agent files materialized (AGENTS.md + git/CI degrade honored)"
     fi
+  fi
+}
+
+check_v2_profile() {
+  [ "$V2_TARGET" = 1 ] || return
+  printf '\n\033[1m• v0.2 profile\033[0m\n'
+  [ -f "$BASE/.agent-army/config.json" ] && ok "config.json present" || return
+  python3 - "$BASE" <<'PY'
+import json, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+try:
+    c = json.loads((root / '.agent-army/config.json').read_text())
+    assert c.get('version') == 2
+    for layer in ('runtime_hooks', 'git_precommit', 'ci'):
+        assert c['enforcement'][layer]['mode'] in {'army','external','disabled','blocked'}
+    for job in c.get('quality', {}).values():
+        if job is not None:
+            assert isinstance(job.get('cwd'), str) and isinstance(job.get('argv'), list)
+except Exception as e:
+    print(e)
+    sys.exit(1)
+PY
+  [ $? -eq 0 ] && ok "config ownership + structured commands valid" || bad "invalid v0.2 config"
+  if grep -q '"mode": "army"' "$BASE/.agent-army/config.json"; then
+    [ -f "$BASE/.agent-army/runtime.py" ] && ok "runtime.py present for owned control" || bad "runtime.py missing for owned control"
+  else
+    [ ! -f "$BASE/.agent-army/runtime.py" ] && ok "no runtime installed when all controls are non-Army" || ok "runtime present without owned control"
+  fi
+  local role
+  for role in architect coder tester code-reviewer security-auditor perf-auditor docs-writer; do
+    if grep -q '"target": "windsurf"' "$BASE/.agent-army/config.json"; then
+      [ -f "$BASE/.windsurf/skills/agent-army-$role/SKILL.md" ] && ok "fallback role: $role" || bad "fallback role missing: $role"
+    elif grep -q '"target": "gemini"' "$BASE/.agent-army/config.json"; then
+      [ -f "$BASE/.gemini/agents/agent-army-$role.md" ] && ok "Gemini adapter role: $role" || bad "Gemini adapter role missing: $role"
+    else
+      ls "$AGENTS_DIR"/agent-army-"$role".agent.md >/dev/null 2>&1 && ok "generated source role: $role" || bad "generated source role missing: $role"
+    fi
+  done
+}
+
+check_v2_source() {
+  [ -z "$TARGET_DIR" ] || return
+  printf '\n\033[1m• v0.2 generator safety\033[0m\n'
+  if python3 - "$ROOT/.apm/skills/bootstrap/bootstrap.py" "$BASE/runtime.py" <<'PY'
+import sys
+for path in sys.argv[1:]:
+    compile(open(path, encoding='utf-8').read(), path, 'exec')
+PY
+  then ok "bootstrap/runtime Python compiles"; else bad "bootstrap/runtime Python does not compile"; fi
+  if rg -n '(^|[^[:alnum:]_])(source|eval)[[:space:]]' "$BASE/hooks" "$BASE/runtime.py" >/dev/null; then
+    bad "runtime contains shell source/eval"
+  else
+    ok "runtime contains no shell source/eval"
+  fi
+  if rg -n '^\.apm/(agents|hooks)/' "$ROOT/.gitignore" >/dev/null 2>&1; then
+    bad "source repo must not ship active local APM agents/hooks"
+  else
+    ok "source repo ships no active local APM agents/hooks"
   fi
 }
 
@@ -281,6 +345,8 @@ if [ "$do_agents" = 1 ] && [ -d "$AGENTS_DIR" ] && ls "$AGENTS_DIR"/*.md >/dev/n
   done
 fi
 check_tool_packaging
+check_v2_profile
+check_v2_source
 # In materialized output, _STANDARD.md and the repo AGENTS.md also carry placeholders — verify they resolved.
 if [ -n "$TARGET_DIR" ]; then
   printf '\n\033[1m• materialized placeholders\033[0m\n'

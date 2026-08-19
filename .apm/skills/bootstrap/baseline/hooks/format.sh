@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-cat >/dev/null 2>&1
-DIR="$(cd "$(dirname "$0")" && pwd)"
-# shellcheck disable=SC1091
-source "$DIR/detect.sh"
-[ -n "$FMT_CMD" ] && eval "$FMT_CMD" >/dev/null 2>&1
-exit 0
+set -euo pipefail
+ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+exec python3 "$ROOT/.agent-army/runtime.py" format

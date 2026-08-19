@@ -8,7 +8,7 @@ other honest, plus deterministic **hooks** (barriers the model can't bypass).
 Claude Code v2.x · `bash` · `python3` (barriers; a fallback runs without it). Windows: WSL or Git Bash.
 
 ## Project policy — before you start
-`/bootstrap` will ask you to set a **policy** for this repo — it's one step, no mystery. The Army adapts to your project's actual stakes. These settings are saved in `.claude/army.conf` (committed; visible in review) and read by both the agents and the gates:
+`/bootstrap` asks who owns each control layer: runtime hooks, git pre-commit and CI. Existing user controls are preserved by default. The verified commands and ownership state are committed in `.agent-army/config.json` as structured `{cwd, argv}` data; they are read by agents and the Agent Army runtime without shell evaluation.
 
 **Testing rigor** — what level of tests does THIS repo need?
 - `strict` (default) — full TDD: write RED tests first, verify GREEN. Testing Trophy (E2E/integration > unit). For most real projects.

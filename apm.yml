@@ -1,11 +1,11 @@
 name: agent-army
-version: 0.1.0
+version: 0.2.0
 description: >-
   Self-checking agent team + deterministic barriers for any repo. Installs four
   live skills (bootstrap, ship, new-agent, adapt-army). Run /bootstrap once
-  per repo: it copies the bundled baseline agents/hooks into your
-  tool's directory and specializes them to THIS codebase. Cross-tool (Claude,
-  Cursor, OpenCode, Codex, Gemini, Windsurf, Copilot).
+  per repo: it creates local APM sources, lets the user choose ownership of
+  hooks/pre-commit/CI, and specializes the team to THIS codebase. Cross-tool
+  (Claude, Cursor, OpenCode, Codex, Gemini, Windsurf, Copilot).
 author: psrebrny
 
 # Only skills live under .apm/. The baseline agents/hooks are bundled

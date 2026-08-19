@@ -6,7 +6,7 @@ description: Full SDD pipeline with the agent team — discovery/interview, blue
 
 > Token discipline for every step lives in `AGENTS.md` → "Cost & context discipline"
 > (cheapest adequate model, pointers not payloads, match the fan-out to task size).
-> This pipeline honors the repo's **Project policy** (`army.conf`): at `TEST_POLICY=none`
+> This pipeline honors the repo's **Project policy** (`.agent-army/config.json`): when the recorded test policy is `none`
 > skip step 2's tester/TDD loop entirely (implement → security → docs); at `light`/`pragmatic`
 > scale the tests down. Security barriers stay on at every level.
 
@@ -37,7 +37,7 @@ For EACH task in the blueprint:
 1. **`tester` writes the tests (RED)** — independently, from the contract/acceptance criteria (not from the implementation), in Testing-Trophy weighting. Runs them → **MUST FAIL (RED)** for the right reason.
 2. **The main session implements** the smallest change that satisfies the task (does not rewrite the tests).
 3. **`tester` verifies (GREEN)** — runs again → **MUST PASS**. Still red → diagnose (bug vs test), fix and repeat. Never weaken the assertions.
-No batching without verification. *Exception:* for trivial tasks the main session may do the whole Red→Green cycle inline, without a round-trip to the subagent (the cheaper default — see AGENTS.md "Cost & context discipline"). Either way the `SubagentStop`/`Stop` hooks enforce green deterministically.
+No batching without verification. *Exception:* for trivial tasks the main session may do the whole Red→Green cycle inline, without a round-trip to the subagent (the cheaper default — see AGENTS.md "Cost & context discipline"). Run the configured verification command after every GREEN step; runtime hooks are feedback, while the user-selected pre-commit/CI controls provide repository enforcement.
 **In Supervised mode:** after RED show the tests and wait for "ok/fix" before implementing; after GREEN stop before the next task. **In Autonomous mode:** keep going without pauses (except the hook gates).
 
 ## 3 · REVIEW  → `code-reviewer` (Architectural Auditor)
@@ -54,4 +54,4 @@ Remove CRITICAL/HIGH findings. Steps 3 and 4 are read-only analyses of the finis
 ## 6 · SUMMARY
 Diff, test result, review verdict, security findings. Propose a commit (Conventional Commits). DO NOT commit without my approval.
 
-The hooks (PreToolUse/PostToolUse/SubagentStop/Stop) act independently as a hard, deterministic barrier — regardless of the agents' judgment.
+The runtime hooks act independently as deterministic feedback. Whether pre-commit and CI are Agent Army barriers, user-owned controls, or disabled is recorded in `.agent-army/config.json`; never claim an external control is owned by this package.

@@ -1,4 +1,6 @@
-name: quality
+# agent-army-v0.2
+name: agent-army-quality
+
 on: [push, pull_request]
 
 jobs:
@@ -6,21 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Add setup for your stack (uncomment the relevant one):
-      # - uses: actions/setup-node@v4
-      #   with: { node-version: 20 }
-      #   # then: npm ci
-      # - uses: actions/setup-python@v5
-      #   with: { python-version: '3.12' }
-      #   # then: pip install -r requirements.txt
-      - name: Verify (lint + tests, same gate as local)
-        run: |
-          # Locate verify.sh in whichever tool dir /bootstrap materialized it into.
-          for d in .claude .opencode .cursor .codex .gemini .windsurf .agents; do
-            if [ -f "$d/hooks/verify.sh" ]; then
-              chmod +x "$d"/hooks/*.sh
-              CLAUDE_PROJECT_DIR="$PWD" "$d/hooks/verify.sh"
-              exit $?
-            fi
-          done
-          echo "quality: no <tool>/hooks/verify.sh found — nothing to verify." >&2
+      # Bootstrap must replace the discovered commands with commands that also
+      # provision their dependencies in CI (for example setup-node/npm ci).
+      - name: Verify Agent Army quality profile
+        run: python3 .agent-army/runtime.py verify

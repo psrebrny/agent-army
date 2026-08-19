@@ -1,213 +1,218 @@
 ---
 name: bootstrap
-description: One-time intelligent setup of the agent team for THIS repo, after installing via apm. Calls the deterministic assembler to materialize the bundled baseline (agents, hooks) into your tool's directory, then AUTHORS repo-tailored agents from a deep code scan (real laws, exact commands, test idioms) plus a canonical AGENTS.md and the design-docs skeleton. Run /bootstrap once, right after `apm install agent-army`.
+description: One-time, evidence-led setup of a tailored Agent Army v0.2. It preserves existing user controls, creates target-native agents through APM, and does not accept generic localization as specialization.
 ---
-# /bootstrap (apm) — assemble + tailor the agent team to THIS repo
+# /bootstrap — own controls, then author a real team
 
-> **Non-Claude tools (OpenCode, Cursor, Codex, Gemini, Windsurf, Copilot):** apm lands the skills in
-> `.agents/skills/` (its cross-client location), not your tool's native command dir — so `/bootstrap`
-> may not be a recognised slash-command yet. Invoke it directly: type `@.agents/skills/bootstrap/SKILL.md`
-> in the chat (run `/ship`, `/new-agent`, `/adapt-army` the same way: `@.agents/skills/<skill>/SKILL.md`).
-> `.agents/skills/` is the apm-managed package, like `node_modules`: the assembler gitignores it (Step 0)
-> and `apm install` restores it — it is NOT a leftover to delete for real, and it holds all four skills,
-> not just this one.
+`apm install` delivered this skill and templates only. It did not install live
+agents, hooks or CI. `/bootstrap` has two distinct jobs:
 
-`apm install` deployed only the SKILLS (this one, plus `ship`, `new-agent`,
-`adapt-army`). It did **not** drop generic agents/hooks into your repo —
-those ride bundled as raw assets in `baseline/` next to this file, and `assemble.sh` (also next
-to this file) is the deterministic tool that materializes them. Your job as the lead: run the
-assembler, then do the thinking a script can't — specialize the team to THIS codebase. Packaging
-is code; specialization is you.
+1. deterministically create the selected target profile without taking over
+   controls that belong to the repository owner;
+2. author a team that knows this repository's evidence, laws and test idioms.
 
-## Step 0 · Assemble the baseline (deterministic — no packaging decisions here)
-**Detect the tool — run the detector, don't eyeball directories:**
+Do not let the first mechanical job displace the second. A target-native team
+with generic prompts is not a successful bootstrap.
+
+## Step 0 — target and ownership (mechanical, explicit)
+
+Run the detector; do not infer the active tool from a directory listing:
+
 ```bash
 bash .agents/skills/bootstrap/assemble.sh --detect
 ```
-It prints exactly one of:
-- `DETECTED=<tool>` — unambiguous, use it directly, no question needed.
-- `AMBIGUOUS=<tool1> <tool2> …` — more than one tool's config dir exists; ask the user **once**
-  which one this repo actually uses.
-- `NONE=1` — no known tool config dir found; ask the user **once** which tool this repo uses,
-  default to Claude Code if they have no preference.
-This is the only judgment call left in Step 0 — everything else is mechanical.
 
-Then call the assembler — it is the SOLE owner of every packaging decision (which dirs, which hooks
-actually fire, `settings.json`, `.gitignore`, the git commit barrier, path placeholders, the
-`design-docs/` skeleton):
+`DETECTED=<tool>` is unambiguous. With `AMBIGUOUS` or `NONE`, ask the user
+which one target is active. One repository has one active target; changing it
+is a deliberate re-bootstrap.
+
+Inspect the existing controls before asking about ownership:
+
 ```bash
-bash .agents/skills/bootstrap/assemble.sh <tool>
+find .github/workflows -type f 2>/dev/null
+git config core.hooksPath || true
+test -f .git/hooks/pre-commit && echo .git/hooks/pre-commit
 ```
-Read its output line by line — it reports exactly what happened: `+ path` (written), `kept path`
-(already there, untouched — an existing agent is treated as specialized and never clobbered), and
-any `WARN` (the tool isn't in `baseline/tools/`, so it fell back to `_default.yml` — a degraded,
-honest AGENTS.md + git/CI-only mode; see `baseline/tools/README.md`). Re-running later (e.g. after
-a version bump) is always safe — the assembler skips existing agent files; pass `--reconcile` if
-you only need to refresh packaging (frontmatter/paths) on already-specialized agents without
-touching their bodies. `--dry-run` previews the plan without writing anything.
-That's it — there is no more tool-branching prose here. Every dir/hook/placeholder decision for
-every tool lives as data in `baseline/tools/<tool>.yml`; adding a new tool means adding one such
-file, not editing this skill.
 
-## Step 1 · Recon (DEEP — read real code before you ask)
-This step decides everything. A shallow recon → generic agents. **Read actual source, not just manifests.**
+Ask separately for runtime hooks, git pre-commit and CI. Each is `army`,
+`external`, or `disabled`. If an existing control is detected, recommend
+`external`. Never overwrite it merely because it is weaker or unfamiliar. In
+`BOOTSTRAP_MODE=auto`, apply the same defaults.
 
-### 1a · Exhaustive discovery sweep (deterministic — do NOT eyeball the root only)
-Last time bootstrap MISSED a nested `frontend/AGENTS.md`. Don't repeat that: **enumerate every relevant file across the whole tree first, then read.** Run a real search — don't assume root-only:
+Generate the profile:
+
 ```bash
-# Standards & memory files at ANY depth (this is what catches frontend/AGENTS.md, src/AGENTS.md, …)
+python3 .agents/skills/bootstrap/bootstrap.py <target> \
+  --runtime-hooks <army|external|disabled> \
+  --git-precommit <army|external|disabled> \
+  --ci <army|external|disabled>
+```
+
+It creates local APM agent sources in `.apm/agents`, optional hook primitives
+in `.apm/hooks`, `.agent-army/config.json`, and then asks APM to render the
+native format. Codex therefore receives TOML through APM, not guessed TOML.
+Gemini uses a direct temporary adapter; Windsurf receives role-skills because
+it has no native project-subagent format. OpenCode has native agents but no
+runtime-hook adapter.
+
+Read the status before continuing:
+
+- `army` is an Agent Army-controlled, testable layer.
+- `external` is visible but belongs to the user; do not call it an Agent Army guarantee.
+- `disabled` is intentional.
+- `blocked` means the requested installation would overwrite an unmanaged
+  non-shell pre-commit or an unmanaged `agent-army-quality.yml`; leave it
+  external unless the user explicitly resolves the collision.
+
+On re-bootstrap, existing `.apm/agents/agent-army-*` sources and the previous
+ownership choices are preserved. Edit those local source agents, not only the
+native APM output, then re-run `apm install --frozen --target <target>` after
+specialization.
+
+## Step 1 — deep recon before questions
+
+A shallow scan produces generic agents. Enumerate first, then read the actual
+files — including every nested standards file and every stack in a monorepo.
+
+```bash
 find . \( -name node_modules -o -name build -o -name dist -o -name target -o -name .gradle -o -name .git \) -prune -o \
   -type f \( -iname 'AGENTS.md' -o -iname 'CLAUDE.md' -o -iname 'README*' -o -iname '.cursorrules' -o -iname '*.mdc' \) -print
-# Every build/dependency manifest at ANY depth (this is what catches monorepo sub-stacks)
 find . \( -name node_modules -o -name build -o -name dist -o -name target -o -name .gradle -o -name .git \) -prune -o \
   -type f \( -name 'package.json' -o -name 'pyproject.toml' -o -name 'build.gradle*' -o -name 'pom.xml' -o -name 'go.mod' -o -name 'Cargo.toml' -o -name '*.csproj' \) -print
-# Test/CI/lint configs
 find . -path ./node_modules -prune -o -type f \( -iname '*jest*' -o -iname '*vitest*' -o -iname 'cypress.config.*' -o -iname 'playwright.config.*' -o -iname 'pytest.ini' -o -iname '*.eslintrc*' -o -iname 'detekt.yml' -o -iname '.editorconfig' \) -print
 find .github/workflows -type f 2>/dev/null
 ```
-**Print the full list of what you found, then read EVERY standards file (`AGENTS.md`/`CLAUDE.md` at all depths) and EVERY manifest.** Nested `AGENTS.md` files are authoritative for their subtree — they often hold the real per-stack laws. Missing one = generic agents for that stack.
 
-### 1b · Reason explicitly before concluding (Chain-of-Thought — write this out)
-Don't jump to writing the report. First THINK on paper, briefly:
-1. **How many stacks / deployables are here?** (root + each manifest dir). Name them.
-2. **For each stack, what is the dominant architectural pattern?** State your hypothesis, then **open 2–3 real files that should prove or break it** and confirm. If the code contradicts your guess, revise — evidence wins.
-3. **What would a senior reviewer of THIS repo reject in a PR?** Those rejections are the repo's laws — list them.
-4. **What's genuinely ambiguous and must be ASKED** (vs. answerable from code)?
-Keep it short but real — this reasoning is what turns a scan into understanding.
+Read every listed `AGENTS.md`/`CLAUDE.md` and manifest. For each stack, open
+3–5 representative source files and 1–2 real tests. Identify its architectural
+boundaries, naming/layout, error handling, reusable assets, test idioms and
+real commands, including a single-test command. Evidence wins over a first
+impression; open files that could disprove your architectural hypothesis.
 
-### 1c · Mine conventions from REAL code
-- **Monorepo:** if 1a found MULTIPLE manifests in subdirs, map **each stack separately** — its own dir, framework, exact commands, and its own nested `AGENTS.md` laws. Per-stack commands get wired into `army.conf` in Step 3.
-- **Mine conventions from REAL code (mandatory — open ≥3–5 real files per stack):** pick representative source files in each layer and **read them**. Extract, with file paths as evidence:
-  - the **architectural patterns this repo actually enforces** (e.g. "domain uses `Facade` + `Creator/Editor/Finder`", "Smart/Dumb with `...Ref` service interface", "PrimeFlex only — no custom CSS") — quote the real class/dir that proves it;
-  - **naming & layout laws** (package/folder structure, file suffixes, test placement);
-  - **error-handling & boundary conventions**;
-  - the **real test style** — open 1–2 existing test files per layer and capture the framework idiom (Spock `given/when/then`, Cypress component vs e2e, base classes like `IntegrationTest`, WireMock/Testcontainers usage).
-- **Reusable assets inventory:** list real shared components/utils/mocks/selectors by path (these become anti-reinvention anchors in the agents).
-- **Capture EXACT commands** actually used (build / lint / unit / integration / e2e) and how to run a SINGLE test — per stack if monorepo.
-- Exclude `node_modules`, `build`, `dist`, `target`, `.gradle`.
+Print a Recon Evidence Report before editing agents:
 
-**Output a RECON EVIDENCE REPORT before Step 2** (this is the raw material every agent is built from — not optional):
 ```
-Stack(s):       <per stack: language, framework, versions>
-Architecture:   <3–6 LAWS this repo enforces, each with a proving file path>
-Conventions:    <naming/layout/error-handling, with paths>
-Test style:     <framework idioms + base classes + example test file paths>
-Reusable assets:<path → role, the anti-reinvention list>
-Commands:       <fmt / lint / unit / integration / e2e / single-test, per stack>
-Gaps:           <what code couldn't tell you → ask in Step 2>
+Stack(s):        language, framework, versions and working directories
+Architecture:    3–6 laws, each with a proving path
+Conventions:     naming/layout/error rules, with paths
+Test style:      framework idioms, fixtures/base classes and example paths
+Reusable assets: path → role; the anti-reinvention inventory
+Commands:        format/lint/unit/integration/e2e/single-test per stack
+Controls:        runtime/pre-commit/CI mode and evidence from Step 0
+Gaps:            only facts code cannot answer
 ```
-If you cannot fill a row from real files, say so — do not guess. Never ask about anything this report already answered.
 
-> ### 🚦 GATE 1 — confirm the laws before writing any agent (supervised mode)
-> Default `BOOTSTRAP_MODE=supervised`: **show the Recon Evidence Report (especially the extracted LAWS, each with its proving path) and the nested-`AGENTS.md` list, and ask the user to confirm/correct** before proceeding. This is the cheapest, highest-leverage checkpoint — a wrong law caught here costs one edit; caught later it has propagated into 6+ agents. Ask plainly: "These are the laws I read out of the code (with proof). Right? Anything I misread or missed? Any 'never touch' zones?" Only continue once confirmed. In `BOOTSTRAP_MODE=auto` (user said "just go"): print the report and continue without pausing.
+In supervised mode, show the report and the full nested-standards list. Ask
+the user to confirm the extracted laws and identify never-touch zones before
+writing. In auto mode, print the report and record assumptions, then continue.
 
-## Step 2 · Smart questions (only the gaps)
-Ask a short, grouped, numbered batch — only what recon couldn't settle:
-- **Business** — what the project is / who uses it / MVP scope (if README is silent).
-- **Architecture intent** — target style, state management, boundaries you must respect, "never touch" zones.
-- **Testing** — confirm Testing-Trophy weighting; which layers exist; exact commands if ambiguous.
-- **NFR** — performance, security, compliance constraints.
-- **Process** — Task-ID format, branch/PR rules, commit convention.
-- **Model tiers** — ask: "Which models are available in your tool, and which should map to each tier?" Present the three roles and their default logic, then let the user name concrete models:
-  - **Strong tier** (hard reasoning / planning / architectural audit) — default: the strongest available
-  - **Mid tier** (review, testing, structured analysis) — default: the balanced option
-  - **Light tier** (docs, high-volume, cheap edits) — default: the cheapest adequate model
-  Don't suggest specific model names or versions — they change and vary by tool. If the user says "use defaults" or skips, keep the tier labels as-is and note them as ASSUMPTIONS.
-- **Project policy** (rigor knobs → written to `army.conf`; **security barriers are NOT a knob — always on**). Ask which level fits THIS repo on each axis:
-  - **Testing** — `strict` (TDD RED→GREEN + Testing Trophy, default) · `pragmatic` (tests, not strict-RED-first) · `light` (smoke/happy-path) · `none` (no tests — throwaway/side project). Respect `none` if the user picks it.
-  - **Lint** — `on` (gate blocks on lint errors, default) · `off`.
-  - **CI** — `on` (use our `quality.yml`) · `off` (the repo has its own, richer CI).
-  Default everything to the strict end if the user doesn't care.
-"Assume and go" → record **ASSUMPTIONS** explicitly. **Greenfield** (empty repo): skip code-recon, ask the full set, and choose the stack together with the user.
+## Step 2 — ask only for genuine gaps
 
-## Step 3 · Specialize the assembled team (bootstrap's PRIMARY job — write files)
-`assemble.sh` already scaffolded a tool-native, generic team in Step 0. Everything from here on
-is judgment work only a model can do: turn that generic scaffold into a team that actually knows
-THIS repo.
+Group a short question set only around missing business context, architecture
+intent, NFR/compliance, task/branch conventions, test rigor, and model-tier
+availability. Do not ask for facts already proved by recon.
 
-**FIRST read `references/agent-worked-examples.md`** (next to this file) — full `Recon → produced agent`
-transformations for `architect`, `tester`, `code-reviewer` and the auditors (across two very different repos).
-They show the target depth, the localization-vs-internalization move, and how the SAME recon report yields a
-different slice per agent. Read them as METHOD, not template (your repo's laws will differ entirely).
+If testing/lint rigor is a user choice, record it in `AGENTS.md` and in a
+`policy` object in `.agent-army/config.json`. Keep executable quality commands
+only under `quality` and only in this safe form:
 
-The assembled agents are a **CONTRACT (role + guarantees), not a fill-in-the-blanks form.** Edit each IN PLACE, AUTHORED for this repo from the Recon Evidence Report.
+```json
+{"cwd": "frontend", "argv": ["npm", "run", "test"]}
+```
 
-> ⛔ **The failure mode to avoid: "localization".** Swapping generic paths for real paths and the stack name into otherwise-untouched baseline rules is NOT specialization — it produces a generic agent wearing this repo's filenames. That is explicitly forbidden.
-> ✅ **What's required instead: "internalization".** Each agent must encode THIS repo's actual **laws** as first-class rules, with proving examples from real code. The reader should be unable to reuse the agent in a different repo without rewriting it.
+Never store shell snippets, `source`, `eval`, or chained command strings.
+Verify a command before treating it as the project command. For an owned CI,
+also add the dependency-install/setup steps needed for the same command to run
+on GitHub Actions.
 
-**Before writing each agent, reason first (CoT — one short paragraph per agent):** "This is the `<role>`. In THIS repo it will mostly be invoked for `<concrete situations from the evidence>`. The laws it must enforce are `<X, Y, Z with proving paths>`. The real assets it should reuse are `<paths>`. The framework idioms its examples must use are `<…>`." Only then write the file. This stops you from defaulting to the baseline's generic phrasing.
+## Step 3 — specialize every role from evidence
 
-For **every** agent:
-- **Bake in 3–6 repo LAWS** from the Recon report as concrete BAD/GOOD rules — e.g. "GOOD: new domain logic goes through `XFacade` + `Creator/Editor/Finder` (see `…/domain/…`); BAD: a controller calling the repository directly." Reference the real proving file. These laws are the difference between localization and internalization.
-- **Name the repo's real anti-reinvention anchors** (the reusable assets) and instruct reuse-over-rewrite by path.
-- Replace `model:` with the concrete model for that tier (Step 2); if defaults kept, document the tier label + reasoning. (`assemble.sh` already dropped/kept `tools:` per the tool's `accepts_tools_field` — don't reintroduce it against the descriptor.)
-- **Exact verification commands** (lint/test/integration/e2e) + single-test invocation — per stack if monorepo.
-- **Test framework + file naming/placement** mirrored from the real test files you opened; Testing-Trophy mix appropriate to the stack.
-- Per role, go beyond paths:
-  - `architect`: encode this repo's layering laws, the real manifest defaults, and example assertions in THIS framework's syntax (Spock `given/when/then`, Cypress, etc.).
-  - `tester`: this repo's real test/single-test commands + example specs that mirror an actual existing test (base class, stubs, containers).
-  - `code-reviewer`: turn this repo's standards (`AGENTS.md` + the mined laws) into an explicit, repo-specific checklist — not generic "is it clean?".
-  - `security-auditor` / `perf-auditor`: the actual stack's sinks (this ORM's N+1, this framework's injection points, this reactive stack's blocking-call traps).
-- **Diff-from-baseline justification (self-gate):** for each agent, before saving, be able to answer "what here is true ONLY for this repo?" — if the honest answer is "just the paths," the agent is not done; go deeper or say what's missing.
+First read `references/agent-worked-examples.md`. It demonstrates the required
+move from generic baseline to repository internalization; use it as method,
+not as content.
 
-**`<prompt_examples>` — rewrite them, don't keep the generic ones (MANDATORY).** The baseline examples are placeholders. For EVERY agent replace them with **≥2–3 examples drawn from THIS repo**, VARIED (not three slants on one scenario):
-  - real file paths from this repo's layout and real commands (incl. single-test invocation), in the repo's actual framework/assertion syntax;
-  - span different Testing-Trophy levels (E2E/Integration vs Component vs Unit) and different shapes the repo really has;
-  - mine the codebase for a real reusable asset or pattern and reference it by path;
-  - keep each example concrete: explicit assertions, RED→GREEN where TDD applies.
-  If you can't find enough distinct real scenarios, say so rather than padding with filler.
-Then:
-- **Make the formatter the sole style authority (kills diff-noise at the source).** Agents are told not to hand-restyle (`AGENTS.md` Hard rules + `_STANDARD.md` diff-hygiene), but the durable fix is machine-enforcement so `format.sh` reverts any stray restyle automatically. From the Step-1a config scan: if the repo's formatter config already pins quote-style, indent width and trailing-comma, leave it. If it does NOT — or there's no `.editorconfig` — **offer** (don't silently impose) to add a minimal `.editorconfig` and/or extend the existing formatter config (e.g. Prettier `singleQuote`, `endOfLine`) to match the repo's *already-dominant* convention detected in Step 1c, covering `*.yml`/`*.json` where the formatter supports them (the files agents most often wreck and no formatter governs by default). Never flip the repo's prevailing style — encode what's already there.
-- **Fill in `army.conf`** (already materialized at `<TOOL_DIR>/army.conf` by Step 0) from the Step-2 policy answers (`TEST_POLICY` / `LINT_POLICY` / `CI_MODE`) **plus the exact commands discovered in Step 1** (`FMT_CMD` / `LINT_CMD` / `TEST_CMD`). These override `detect.sh` — hooks read `army.conf` last. Only write a command after you verified it runs (Step 4). **Monorepo:** chain per-stack commands so the barrier covers ALL stacks, e.g. `TEST_CMD=cd frontend && npm test && cd ../backend && pytest` (or document per-stack `*_FRONTEND`/`*_BACKEND` vars if the hooks support them). If `CI_MODE=off`, remove any copied `quality.yml`. Honor `TEST_POLICY` everywhere: at `none` the team SKIPS the `tester`/TDD steps; at `light`/`pragmatic` scale the Testing-Trophy mix down. Never relax security barriers.
-- **Write/refresh `AGENTS.md` — the single canonical entry point** (every tool reads it, including Claude Code): stack(s), exact commands, the mined laws & conventions, testing strategy, team roster, guardrails (hooks), and a **`## Project policy`** block summarizing `army.conf`. This is where the real content lives. Its placeholders (`<SKILLS_DIR>`/`<AGENTS_DIR>`/`<TOOL_DIR>`) were already resolved to real dirs by `assemble.sh` in Step 0 — as you refresh/extend the file keep them resolved and tool-correct; never reintroduce a `.claude/` path unless the tool IS Claude.
-  - **`CLAUDE.md` only for Claude Code, and keep it THIN** — a few lines that point to `AGENTS.md` as the source of truth (so Claude's native auto-load finds it) plus the `## Project policy` summary. Do NOT duplicate AGENTS.md into it. For OpenCode/Cursor/etc. skip `CLAUDE.md` entirely — `AGENTS.md` is enough.
-- **Specialize the blueprint skeletons embedded in `architect`'s `## Output` section** to this repo — AND keep them in lockstep with the rest of the agent:
-  - The two skeletons (`00_CORE_MANIFEST` + PR file) live inline in `architect.md`; bake in real test commands, framework assertion syntax and the repo's manifest fields.
-  - Whatever sections/idioms you change must match what `architect`'s `<prompt_examples>` show it producing — example output and skeleton structure cannot diverge.
-  - `tester` and `ship` also rely on the PR skeleton's TDD/auto-critic block — if you change that block, update those agents too. (See `references/agent-worked-examples.md`: the example architect output = these skeletons filled.)
-- **Re-run = re-specialize in place.** `assemble.sh` (Step 0) already skips any agent file that exists — so on a re-run it hands you the SAME specialized files you edited last time; keep editing them in place, do NOT leave `*.base.md` backups. Rollback is git: if the working tree has uncommitted changes to the tool dir, tell the user to commit or stash first so `git diff` / `git checkout` is their clean before/after.
+The generated agent source files are a contract, not a filename replacement
+exercise. For every role, write a short rationale before editing: what concrete
+situations it handles here, the laws it enforces with proving paths, reusable
+assets it must prefer, and test/framework idioms it must follow.
 
-## Step 4 · Reflection & self-critique (MANDATORY second pass — do not skip)
-First drafts read as "baseline + paths". This pass is where they become repo-authored. Don't trust the first write.
+For every agent, require all of the following:
 
-### 4a · Re-look at the repo (fresh eyes)
-Re-open **2–3 files you did NOT read in Step 1** — a different feature, a different layer, another stack's code. Ask: does what I wrote into the agents still hold here, or did I over-fit to the first files I happened to open? Adjust the laws if the second sample disagrees. Also re-check: did I honor **every** nested `AGENTS.md` found in 1a? Name each one and the agent rule it produced — if a nested standards file produced no rule, that's a miss; fix it.
+- 3–6 repository laws as concrete BAD/GOOD contrasts, cited to real paths;
+- reusable assets by path and explicit reuse-over-rewrite guidance;
+- exact verified commands, appropriate stack directory and single-test usage;
+- test naming/placement and assertion style from actual tests;
+- at least 2–3 rewritten, varied `<prompt_examples>` from this repository;
+- a diff-from-baseline justification: if only paths changed, keep digging.
 
-### 4b · Critique each generated agent (write the critique, then revise)
-For each agent, score it honestly against three questions and **write the answers down**:
-1. **Internalization:** "Could this file be dropped into a *different* repo unchanged?" If yes → it's still generic. Name the generic sentences and replace them with repo-law sentences.
-2. **Evidence:** "Does every repo-specific claim cite a real file/command?" Flag any unproven claim → verify it or cut it.
-3. **Coverage & variety:** "Do the `<prompt_examples>` span the real shapes this agent meets (different layers, happy + error, different Testing-Trophy levels)?" If they're three slants on one scenario → replace until varied.
-List concrete defects (file + line/section), THEN revise the files. Loop 4b until each agent passes all three — don't proceed with known defects.
+Apply role-specific depth:
 
-### 4c · Cross-agent consistency
-Check the team agrees with itself: the commands in `architect`, `tester`, `code-reviewer` and `army.conf` are identical; the laws in `code-reviewer`'s checklist match the laws `architect` enforces; no two agents claim the same responsibility. Fix drift.
+- `architect`: layers, public contracts, real manifest defaults and blueprint
+  skeletons consistent with its examples.
+- `tester`: real RED→GREEN idioms, fixtures and all relevant stack commands.
+- `code-reviewer`: an explicit checklist made from the repository's laws.
+- `security-auditor` and `perf-auditor`: stack-specific sinks and bottlenecks.
+- `docs-writer` and `coder`: actual documentation ownership and module limits.
 
-> ### 🚦 GATE 2 — show the drafts before finalizing (supervised mode)
-> In `BOOTSTRAP_MODE=supervised`, present a **per-agent summary** — the repo LAWS each agent baked in + the `<prompt_examples>` it produced (the essence, not the full files) — and get the user's "ok / fix" before Step 5. They're the quality gate: their answer is what closes the gap to hand-crafted quality. In `auto` mode, skip the pause and go straight to verify.
-> Record the chosen mode in `army.conf` as `BOOTSTRAP_MODE` so re-runs remember it.
+Write or refresh root `AGENTS.md` first: stacks, commands, laws, reusable
+assets, policy, roster and the ownership status of controls. Claude alone gets
+a thin `CLAUDE.md` pointer to it. Keep `architect`, `tester`, `ship` and the
+architect's embedded blueprint skeletons in lockstep.
 
-## Step 5 · Verify & report
-- **Run the deterministic gate — don't hand-roll a check that already exists:**
-  ```bash
-  bash scripts/check.sh --target-dir <tool-config-root>   # e.g. .claude, .opencode, .github (Copilot)
-  ```
-  This is the SAME assertion `assemble.sh`'s own tests run against — it catches unresolved
-  `<SKILLS_DIR>`/`<AGENTS_DIR>`/`<TOOL_DIR>` placeholders you reintroduced while specializing
-  (in the agents, `AGENTS.md`, and `CLAUDE.md`), the correct per-tool agents dir, the exact
-  `hooks_live` set (inert hooks absent), `settings.json` iff `claude-settings`, and the
-  frontmatter `tools:` rule — all in one shot, from the same descriptor data `assemble.sh` used.
-  If it fails, fix the flagged files; never relax the check to make it pass.
-- Run the detected verify (lint + tests) ONCE to confirm the wired commands actually work; if wrong, fix them in the agents + `army.conf` + AGENTS.md.
-- Optionally run `bash .agents/skills/bootstrap/assemble.sh <tool> --reconcile` if you changed a packaging convention (not the agents' specialized content) and want the assembler to re-sync frontmatter/paths.
-- Print a short report: tool detected + where files landed, detected stack(s), commands wired, the repo LAWS you extracted (with proving paths), which agents were specialized, what the reflection pass changed, and assumptions made. Suggest next step: `/ship "<first task>"`.
+## Step 4 — mandatory reflection and quality gates
 
-## Rules
-- **Do not invent commands** — verify them by running. **Do not weaken** any agent's guarantees while specializing.
-- If a materialized file looks hand-edited (diverges from baseline), ASK before overwriting.
+Re-open 2–3 files not used in initial recon, from another layer or feature.
+Re-check every nested standards file against the produced rules. Then critique
+each agent in writing:
 
-## Quality bar (non-negotiable)
-Every agent you write or specialize MUST conform to `<TOOL_DIR>/_STANDARD.md` and pass its
-self-check. Match the depth of `architect.md`. Two hard gates on top of `_STANDARD.md`:
-- **Evidence gate:** every repo-specific claim in an agent traces to a real file/command from the Recon Evidence Report — no invented paths, no guessed commands (verify in Step 4).
-- **Internalization gate:** each agent fails review if its repo-specificity is "just the paths". It must carry this repo's laws, real reusable anchors, and real test idioms. If you can't reach that bar for an agent, STOP and say exactly what's missing — don't ship a localized-but-generic file.
+1. **Internalization:** could it be copied unchanged into another repository?
+   If yes, replace generic prose with evidence-backed laws.
+2. **Evidence:** does every repository-specific claim have a real path or
+   verified command? Verify it or remove it.
+3. **Coverage:** do examples span real layers and behaviours, rather than three
+   variants of one task? Replace thin or repetitive examples.
+
+Repeat until all roles pass. Then verify cross-agent consistency: architect's
+plans must match reviewer's rejections; tester/architect/reviewer commands must
+match `.agent-army/config.json`; no agent silently weakens an agreed law.
+
+In supervised mode, present a per-agent summary of laws and example scenarios
+and ask for approval/correction. In auto mode, print the same summary and
+continue, explicitly labelling assumptions.
+
+## Step 5 — verify and report
+
+Run each configured command directly first. If at least one quality-enforcement
+layer is `army`, also run:
+
+```bash
+python3 .agent-army/runtime.py verify
+```
+
+If all such layers are external or disabled, do not invoke a nonexistent
+runtime; report that those controls are outside Agent Army's guarantee.
+
+After editing local agent sources, render them again:
+
+```bash
+apm install --frozen --target <target>
+```
+
+Report: target and native/degraded capability; full control ownership table;
+recon laws with proving paths; every specialized role; verified commands;
+reflection changes; assumptions; and any external/disabled/blocked guarantee.
+Suggest `/ship "<first task>"` only after this report.
+
+## Non-negotiable quality bar
+
+Each specialized agent must still conform to
+`baseline/core/agents/_STANDARD.md` and retain its output skeleton. It fails
+bootstrap if either condition holds:
+
+- **Evidence failure:** a repository claim lacks a real proving path or a
+  verified command.
+- **Internalization failure:** the file contains generic baseline prose with
+  only local paths substituted.
+
+Never replace user-owned controls, weaken tests/security to make a command
+pass, invent commands, or commit without explicit human approval.

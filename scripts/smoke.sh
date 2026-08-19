@@ -1,197 +1,95 @@
 #!/usr/bin/env bash
-# smoke.sh — e2e smoke test for the `bootstrap` skill.
-#
-# Like a Playwright/Cypress run, except the "app under test" is the bootstrap skill
-# driven headlessly by `claude -p`. Flow:
-#   1. copy a fixture repo (tests/fixtures/<name>) to a temp dir + git init
-#   2. install the army hermetically (source .apm/skills -> <work>/.claude/skills)
-#   3. run the bootstrap skill headless in BOOTSTRAP_MODE=auto
-#   4. GATE A (deterministic, zero-LLM): check.sh on the GENERATED agents + grep the
-#      fixture's planted facts (see tests/fixtures/README.md)
-#   5. GATE B (optional, --judge): an LLM scores each agent on internalization/evidence/variety
-#
-# Usage:
-#   scripts/smoke.sh                       # fixture py-monorepo, deterministic gate only
-#   scripts/smoke.sh --judge               # also run the LLM judge
-#   scripts/smoke.sh --fixture py-monorepo --keep
-#   scripts/smoke.sh --work <dir> --no-bootstrap   # re-run assertions on an existing run
-#   scripts/smoke.sh --setup-only          # just build the work dir + install, print path
-#
-# Env: SMOKE_TIMEOUT (default 1800s)  SMOKE_MODEL (claude model for bootstrap)
-#      SMOKE_JUDGE_MODEL (claude model for the judge)
+# Deterministic v0.2 smoke tests.  They intentionally exercise the generator
+# without APM network/install state; the generator itself owns the frozen APM
+# handoff in normal bootstrap mode.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PASS=0; FAIL=0
+ok(){ printf '  \033[32m✓\033[0m %s\n' "$1"; PASS=$((PASS+1)); }
+bad(){ printf '  \033[31m✗\033[0m %s\n' "$1"; FAIL=$((FAIL+1)); }
+need(){ "$@" >/dev/null 2>&1 && ok "$2" || bad "$2"; }
 
-FIXTURE="py-monorepo"; JUDGE=0; KEEP=0; RUN_BOOTSTRAP=1; SETUP_ONLY=0; WORK=""
-while [ $# -gt 0 ]; do
-  case "$1" in
-    --fixture) FIXTURE="${2:?}"; shift 2 ;;
-    --judge) JUDGE=1; shift ;;
-    --keep) KEEP=1; shift ;;
-    --work) WORK="${2:?}"; shift 2 ;;
-    --no-bootstrap) RUN_BOOTSTRAP=0; shift ;;
-    --setup-only) SETUP_ONLY=1; shift ;;
-    -h|--help) sed -n '2,28p' "$0"; exit 0 ;;
-    *) echo "unknown arg: $1" >&2; exit 2 ;;
-  esac
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/agent-army-v2.XXXXXX")"
+cleanup(){ rm -rf "$WORK"; }
+trap cleanup EXIT
+init_repo(){
+  local dir="$1"
+  mkdir -p "$dir"
+  (cd "$dir" && git init -q && git config user.email smoke@example.test && git config user.name smoke)
+}
+bootstrap(){
+  local dir="$1" target="$2"; shift 2
+  (cd "$dir" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" "$target" --skip-apm "$@")
+}
+bootstrap_apm(){
+  local dir="$1" target="$2"; shift 2
+  (cd "$dir" && python3 .agents/skills/bootstrap/bootstrap.py "$target" "$@")
+}
+
+printf '\n\033[1mGATE 0 · profile generation for every target\033[0m\n'
+for target in claude codex cursor copilot opencode gemini windsurf; do
+  dir="$WORK/$target"; init_repo "$dir"
+  bootstrap "$dir" "$target" --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null
+  if [ "$target" = windsurf ]; then
+    [ -f "$dir/.windsurf/skills/agent-army-architect/SKILL.md" ] && ok "$target: role-skills fallback" || bad "$target: fallback role missing"
+  else
+    count="$(find "$dir/.apm/agents" -name 'agent-army-*.agent.md' 2>/dev/null | wc -l | tr -d ' ')"
+    [ "$count" = 7 ] && ok "$target: seven local APM agent sources" || bad "$target: expected seven agent sources, got $count"
+  fi
+  "$ROOT/scripts/check.sh" --target-dir "$dir" >/dev/null 2>&1 && ok "$target: profile validates" || bad "$target: profile validation failed"
 done
 
-FIXTURE_DIR="$ROOT/tests/fixtures/$FIXTURE"
-[ -d "$FIXTURE_DIR" ] || { echo "no such fixture: $FIXTURE_DIR" >&2; exit 2; }
+printf '\n\033[1mGATE 1 · ownership and non-clobbering\033[0m\n'
+OWN="$WORK/ownership"; init_repo "$OWN"
+mkdir -p "$OWN/.github/workflows"; printf 'name: user-ci\n' > "$OWN/.github/workflows/user.yml"
+mkdir -p "$OWN/.git/hooks"; printf '#!/usr/bin/env node\n' > "$OWN/.git/hooks/pre-commit"; chmod +x "$OWN/.git/hooks/pre-commit"
+bootstrap "$OWN" claude --runtime-hooks external --git-precommit external --ci external >/dev/null
+grep -q 'env node' "$OWN/.git/hooks/pre-commit" && ok "external pre-commit preserved" || bad "external pre-commit changed"
+[ ! -f "$OWN/.github/workflows/agent-army-quality.yml" ] && ok "external CI preserved" || bad "external CI unexpectedly installed"
+grep -q '"mode": "external"' "$OWN/.agent-army/config.json" && ok "external ownership recorded" || bad "external ownership not recorded"
+printf '\nSMOKE-SPECIALIZATION\n' >> "$OWN/.apm/agents/agent-army-architect.agent.md"
+bootstrap "$OWN" claude >/dev/null
+grep -q 'SMOKE-SPECIALIZATION' "$OWN/.apm/agents/agent-army-architect.agent.md" && ok "re-bootstrap preserves specialized agent source" || bad "re-bootstrap overwrote specialized agent source"
+grep -q '"mode": "external"' "$OWN/.agent-army/config.json" && ok "re-bootstrap preserves ownership choice" || bad "re-bootstrap changed ownership choice"
 
-bold(){ printf '\n\033[1m%s\033[0m\n' "$1"; }
-ok(){ printf '  \033[32m✓\033[0m %s\n' "$1"; PASS=$((PASS+1)); }
-bad(){ printf '  \033[31m✗ %s\033[0m\n' "$1"; FAIL=$((FAIL+1)); }
-PASS=0; FAIL=0
+BLOCK="$WORK/blocked"; init_repo "$BLOCK"
+mkdir -p "$BLOCK/.git/hooks"; printf '#!/usr/bin/env node\n' > "$BLOCK/.git/hooks/pre-commit"; chmod +x "$BLOCK/.git/hooks/pre-commit"
+bootstrap "$BLOCK" codex --runtime-hooks disabled --git-precommit army --ci disabled >/dev/null
+grep -A2 'git_precommit' "$BLOCK/.agent-army/config.json" | grep -q blocked && ok "unsafe hook replacement blocked" || bad "unsafe hook replacement was not blocked"
 
-# --- 0. GATE 0: assembler (deterministic, zero-LLM) -------------------------
-# Exercises assemble.sh directly for claude + opencode: correct per-tool layout, non-clobber
-# on re-run (a hand-edit survives), husky idempotency, and no cross-tool leakage. Independent
-# of the LLM-driven bootstrap flow below (which needs `claude` CLI) — always runs, gates CI.
-run_assembler_gate() {
-  bold "GATE 0 · assembler (deterministic, zero-LLM)"
-  local t d cfg
-  for t in claude opencode; do
-    cfg=".claude"; [ "$t" = "opencode" ] && cfg=".opencode"
-    d="$(mktemp -d "${TMPDIR:-/tmp}/army-smoke-asm.XXXXXX")"
-    ( cd "$d" && git init -q && git config user.email smoke@test && git config user.name smoke )
-    ( cd "$d" && bash "$ROOT/.apm/skills/bootstrap/assemble.sh" "$t" >/dev/null 2>&1 )
+printf '\n\033[1mGATE 2 · runtime safety\033[0m\n'
+SAFE="$WORK/safety"; init_repo "$SAFE"
+printf '{"scripts":{"lint":"true","test":"true"}}\n' > "$SAFE/package.json"
+bootstrap "$SAFE" claude --runtime-hooks army --git-precommit army --ci disabled >/dev/null
+if printf '%s' '{"tool_name":"Bash","tool_input":{"command":"printf secret > .env"}}' | (cd "$SAFE" && python3 .agent-army/runtime.py guard) >/dev/null 2>&1; then
+  bad "shell write to .env was allowed"
+else ok "shell write to .env blocked"; fi
+printf 'AWS_ACCESS_KEY_ID=AKIA1234567890ABCDEF\n' > "$SAFE/normal.txt"
+(cd "$SAFE" && git add normal.txt)
+if (cd "$SAFE" && python3 .agent-army/runtime.py precommit) >/dev/null 2>&1; then
+  bad "staged secret in ordinary file was allowed"
+else ok "staged secret in ordinary file blocked"; fi
+sed -i.bak 's/"npm"/"definitely-not-a-command"/g' "$SAFE/.agent-army/config.json"; rm -f "$SAFE/.agent-army/config.json.bak"
+if (cd "$SAFE" && python3 .agent-army/runtime.py verify) >/dev/null 2>&1; then
+  bad "failed structured quality command passed"
+else ok "failed structured quality command fails"; fi
 
-    if "$ROOT/scripts/check.sh" --target-dir "$d/$cfg" >/dev/null 2>&1; then
-      ok "$t: assemble + check.sh GREEN"
-    else
-      bad "$t: assemble + check.sh FAILED (repro: cd a scratch git repo && bash $ROOT/.apm/skills/bootstrap/assemble.sh $t && $ROOT/scripts/check.sh --target-dir \$PWD/$cfg)"
-    fi
-
-    if [ "$t" = "opencode" ]; then
-      if [ -e "$d/.claude" ]; then bad "opencode: leaked a .claude/ dir into non-Claude output"
-      else ok "opencode: no .claude/ leakage"; fi
-    fi
-
-    # non-clobber: hand-edit the architect agent, re-run assemble, assert the edit survived.
-    local afile; afile="$(ls "$d/$cfg"/agent*/architect* 2>/dev/null | head -1)"
-    if [ -n "$afile" ] && [ -f "$afile" ]; then
-      local marker="SMOKE-MARKER-$$-$t"
-      echo "$marker" >> "$afile"
-      ( cd "$d" && bash "$ROOT/.apm/skills/bootstrap/assemble.sh" "$t" >/dev/null 2>&1 )
-      grep -q "$marker" "$afile" && ok "$t: non-clobber preserved a hand-edit on re-run" || bad "$t: re-run CLOBBERED a hand-edited agent"
-    else
-      bad "$t: expected an architect agent file under $d/$cfg/agent(s)/ — none found"
-    fi
-    [ "$KEEP" = 1 ] || rm -rf "$d"
-  done
-
-  # husky idempotency: a hook-manager repo (core.hooksPath set) must get the barrier line
-  # exactly once even after two assemble runs, and .git/hooks/pre-commit must stay untouched.
-  local hd; hd="$(mktemp -d "${TMPDIR:-/tmp}/army-smoke-husky.XXXXXX")"
-  ( cd "$hd" && git init -q && git config user.email smoke@test && git config user.name smoke \
-      && mkdir -p .husky && git config core.hooksPath .husky )
-  ( cd "$hd" && bash "$ROOT/.apm/skills/bootstrap/assemble.sh" opencode >/dev/null 2>&1 )
-  ( cd "$hd" && bash "$ROOT/.apm/skills/bootstrap/assemble.sh" opencode >/dev/null 2>&1 )
-  local barrier_count; barrier_count="$(grep -c 'git-pre-commit.sh' "$hd/.husky/pre-commit" 2>/dev/null || echo 0)"
-  [ "$barrier_count" = "1" ] && ok "husky: barrier line idempotent across two assemble runs" || bad "husky: barrier line count=$barrier_count (expected 1)"
-  if [ -f "$hd/.git/hooks/pre-commit" ]; then bad "husky: .git/hooks/pre-commit should stay untouched when core.hooksPath is set"
-  else ok "husky: .git/hooks/pre-commit untouched"; fi
-  [ "$KEEP" = 1 ] || rm -rf "$hd"
-}
-run_assembler_gate
-
-# --- 1+2. setup work dir + hermetic install --------------------------------
-if [ -z "$WORK" ]; then
-  WORK="$(mktemp -d "${TMPDIR:-/tmp}/army-smoke.XXXXXX")"
-fi
-AGENTS_OUT="$WORK/.claude/agents"
-
-if [ "$RUN_BOOTSTRAP" = 1 ] || [ "$SETUP_ONLY" = 1 ]; then
-  bold "Setup → $WORK"
-  rm -rf "$WORK"; mkdir -p "$WORK"
-  cp -R "$FIXTURE_DIR/." "$WORK/"
-  ( cd "$WORK" && git init -q && git add -A && git -c user.email=smoke@test -c user.name=smoke commit -qm "fixture" )
-  mkdir -p "$WORK/.claude"
-  cp -R "$ROOT/.apm/skills" "$WORK/.claude/skills"
-  echo "  fixture=$FIXTURE  skills installed to .claude/skills"
-fi
-
-if [ "$SETUP_ONLY" = 1 ]; then
-  echo "WORK=$WORK"; exit 0
-fi
-
-# --- 3. run the bootstrap skill headless ------------------------------------
-if [ "$RUN_BOOTSTRAP" = 1 ]; then
-  bold "Run bootstrap skill (headless)"
-  command -v claude >/dev/null || { echo "claude CLI not found" >&2; exit 2; }
-  PROMPT="Invoke the bootstrap skill (.claude/skills/bootstrap/SKILL.md) to materialize and \
-tailor the agent team for THIS repository. Run in BOOTSTRAP_MODE=auto: do NOT pause at any \
-gate, do NOT ask me any questions. This repo uses Claude Code — materialize into .claude/. \
-Use strict defaults (TEST_POLICY=strict, LINT_POLICY=on) and the default model tiers. \
-Discover every stack and every nested AGENTS.md, author the agents, write army.conf and \
-AGENTS.md, then stop. Do not git commit."
-  LOG="$WORK/.smoke-bootstrap.log"
-  MODEL_ARG=(); [ -n "${SMOKE_MODEL:-}" ] && MODEL_ARG=(--model "$SMOKE_MODEL")
-  RUNNER=(claude -p "$PROMPT" --permission-mode bypassPermissions ${MODEL_ARG[@]+"${MODEL_ARG[@]}"})
-  command -v timeout >/dev/null && RUNNER=(timeout "${SMOKE_TIMEOUT:-1800}" "${RUNNER[@]}")
-  echo "  logging to $LOG"
-  ( cd "$WORK" && "${RUNNER[@]}" ) >"$LOG" 2>&1
-  rc=$?
-  [ $rc -eq 0 ] && echo "  bootstrap run exited 0" || echo "  ⚠ bootstrap run exited $rc (see $LOG) — continuing to assertions"
-fi
-
-# --- 4. GATE A: deterministic assertions on the GENERATED output ------------
-bold "GATE A · structure (check.sh on generated agents)"
-if [ -d "$AGENTS_OUT" ] && ls "$AGENTS_OUT"/*.md >/dev/null 2>&1; then
-  if "$ROOT/scripts/check.sh" --target-dir "$WORK/.claude" >/dev/null 2>&1; then
-    ok "check.sh passed on generated .claude/agents"
-  else
-    bad "check.sh FAILED on generated agents (run: scripts/check.sh --target-dir $WORK/.claude)"
+printf '\n\033[1mGATE 3 · real APM rendering\033[0m\n'
+for target in claude codex cursor copilot opencode gemini windsurf; do
+  dir="$WORK/apm-$target"; mkdir -p "$dir/.agents"; cp -R "$ROOT/.apm/skills" "$dir/.agents/skills"; init_repo "$dir"
+  if ! bootstrap_apm "$dir" "$target" --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null; then
+    bad "$target: frozen APM rendering failed"; continue
   fi
-else
-  bad "no generated agents at $AGENTS_OUT — bootstrap did not produce a team"
-fi
+  case "$target" in
+    claude) [ -f "$dir/.claude/agents/agent-army-architect.md" ] ;;
+    codex) [ -f "$dir/.codex/agents/agent-army-architect.toml" ] ;;
+    cursor) [ -f "$dir/.cursor/agents/agent-army-architect.md" ] ;;
+    copilot) [ -f "$dir/.github/agents/agent-army-architect.agent.md" ] ;;
+    opencode) [ -f "$dir/.opencode/agents/agent-army-architect.md" ] ;;
+    gemini) [ -f "$dir/.gemini/agents/agent-army-architect.md" ] ;;
+    windsurf) [ -f "$dir/.windsurf/skills/agent-army-architect/SKILL.md" ] ;;
+  esac && ok "$target: expected native/degraded output rendered" || bad "$target: expected output missing"
+done
 
-bold "GATE A · planted facts ($FIXTURE)"
-A="$AGENTS_OUT"
-have(){ ls "$1" >/dev/null 2>&1; }   # file exists
-gci(){ grep -liE "$2" "$1" >/dev/null 2>&1; }  # case-insensitive grep, file(s) glob in $1
-
-if [ "$FIXTURE" = "py-monorepo" ]; then
-  # #1 repository law surfaced in architect + code-reviewer
-  if have "$A/architect.md" && gci "$A/architect.md" 'repositor'; then ok "#1 repository law in architect"; else bad "#1 repository law MISSING in architect"; fi
-  if have "$A/code-reviewer.md" && gci "$A/code-reviewer.md" 'repositor'; then ok "#1 repository law in code-reviewer"; else bad "#1 repository law MISSING in code-reviewer"; fi
-  # #2 nested frontend/AGENTS.md discovered -> "primitive" law lands somewhere
-  if gci "$A/*.md" 'primitive'; then ok "#2 nested frontend/AGENTS.md discovered (design-system 'primitive' law present)"; else bad "#2 nested frontend/AGENTS.md MISSED (no 'primitive' law) — the known regression"; fi
-  # #3 pytest in tester + army.conf
-  if have "$A/tester.md" && gci "$A/tester.md" 'pytest'; then ok "#3 pytest wired in tester"; else bad "#3 pytest MISSING in tester"; fi
-  if gci "$WORK/.claude/army.conf" 'pytest' || gci "$WORK/army.conf" 'pytest'; then ok "#3 pytest in army.conf TEST_CMD"; else bad "#3 pytest MISSING in army.conf"; fi
-  # #4 vitest wired somewhere (monorepo chaining)
-  if gci "$A/*.md" 'vitest' || gci "$WORK/.claude/army.conf" 'vitest' || gci "$WORK/AGENTS.md" 'vitest'; then ok "#4 vitest wired (frontend stack)"; else bad "#4 vitest MISSING (frontend stack dropped)"; fi
-  # #6 both stacks named in generated AGENTS.md
-  if gci "$WORK/AGENTS.md" 'python' && gci "$WORK/AGENTS.md" 'typescript|react|vitest|tsx'; then ok "#6 both stacks named in AGENTS.md"; else bad "#6 AGENTS.md does not name both stacks"; fi
-else
-  echo "  (no planted-fact assertions defined for fixture '$FIXTURE')"
-fi
-
-# --- 5. GATE B: LLM judge (optional) ----------------------------------------
-if [ "$JUDGE" = 1 ]; then
-  bold "GATE B · LLM judge (rubric: tests/judge/rubric.md)"
-  RUBRIC="$(cat "$ROOT/tests/judge/rubric.md")"
-  FACTS="$(cat "$ROOT/tests/fixtures/README.md")"
-  JMODEL=(); [ -n "${SMOKE_JUDGE_MODEL:-}" ] && JMODEL=(--model "$SMOKE_JUDGE_MODEL")
-  for agent in architect tester code-reviewer security-auditor perf-auditor; do
-    f="$A/$agent.md"
-    [ -f "$f" ] || { bad "judge: $agent.md not generated"; continue; }
-    out="$( { printf '%s\n\n## PLANTED FACTS\n%s\n\n## AGENT FILE (%s)\n' "$RUBRIC" "$FACTS" "$agent"; cat "$f"; } \
-            | claude -p ${JMODEL[@]+"${JMODEL[@]}"} 2>/dev/null )"
-    verdict="$(printf '%s' "$out" | grep -oE '"verdict"[[:space:]]*:[[:space:]]*"(PASS|FAIL)"' | grep -oE 'PASS|FAIL' | head -1)"
-    scores="$(printf '%s' "$out" | grep -oE '"(internalization|evidence|variety)"[[:space:]]*:[[:space:]]*[0-9]' | tr '\n' ' ')"
-    if [ "$verdict" = "PASS" ]; then ok "judge $agent → PASS  [$scores]"; else bad "judge $agent → ${verdict:-NO-VERDICT}  [$scores]"; fi
-  done
-fi
-
-# --- report -----------------------------------------------------------------
-bold "Result: $PASS passed, $FAIL failed"
-if [ "$KEEP" = 1 ] || [ "$FAIL" -gt 0 ]; then
-  echo "  work dir kept: $WORK"
-else
-  rm -rf "$WORK"
-fi
+printf '\n\033[1mResult: %d passed, %d failed\033[0m\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

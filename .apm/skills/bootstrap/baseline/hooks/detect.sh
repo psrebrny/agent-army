@@ -1,46 +1,6 @@
 #!/usr/bin/env bash
-# Sets FMT_CMD / LINT_CMD / TEST_CMD for the other hooks.
-# Priority: army.conf (written by /bootstrap) > auto-detection below.
-# /bootstrap verifies exact commands and writes them to army.conf — that wins.
-# Auto-detection is the fallback for repos where /bootstrap hasn't run yet.
-ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
-cd "$ROOT" 2>/dev/null || true
-FMT_CMD=""; LINT_CMD=""; TEST_CMD=""
-
-_pm() {
-  if command -v pnpm >/dev/null 2>&1; then echo pnpm
-  elif command -v yarn >/dev/null 2>&1; then echo yarn
-  else echo npm; fi
-}
-
-if [ -f package.json ]; then
-  PM="$(_pm)"
-  grep -q '"format"' package.json 2>/dev/null && FMT_CMD="$PM run format"
-  grep -q '"lint"'   package.json 2>/dev/null && LINT_CMD="$PM run lint"
-  grep -q '"test"'   package.json 2>/dev/null && TEST_CMD="$PM test"
-fi
-if [ -f pyproject.toml ] || [ -f requirements.txt ] || ls ./*.py >/dev/null 2>&1; then
-  command -v ruff   >/dev/null 2>&1 && { FMT_CMD="${FMT_CMD:-ruff format .}"; LINT_CMD="${LINT_CMD:-ruff check .}"; }
-  command -v pytest >/dev/null 2>&1 && TEST_CMD="${TEST_CMD:-pytest -q}"
-fi
-if [ -f go.mod ]; then
-  FMT_CMD="${FMT_CMD:-gofmt -w .}"; TEST_CMD="${TEST_CMD:-go test ./...}"
-fi
-if [ -f Cargo.toml ]; then
-  FMT_CMD="${FMT_CMD:-cargo fmt}"; LINT_CMD="${LINT_CMD:-cargo clippy -q}"; TEST_CMD="${TEST_CMD:-cargo test -q}"
-fi
-
-# Project policy (army.conf) — relaxes QUALITY rigor only; security barriers are separate.
-# Absent file → defaults (strict tests, lint on), so existing installs are unchanged.
-# Locate army.conf in whichever tool dir /bootstrap materialized it into (tool-agnostic).
-for d in .claude .opencode .cursor .codex .gemini .windsurf .agents; do
-  if [ -f "$ROOT/$d/army.conf" ]; then
-    # shellcheck disable=SC1090
-    . "$ROOT/$d/army.conf"
-    break
-  fi
-done
-case "${TEST_POLICY:-strict}" in none) TEST_CMD="" ;; esac   # 'none' → no test gate
-case "${LINT_POLICY:-on}"     in off)  LINT_CMD="" ;; esac   # 'off'  → no lint gate
-
-export FMT_CMD LINT_CMD TEST_CMD TEST_POLICY LINT_POLICY CI_MODE
+# v0.2 compatibility shim. Commands are structured in .agent-army/config.json;
+# this file no longer sources project configuration or evaluates shell strings.
+set -euo pipefail
+ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+export AGENT_ARMY_CONFIG="$ROOT/.agent-army/config.json"

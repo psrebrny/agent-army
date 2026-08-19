@@ -68,7 +68,7 @@ every agent that owns it and keeps `AGENTS.md` the source of truth).
 When an agent keeps hitting the SAME style gap the formatter doesn't enforce (e.g. the diff repeatedly
 wants single quotes but `.prettierrc` has no `singleQuote`, or `*.yml` indent drifts because nothing
 pins it), it may propose — ONCE — adding that rule to the **formatter's own config that the hooks
-already run** (`.prettierrc`/`.editorconfig`/ruff/gofmt — whatever `FMT_CMD` in `army.conf` invokes),
+already run** (`.prettierrc`/`.editorconfig`/ruff/gofmt — whatever structured `quality.format` in `.agent-army/config.json` invokes),
 so it's machine-enforced from then on instead of re-litigated every PR.
 - **Conservative, not naggy:** a one-off restyle is just diff-noise — revert it (see Hard rules), don't
   raise config. Only a *recurring, repo-wide* gap earns the offer, and only once — if declined, drop it.
