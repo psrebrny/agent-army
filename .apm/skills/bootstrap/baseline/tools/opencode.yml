@@ -14,7 +14,7 @@ status: first-class
 
 dirs:
   agents: .opencode/agents         # PLURAL — verified 2026-07-02, corrects an earlier typo
-  skills: .agents/skills           # apm's cross-client skills location, NOT .opencode/command
+  skills: .agents/skills           # OpenCode also discovers the shared project skill location
   hooks: .opencode/hooks           # our own bash-script storage only — NOT opencode's native
                                     # ".opencode/plugins/" dir; opencode never reads this path itself,
                                     # only OUR git-pre-commit.sh (via its self-locating loop) does
@@ -35,7 +35,7 @@ capabilities:
                                      # its OWN plugin system could fire hooks natively but we don't emit plugins yet
   auto_loads_skills: false          # apm does not yet route skills to a native OpenCode command dir (0.19)
   commands_dir: null
-  skill_invocation: invoke-by-path  # "@.agents/skills/<skill>/SKILL.md" until apm wires native routing
+  skill_invocation: invoke-by-path  # "@.agents/skills/<skill>/SKILL.md" until native routing exists
 
 model_control:
   main_session: inherit

@@ -16,10 +16,25 @@ with generic prompts is not a successful bootstrap.
 
 ## Step 0 — target and ownership (mechanical, explicit)
 
+Use the shared installed skill directory. OpenCode and the other targets use
+`.agents/skills`; bootstrap also recognizes older OpenCode installations under
+`.opencode/skills`:
+
+```bash
+SKILLS_DIR=".agents/skills"
+[ ! -f "$SKILLS_DIR/bootstrap/assemble.sh" ] && [ -f ".opencode/skills/bootstrap/assemble.sh" ] && SKILLS_DIR=".opencode/skills"
+```
+
+Before creating the profile, bootstrap checks the selected skill directory,
+the older `.agents/skills` location, and the installed `apm_modules` cache. If
+the four Agent Army skills exist in one of those locations, it materializes any
+missing files in the selected target directory. It does not delete the source
+cache or local agent sources.
+
 Run the detector; do not infer the active tool from a directory listing:
 
 ```bash
-bash .agents/skills/bootstrap/assemble.sh --detect
+bash "$SKILLS_DIR/bootstrap/assemble.sh" --detect
 ```
 
 `DETECTED=<tool>` is unambiguous. With `AMBIGUOUS` or `NONE`, ask the user
@@ -42,7 +57,7 @@ Ask separately for runtime hooks, git pre-commit and CI. Each is `army`,
 Generate the profile:
 
 ```bash
-python3 .agents/skills/bootstrap/bootstrap.py <target> \
+python3 "$SKILLS_DIR/bootstrap/bootstrap.py" <target> \
   --runtime-hooks <army|external|disabled> \
   --git-precommit <army|external|disabled> \
   --ci <army|external|disabled>
@@ -50,7 +65,9 @@ python3 .agents/skills/bootstrap/bootstrap.py <target> \
 
 It creates local APM agent sources in `.apm/agents`, optional hook primitives
 in `.apm/hooks`, `.agent-army/config.json`, and then asks APM to render the
-native format. Codex therefore receives TOML through APM, not guessed TOML.
+native format. OpenCode discovers the four skills in the shared `.agents/skills`
+path as well as its native `.opencode/skills` path. Codex therefore receives
+TOML through APM, not guessed TOML.
 Gemini uses a direct temporary adapter; Windsurf receives role-skills because
 it has no native project-subagent format. OpenCode has native agents but no
 runtime-hook adapter.
@@ -67,7 +84,8 @@ Read the status before continuing:
 On re-bootstrap, existing `.apm/agents/agent-army-*` sources and the previous
 ownership choices are preserved. Edit those local source agents, not only the
 native APM output, then re-run `apm install --frozen --target <target>` after
-specialization.
+specialization. Do not delete `.apm/agents` after rendering: those files are
+the source of truth for the next re-bootstrap or native-target switch.
 
 ## Step 1 — deep recon before questions
 

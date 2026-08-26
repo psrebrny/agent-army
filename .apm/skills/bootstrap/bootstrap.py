@@ -22,6 +22,7 @@ from typing import Any
 HERE = Path(__file__).resolve().parent
 BASE = HERE / "baseline"
 ROLES = ("architect", "coder", "tester", "code-reviewer", "security-auditor", "perf-auditor", "docs-writer")
+SKILLS = ("bootstrap", "ship", "new-agent", "adapt-army")
 RUNTIME_TARGETS = {"claude", "codex", "cursor", "copilot", "gemini", "windsurf"}
 AGENT_TARGETS = {"claude", "codex", "cursor", "copilot", "opencode", "gemini"}
 ALL_TARGETS = AGENT_TARGETS | {"windsurf"}
@@ -95,10 +96,60 @@ def default_quality(root: Path) -> dict[str, Any]:
     return quality
 
 
-def source_agent(role: str) -> str:
+def skills_dir(target: str) -> str:
+    """Return the installed skill location for the selected target."""
+    return ".agents/skills"
+
+
+def is_agent_army_skills(path: Path) -> bool:
+    return all((path / skill / "SKILL.md").is_file() for skill in SKILLS) and (path / "bootstrap/bootstrap.py").is_file()
+
+
+def skill_source_candidates(root: Path, target: str) -> list[Path]:
+    candidates = [root / skills_dir(target)]
+    if target == "opencode":
+        # OpenCode also discovers the shared project skill location. Accept
+        # its native directory as a migration source from older installs.
+        candidates.append(root / ".opencode/skills")
+
+    # The bootstrap skill may itself be running from an installed package
+    # cache (apm_modules/.../.apm/skills) rather than a materialized location.
+    candidates.append(HERE.parent)
+    modules = root / "apm_modules"
+    if modules.is_dir():
+        candidates.extend(sorted(modules.glob("**/.apm/skills")))
+
+    unique: list[Path] = []
+    for candidate in candidates:
+        resolved = candidate.resolve()
+        if resolved not in {path.resolve() for path in unique}:
+            unique.append(candidate)
+    return unique
+
+
+def materialize_skills(root: Path, target: str, dry_run: bool) -> None:
+    destination = root / skills_dir(target)
+    if is_agent_army_skills(destination):
+        return
+    source = next((path for path in skill_source_candidates(root, target) if is_agent_army_skills(path)), None)
+    if source is None or source.resolve() == destination.resolve():
+        return
+    for skill in SKILLS:
+        src = source / skill
+        dst = destination / skill
+        if not src.is_dir() or dst.exists():
+            continue
+        print(f"{'plan' if dry_run else '+'} {dst.relative_to(ROOT)}")
+        if not dry_run:
+            destination.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(src, dst)
+
+
+def source_agent(role: str, target: str) -> str:
     text = (BASE / "core/agents" / f"{role}.md").read_text(encoding="utf-8")
-    # APM owns native conversion.  These are only the local cross-target source.
-    return text.replace("<SKILLS_DIR>", ".agents/skills").replace("<AGENTS_DIR>", ".apm/agents").replace("<TOOL_DIR>", ".agent-army")
+    # APM owns native conversion. These are the local authoring sources, with
+    # the installed skill path made explicit for the selected target.
+    return text.replace("<SKILLS_DIR>", skills_dir(target)).replace("<AGENTS_DIR>", ".apm/agents").replace("<TOOL_DIR>", ".agent-army")
 
 
 def existing_profile(root: Path) -> dict[str, Any]:
@@ -161,24 +212,24 @@ def write_runtime_sources(root: Path, target: str, install_hooks: bool, dry_run:
 def write_agents(root: Path, target: str, dry_run: bool) -> None:
     if target in AGENT_TARGETS:
         for role in ROLES:
-            write_new_text(root / f".apm/agents/agent-army-{role}.agent.md", source_agent(role), dry_run)
+            write_new_text(root / f".apm/agents/agent-army-{role}.agent.md", source_agent(role, target), dry_run)
     if target == "gemini":
         # APM 0.19 does not yet deploy project Gemini agents. Keep the adapter
         # local and explicit until that primitive is supported upstream.
         for role in ROLES:
-            write_new_text(root / f".gemini/agents/agent-army-{role}.md", source_agent(role), dry_run)
+            write_new_text(root / f".gemini/agents/agent-army-{role}.md", source_agent(role, target), dry_run)
     elif target == "windsurf":
         # Windsurf has no native subagent file; named skills retain roles without
             # pretending that it can delegate to native subagents.
         for role in ROLES:
-            content = "---\nname: agent-army-" + role + "\ndescription: Agent Army fallback role for Windsurf.\n---\n\n" + source_agent(role)
+            content = "---\nname: agent-army-" + role + "\ndescription: Agent Army fallback role for Windsurf.\n---\n\n" + source_agent(role, target)
             write_new_text(root / f".windsurf/skills/agent-army-{role}/SKILL.md", content, dry_run)
 
 
-def update_gitignore(root: Path, dry_run: bool) -> None:
+def update_gitignore(root: Path, target: str, dry_run: bool) -> None:
     path = root / ".gitignore"
     existing = path.read_text(encoding="utf-8") if path.exists() else ""
-    entries = [".agents/skills/", ".agent-army/state.json"]
+    entries = [f"{skills_dir(target)}/", ".agent-army/state.json"]
     missing = [entry for entry in entries if entry not in existing.splitlines()]
     if missing:
         write_text(path, existing.rstrip() + "\n" + "\n".join(missing) + "\n", dry_run)
@@ -194,10 +245,14 @@ def run_apm(root: Path, target: str) -> int:
         # Package-style installs can deploy skills without creating a project
         # manifest. Promote those installed skills into a local APM project so
         # the frozen second pass does not remove the bootstrap command itself.
-        installed_skills = root / ".agents/skills"
+        installed_skills = root / skills_dir(target)
+        if not installed_skills.is_dir() and target == "opencode":
+            # Migrate a project that was initially installed into OpenCode's
+            # native directory before using the shared compatible path.
+            installed_skills = root / ".opencode/skills"
         local_skills = root / ".apm/skills"
         if not installed_skills.is_dir():
-            print("WARN: no apm.yml and no installed .agents/skills; local agent sources were generated but cannot be rendered by APM.", file=sys.stderr)
+            print("WARN: no apm.yml and no installed skill directory; local agent sources were generated but cannot be rendered by APM.", file=sys.stderr)
             return 0
         if local_skills.exists():
             print("WARN: no apm.yml but .apm/skills already exists; refusing to guess ownership. Run `apm lock` and `apm install --frozen --target %s` yourself." % target, file=sys.stderr)
@@ -207,7 +262,8 @@ def run_apm(root: Path, target: str) -> int:
         lock = subprocess.run([apm, "lock"], cwd=root)
         if lock.returncode != 0:
             return lock.returncode
-    result = subprocess.run([apm, "install", "--frozen", "--target", target], cwd=root)
+    command = [apm, "install", "--frozen", "--target", target]
+    result = subprocess.run(command, cwd=root)
     return result.returncode
 
 
@@ -238,6 +294,7 @@ def main() -> int:
     if args.target == "opencode" and selections["runtime_hooks"] == "army":
         selections["runtime_hooks"] = "blocked"
 
+    materialize_skills(ROOT, args.target, args.dry_run)
     write_agents(ROOT, args.target, args.dry_run)
     if "army" in selections.values():
         write_runtime_sources(ROOT, args.target, selections["runtime_hooks"] == "army", args.dry_run)
@@ -256,7 +313,7 @@ def main() -> int:
         },
     }
     write_text(ROOT / ".agent-army/config.json", json.dumps(config, indent=2) + "\n", args.dry_run)
-    update_gitignore(ROOT, args.dry_run)
+    update_gitignore(ROOT, args.target, args.dry_run)
     print("\nAgent Army v2 status:")
     for layer, value in config["enforcement"].items():
         print(f"  {layer}: {value['mode']}" + (f" ({', '.join(value['evidence'])})" if value["evidence"] else ""))

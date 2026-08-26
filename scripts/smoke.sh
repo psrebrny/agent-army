@@ -39,6 +39,13 @@ for target in claude codex cursor copilot opencode gemini windsurf; do
   "$ROOT/scripts/check.sh" --target-dir "$dir" >/dev/null 2>&1 && ok "$target: profile validates" || bad "$target: profile validation failed"
 done
 
+MIG="$WORK/cache-migration"; init_repo "$MIG"
+mkdir -p "$MIG/apm_modules/psrebrny/agent-army/.apm"
+cp -R "$ROOT/.apm/skills" "$MIG/apm_modules/psrebrny/agent-army/.apm/"
+(cd "$MIG" && python3 apm_modules/psrebrny/agent-army/.apm/skills/bootstrap/bootstrap.py opencode --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null 2>&1)
+[ -f "$MIG/.agents/skills/ship/SKILL.md" ] && ok "cache migration: skills materialized to .agents/skills" || bad "cache migration: skills not materialized"
+[ -f "$MIG/.opencode/agents/agent-army-architect.md" ] && ok "cache migration: native agents rendered" || bad "cache migration: native agents missing"
+
 printf '\n\033[1mGATE 1 · ownership and non-clobbering\033[0m\n'
 OWN="$WORK/ownership"; init_repo "$OWN"
 mkdir -p "$OWN/.github/workflows"; printf 'name: user-ci\n' > "$OWN/.github/workflows/user.yml"
@@ -89,6 +96,7 @@ for target in claude codex cursor copilot opencode gemini windsurf; do
     gemini) agent="$dir/.gemini/agents/agent-army-architect.md" ;;
     windsurf) agent="$dir/.windsurf/skills/agent-army-architect/SKILL.md" ;;
   esac
+  [ -f "$dir/.agents/skills/ship/SKILL.md" ] && ok "$target: shared skills present" || bad "$target: shared skills missing"
   if [ -f "$agent" ]; then
     ok "$target: expected native/degraded output rendered"
     grep -q 'Delegation Contract' "$agent" && ok "$target: delegation contract rendered" || bad "$target: delegation contract missing after render"

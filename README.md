@@ -9,7 +9,7 @@ performance and documentation agents.
 ```bash
 cd my-repository
 apm install psrebrny/agent-army --target opencode
-# choose one: claude | cursor | codex | gemini | copilot | windsurf | opencode
+# choose one target: claude | cursor | codex | gemini | copilot | windsurf | opencode
 ```
 
 Choose the tool that is active for this repository:
@@ -20,21 +20,23 @@ Choose the tool that is active for this repository:
 | `codex` | Native Codex TOML agents through APM |
 | `cursor` | Native Cursor agents through APM |
 | `copilot` | Native `.github/agents/*.agent.md` through APM |
-| `opencode` | Native agents through APM; no runtime-hook adapter |
+| `opencode` | Native agents through APM; skills via shared `.agents/skills`; no runtime-hook adapter |
 | `gemini` | Agent sources plus a temporary direct Gemini adapter |
 | `windsurf` | Role-skills fallback; Windsurf has no native project subagents |
 
 Use one target per repository. To switch tools, explicitly re-run `/bootstrap`
 for the new target.
 
-On Claude, `/bootstrap` is normally a slash command. In the other tools, open
-or invoke `.agents/skills/bootstrap/SKILL.md` directly when the tool does not
-register the command natively; use the corresponding path for `/ship`,
-`/new-agent` and `/adapt-army` too.
+On Claude, `/bootstrap` is normally a slash command. In the other tools,
+including OpenCode, open or invoke `.agents/skills/bootstrap/SKILL.md` directly
+when the tool does not register the command natively. Use the corresponding
+path for `/ship`, `/new-agent` and `/adapt-army` too.
 
 The install is intentionally passive: it ships four skills and templates only.
 `/bootstrap` is the explicit second step that creates the tailored local APM
 agent sources and lets APM render the selected target's native agent format.
+The `.apm/agents` files remain the authoring source after rendering; do not
+delete them just because equivalent native files exist under `.opencode/agents`.
 
 During bootstrap, choose the owner of each layer independently:
 
