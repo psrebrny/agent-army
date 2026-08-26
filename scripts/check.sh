@@ -134,7 +134,7 @@ check_agent() {
   [ "$base" = "$fname" ] && base="$(basename "$f" .md)"   # suffix didn't match (e.g. source mode) — fall back to plain .md
   printf '\n\033[1m• agent: %s\033[0m\n' "$base"
 
-  # 1. frontmatter parses + has name/description; model is optional and runtime-selected
+  # 1. frontmatter parses + has name/description; model is optional and target-routed when present
   if command -v python3 >/dev/null 2>&1; then
     python3 - "$f" <<'PY' >/dev/null 2>&1 && ok "frontmatter is valid YAML" || bad "frontmatter is NOT valid YAML"
 import sys,yaml
@@ -146,7 +146,7 @@ PY
   [ -n "$name" ] && ok "has name: $name" || bad "missing 'name:' in frontmatter"
   [ "$name" = "$base" ] || warn "name ('$name') != filename ('$base')"
   [ -n "$(yaml_key "$f" description)" ] && ok "has description" || bad "missing 'description:'"
-  [ -n "$(yaml_key "$f" model)" ] && warn "has fixed 'model:' field — runtime routing may be bypassed" || ok "model is runtime-selected"
+  [ -n "$(yaml_key "$f" model)" ] && ok "has target-routed or user-selected 'model:' field" || ok "model inherits tool/session configuration"
 
   # 2. cross-tool safety: a bare string 'tools:' field is only safe when the tool's
   #    descriptor says accepts_tools_field:true. In target-dir mode we KNOW the tool, so a
@@ -374,12 +374,28 @@ check_skill() {
     if grep -q 'RESOLVE THE EXECUTION SCOPE' "$f" \
       && grep -q 'no argument → resume the single unfinished task or PR only when exactly one exists' "$f" \
       && grep -q 'MODEL & EFFORT ROUTING' "$f" \
-      && grep -q 'Before the first architect dispatch' "$f" \
+      && grep -q 'MANDATORY BLUEPRINT + ROUTING + SCOPE GATE' "$f" \
+      && grep -q 'SCOPE-AWARE ROUTING' "$f" \
+      && grep -q 'Per-role static routing' "$f" \
+      && grep -q 'Inherit fallback' "$f" \
+      && grep -q 'Autonomous' "$f" \
+      && grep -q 'Interactive' "$f" \
+      && grep -q 'INTERACTION CARD' "$f" \
+      && grep -q 'Interaction policy: supervised' "$f" \
+      && grep -q 'migrated to interactive' "$f" \
+      && grep -q 'RED acceptance' "$f" \
+      && grep -q 'task-review Interaction Card' "$f" \
+      && grep -q 'contract interpretation, exact RED tests, smallest implementation' "$f" \
+      && grep -q 'focused diff summary, GREEN' "$f" \
+      && grep -q 'PERSIST EVERY ROLE TRANSITION' "$f" \
       && grep -q 'switch and continue | stay current' "$f" \
-      && grep -q 're-run both review and security' "$f" \
+      && grep -q 'then re-run both review' "$f" \
+      && grep -q 'verdict directly to coder' "$f" \
+      && grep -q 'Final review is a pause in both modes' "$f" \
       && grep -q 'ready_for_human_review' "$f" \
-      && grep -q 'Never change a UI/CLI/API model' "$f"; then
-      ok "ship resolve, routing and closure loop are explicit"
+      && grep -q 'Never change a' "$f" \
+      && grep -q 'UI/CLI/API model' "$f"; then
+      ok "ship interaction modes, routing and closure loop are explicit"
     else
       bad "ship missing resolve, routing or closure-loop rule"
     fi

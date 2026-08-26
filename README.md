@@ -72,23 +72,34 @@ external layers remain the user's responsibility.
 Use `architect` directly when you want discovery and a blueprint only; it never
 implements source code. `/ship` resolves and resumes the narrowest unambiguous
 task or PR from `design-docs/` (plain `/ship` resumes only when one open scope
-exists). Each PR persists execution mode, checkpoints and task state, so a new
-session can continue without reconstructing chat history.
+exists). Each PR persists its interaction mode, Interaction Card and task state,
+so a new session can continue without reconstructing chat history.
 
-Architect assigns each task a portable capability/effort profile. `/ship` maps
-it through the target adapter's confirmed model controls: it may select a fresh
-subagent configuration only when the adapter supports that, otherwise it
-inherits and reports the limitation. It never changes the main tool setting;
-when a main-session recommendation is material, the user chooses `switch and
-continue` or `stay current` for that task. The delivery loop is TDD → independent
-review/security → repairs and re-audit → docs/full verification → ready for
-human review. Workers receive explicit read/write scope, and the reviewer
-receives only the task contract, diff and human decisions.
+Architect assigns each task a portable capability/effort profile. `/ship`
+combines it with the selected scope's coordinator profile, while bootstrap maps
+roles to the target's native model field where that field is confirmed. The
+static defaults are strong for architect/review/security, mid for coder/perf,
+and light for tester/docs, so autonomous execution can move between roles
+without a model-switch pause. Claude uses its documented tier names; Cursor and
+OpenCode receive this routing only after bootstrap is given three real
+target-native model IDs. The delivery loop is TDD → independent review/security
+→ repairs and re-audit → docs/full verification → ready for human review.
 
-Native agent definitions do not pin a vendor model. Before every non-trivial
-architect dispatch, `/ship` pauses with a model recommendation; the user
-changes the model if desired and then resumes. An absent native `model` field
-means that the agent inherits the active tool/session configuration.
+When an architect creates or materially revises a blueprint, `/ship` always
+pauses — including in autonomous mode — so the user can review acceptance
+criteria and choose one task, one PR or all unfinished PRs before implementation.
+For adapters without a configured native model field, every subagent inherits
+the active tool/session configuration and `/ship` asks for a manual change only
+when the recommendation is material. It never invents a provider/model ID,
+changes the main-session setting, or claims that a role-level effort changed:
+effort falls back to the tool default unless the adapter explicitly supports it.
+
+`/ship` has two interaction modes per PR. **Autonomous** continues after that
+mandatory gate until a real decision, risk, or final human review. **Interactive**
+also pauses after each RED test and each verified task. Every pause is an
+Interaction Card in the blueprint: completed work, evidence, what to check, one
+question, and choices to continue, redirect, inspect details, change scope, or
+switch mode. Existing `supervised` PRs migrate to `interactive` when resumed.
 
 ## Development
 

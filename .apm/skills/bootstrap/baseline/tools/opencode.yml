@@ -39,7 +39,7 @@ capabilities:
 
 model_control:
   main_session: inherit
-  subagent_model: per_role_static
+  subagent_model: per_role_static  # requires exact user-provided provider/model IDs at bootstrap
   subagent_effort: unsupported
 
 # Only the hooks that can actually fire without settings.json: the git-commit barrier

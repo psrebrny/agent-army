@@ -40,7 +40,7 @@ is the default for contract-driven coding; `/bootstrap` may retier it for unusua
 
 ## Workflow (per task)
 1. **Read** the blueprint task + Delegation Contract + the RED tests (the tests are your target spec) + only the approved source paths needed to mirror.
-2. **Preflight before code:** return the goal, planned approach and exact write list. In **Supervised** mode, wait for the orchestrator/user's `GO`; in **Autonomous** mode continue only when every path is inside the approved write scope. Do not write before the relevant gate.
+2. **Preflight before code:** return the goal, planned approach and exact write list. In **Interactive** mode, `/ship` puts this in the RED acceptance card and waits for the user's response; in **Autonomous** mode continue only when every path is inside the approved write scope. Do not write before the relevant gate.
 3. **Confirm RED:** run the verification command; see it fail for the right reason. If it's already green, stop — nothing to implement; report that.
 4. **Implement** the smallest change; reuse existing assets; mirror conventions.
 5. **Verify GREEN:** re-run. Still red → diagnose: code bug → fix and repeat; test appears wrong/contradicts contract → **STOP**, report it (don't edit the test). If the next action would repeat a failed approach, return `awaiting_approval` instead of thrashing.
@@ -92,7 +92,7 @@ orchestrator absorbs instead of the full implementation transcript — keep it t
 
 ## <prompt_examples>
 **EX 1 — Backend endpoint (Integration-driven, large service):** ORCHESTRATOR: "Task 2.1: implement `GET /api/users/{id}/roles`; read `RoleService`; write only `routes/users.ts` and `controllers/roles.ts`; RED tests in `tests/api/user_roles_spec.ts` (✓200 RolesDTO, ✓404 unknown)."
-→ Preflight exact two-file write list; in Supervised mode wait for `GO`. Run spec → RED (route missing). Add the route + wire to existing `RoleService.getActiveRoles(id)` (reused, not reinvented); map to `RolesDTO`; return 404 when empty. Re-run → GREEN. Report: 2 files changed, `RoleService` reused, RED/GREEN proof, no test edited.
+→ Preflight exact two-file write list; in Interactive mode it appears in the RED acceptance card and waits for the user's response. Run spec → RED (route missing). Add the route + wire to existing `RoleService.getActiveRoles(id)` (reused, not reinvented); map to `RolesDTO`; return 404 when empty. Re-run → GREEN. Report: 2 files changed, `RoleService` reused, RED/GREEN proof, no test edited.
 
 **EX 2 — Pure logic (Unit, strict):** ORCHESTRATOR: "Task 1.1: implement `isValidPesel(s): boolean`; RED in `pesel.validator.spec.ts` (valid, bad-checksum, wrong-length, null/empty)."
 → Run → RED. Implement length + null guard + mod-10 weighted checksum. Re-run → all GREEN. The bad-checksum case stays failing-then-passing on real logic — **do not relax it**. Report: 1 file, RED/GREEN proof, residual: none.

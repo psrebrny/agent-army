@@ -3,7 +3,7 @@
 - **Date**: 2026-07-02
 - **Stack**: apm package — Markdown agent/skill prompts + `bash` hooks + `scripts/check.sh` (structural) & `scripts/smoke.sh` (e2e). No app runtime; the "product" is the materialized agent team.
 - **Standards Source**: AGENTS.md
-- **Execution Mode**: [Autonomous | Supervised]   <!-- set by /ship Step 0 -->
+- **Interaction policy**: [autonomous | interactive | unset]   <!-- selected per PR by /ship before execution -->
 
 ## 1. Background
 Today `baseline/` is a single `.claude`-shaped file set (with placeholders), and `bootstrap` (an LLM) materializes it per tool through **prose branching** in `SKILL.md`: which hooks to copy, which dirs, husky wiring, `.gitignore`, skills location, path substitution. Every cross-tool difference is a "soft if" the model must execute. This session surfaced a run of per-tool bugs (inert hooks copied to non-Claude, husky clobber, hardcoded `.claude/` paths, skills in `.agents` vs `.claude`, command-vs-agent split, context-budget with no home) — all the same root cause: **tool packaging lives as fragile prose an LLM interprets.**

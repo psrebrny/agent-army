@@ -27,6 +27,22 @@ RUNTIME_TARGETS = {"claude", "codex", "cursor", "copilot", "gemini", "windsurf"}
 AGENT_TARGETS = {"claude", "codex", "cursor", "copilot", "opencode", "gemini"}
 ALL_TARGETS = AGENT_TARGETS | {"windsurf"}
 MARKER = "# agent-army-v0.2"
+ROLE_CAPABILITY = {
+    "architect": "strong",
+    "coder": "mid",
+    "tester": "light",
+    "code-reviewer": "strong",
+    "security-auditor": "strong",
+    "perf-auditor": "mid",
+    "docs-writer": "light",
+}
+MODEL_CAPABLE_TARGETS = {"claude", "cursor", "opencode"}
+# Claude documents these portable tier names. Other adapters require their exact
+# model IDs, which bootstrap receives explicitly rather than inventing them.
+DEFAULT_MODEL_TIERS = {
+    "claude": {"light": "haiku", "mid": "sonnet", "strong": "opus"},
+}
+ROLE_MODEL_MARKER = "# agent-army-role-profile:"
 
 
 def repo_root() -> Path:
@@ -50,34 +66,134 @@ def write_new_text(path: Path, content: str, dry_run: bool) -> None:
     write_text(path, content, dry_run)
 
 
-def remove_legacy_model_tier(path: Path, dry_run: bool) -> None:
-    """Remove only Agent Army's old tier defaults; preserve explicit user models."""
+def model_routing(target: str, previous: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
+    """Resolve model IDs once at bootstrap; never ask an LLM to manufacture one."""
+    supplied = {tier: getattr(args, f"model_{tier}") for tier in ("light", "mid", "strong")}
+    supplied_values = [value for value in supplied.values() if value]
+    if supplied_values and len(supplied_values) != len(supplied):
+        raise ValueError("--model-light, --model-mid and --model-strong must be supplied together")
+    if supplied_values and target not in MODEL_CAPABLE_TARGETS:
+        raise ValueError(f"{target} has no confirmed native subagent model field")
+
+    if args.role_model_routing == "inherit":
+        return {
+            "strategy": "inherit",
+            "source": "user-disabled",
+            "tiers": {},
+            "roles": ROLE_CAPABILITY,
+            "effort": "unsupported",
+            "reason": "user selected inherited subagent models",
+        }
+
+    previous_routing = previous.get("model_routing") if isinstance(previous.get("model_routing"), dict) else {}
+    previous_tiers = previous_routing.get("tiers") if isinstance(previous_routing.get("tiers"), dict) else {}
+    previous_complete = all(isinstance(previous_tiers.get(tier), str) and previous_tiers[tier] for tier in supplied)
+    if supplied_values:
+        tiers, source = supplied, "user-provided"
+    elif target in DEFAULT_MODEL_TIERS:
+        tiers, source = DEFAULT_MODEL_TIERS[target], "target-default"
+    elif previous_routing.get("target") == target and previous_complete:
+        tiers, source = {tier: previous_tiers[tier] for tier in supplied}, "previous-bootstrap"
+    else:
+        reason = (
+            "target has no confirmed native subagent model field"
+            if target not in MODEL_CAPABLE_TARGETS
+            else "exact light/mid/strong model IDs were not provided for this target"
+        )
+        return {
+            "strategy": "inherit",
+            "source": "fallback",
+            "tiers": {},
+            "roles": ROLE_CAPABILITY,
+            "effort": "unsupported",
+            "reason": reason,
+        }
+
+    return {
+        "strategy": "per_role_static",
+        "source": source,
+        "tiers": tiers,
+        "roles": ROLE_CAPABILITY,
+        "effort": "unsupported",
+        "reason": "native agent files select a model per role; the tool selects no effort per role",
+    }
+
+
+def model_line(model: str, capability: str) -> str:
+    # JSON strings are valid YAML scalars and safely preserve provider/model IDs.
+    return f"model: {json.dumps(model)} {ROLE_MODEL_MARKER} {capability}\n"
+
+
+def with_role_model(text: str, role: str, routing: dict[str, Any]) -> str:
+    """Add a generated model declaration to a baseline definition, when available."""
+    if routing["strategy"] != "per_role_static":
+        return text
+    capability = ROLE_CAPABILITY[role]
+    model = routing["tiers"][capability]
+    parts = text.split("---", 2)
+    if len(parts) != 3 or parts[0].strip():
+        raise ValueError(f"baseline {role} has invalid frontmatter")
+    frontmatter, body = parts[1], parts[2]
+    if re.search(r"^model:\s*", frontmatter, flags=re.MULTILINE):
+        raise ValueError(f"baseline {role} already declares model; routing must remain target-owned")
+    return "---" + frontmatter + model_line(model, capability) + "---" + body
+
+
+def reconcile_role_model(path: Path, role: str, routing: dict[str, Any], dry_run: bool) -> None:
+    """Update only generated declarations; a user's unmarked model stays untouched."""
     text = path.read_text(encoding="utf-8")
     parts = text.split("---", 2)
     if len(parts) != 3 or parts[0].strip():
         return
     frontmatter, body = parts[1], parts[2]
-    updated_frontmatter = re.sub(
-        r"^model:\s*(opus|sonnet|haiku)\s*\n",
-        "",
-        frontmatter,
-        count=1,
-        flags=re.MULTILINE,
-    )
+    existing = re.search(r"^model:.*(?:\s+" + re.escape(ROLE_MODEL_MARKER) + r"\s+\w+)?\s*$", frontmatter, flags=re.MULTILINE)
+    managed = existing is not None and ROLE_MODEL_MARKER in existing.group(0)
+    desired = None
+    capability = ROLE_CAPABILITY[role]
+    if routing["strategy"] == "per_role_static":
+        desired = model_line(routing["tiers"][capability], capability)
+
+    if existing and not managed:
+        return
+    if desired is None and not managed:
+        return
+    if desired is None:
+        updated_frontmatter = frontmatter[:existing.start()] + frontmatter[existing.end():]
+    elif managed:
+        updated_frontmatter = frontmatter[:existing.start()] + desired + frontmatter[existing.end():]
+    else:
+        updated_frontmatter = frontmatter + desired
     if updated_frontmatter == frontmatter:
         return
-    print(f"{'plan' if dry_run else '~'} {path.relative_to(ROOT)} (remove legacy fixed model tier)")
+    print(f"{'plan' if dry_run else '~'} {path.relative_to(ROOT)} (reconcile generated role model)")
     if not dry_run:
         path.write_text("---" + updated_frontmatter + "---" + body, encoding="utf-8")
 
 
-def migrate_legacy_agent_models(root: Path, dry_run: bool) -> None:
-    """Migrate previously generated sources without overwriting specialization."""
-    sources = root / ".apm/agents"
-    if not sources.is_dir():
-        return
-    for path in sorted(sources.glob("agent-army-*.agent.md")):
-        remove_legacy_model_tier(path, dry_run)
+def effective_role_models(root: Path, target: str) -> dict[str, dict[str, str | None]]:
+    """Snapshot the rendered-source choice, including user-owned overrides."""
+    effective: dict[str, dict[str, str | None]] = {}
+    if target not in AGENT_TARGETS:
+        return effective
+    for role in ROLES:
+        path = root / f".apm/agents/agent-army-{role}.agent.md"
+        if not path.is_file():
+            continue
+        parts = path.read_text(encoding="utf-8").split("---", 2)
+        frontmatter = parts[1] if len(parts) == 3 and not parts[0].strip() else ""
+        match = re.search(r"^model:\s*(.*?)(?:\s+#.*)?$", frontmatter, flags=re.MULTILINE)
+        value = match.group(1).strip() if match else None
+        if value and value.startswith('"'):
+            try:
+                value = json.loads(value)
+            except json.JSONDecodeError:
+                pass
+        effective[role] = {
+            "capability": ROLE_CAPABILITY[role],
+            "model": value,
+            "source": "bootstrap" if match and ROLE_MODEL_MARKER in match.group(0) else ("user-override" if value else "inherit"),
+        }
+    return effective
 
 
 def copy_file(source: Path, target: Path, dry_run: bool, executable: bool = False) -> None:
@@ -175,11 +291,12 @@ def materialize_skills(root: Path, target: str, dry_run: bool) -> None:
             shutil.copytree(src, dst)
 
 
-def source_agent(role: str, target: str) -> str:
+def source_agent(role: str, target: str, routing: dict[str, Any]) -> str:
     text = (BASE / "core/agents" / f"{role}.md").read_text(encoding="utf-8")
     # APM owns native conversion. These are the local authoring sources, with
     # the installed skill path made explicit for the selected target.
-    return text.replace("<SKILLS_DIR>", skills_dir(target)).replace("<AGENTS_DIR>", ".apm/agents").replace("<TOOL_DIR>", ".agent-army")
+    text = text.replace("<SKILLS_DIR>", skills_dir(target)).replace("<AGENTS_DIR>", ".apm/agents").replace("<TOOL_DIR>", ".agent-army")
+    return with_role_model(text, role, routing)
 
 
 def existing_profile(root: Path) -> dict[str, Any]:
@@ -239,20 +356,24 @@ def write_runtime_sources(root: Path, target: str, install_hooks: bool, dry_run:
         print(f"note runtime_hooks: {target} has no supported native runtime hook adapter")
 
 
-def write_agents(root: Path, target: str, dry_run: bool) -> None:
+def write_agents(root: Path, target: str, routing: dict[str, Any], dry_run: bool) -> None:
     if target in AGENT_TARGETS:
         for role in ROLES:
-            write_new_text(root / f".apm/agents/agent-army-{role}.agent.md", source_agent(role, target), dry_run)
+            path = root / f".apm/agents/agent-army-{role}.agent.md"
+            if path.exists():
+                reconcile_role_model(path, role, routing, dry_run)
+            else:
+                write_text(path, source_agent(role, target, routing), dry_run)
     if target == "gemini":
         # APM 0.19 does not yet deploy project Gemini agents. Keep the adapter
         # local and explicit until that primitive is supported upstream.
         for role in ROLES:
-            write_new_text(root / f".gemini/agents/agent-army-{role}.md", source_agent(role, target), dry_run)
+            write_new_text(root / f".gemini/agents/agent-army-{role}.md", source_agent(role, target, routing), dry_run)
     elif target == "windsurf":
         # Windsurf has no native subagent file; named skills retain roles without
-            # pretending that it can delegate to native subagents.
+        # pretending that it can delegate to native subagents.
         for role in ROLES:
-            content = "---\nname: agent-army-" + role + "\ndescription: Agent Army fallback role for Windsurf.\n---\n\n" + source_agent(role, target)
+            content = "---\nname: agent-army-" + role + "\ndescription: Agent Army fallback role for Windsurf.\n---\n\n" + source_agent(role, target, routing)
             write_new_text(root / f".windsurf/skills/agent-army-{role}/SKILL.md", content, dry_run)
 
 
@@ -303,6 +424,10 @@ def main() -> int:
     parser.add_argument("--runtime-hooks", choices=("army", "external", "disabled"))
     parser.add_argument("--git-precommit", choices=("army", "external", "disabled"))
     parser.add_argument("--ci", choices=("army", "external", "disabled"))
+    parser.add_argument("--role-model-routing", choices=("auto", "inherit"), default="auto")
+    parser.add_argument("--model-light", metavar="MODEL", help="exact target-native model ID for light roles")
+    parser.add_argument("--model-mid", metavar="MODEL", help="exact target-native model ID for mid roles")
+    parser.add_argument("--model-strong", metavar="MODEL", help="exact target-native model ID for strong roles")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--skip-apm", action="store_true", help="test-only: do not run apm install")
     args = parser.parse_args()
@@ -310,6 +435,10 @@ def main() -> int:
     global ROOT
     ROOT = repo_root()
     previous = existing_profile(ROOT)
+    try:
+        routing = model_routing(args.target, previous, args)
+    except ValueError as exc:
+        parser.error(str(exc))
     previous_modes = previous.get("enforcement", {}) if isinstance(previous.get("enforcement"), dict) else {}
     def prior_mode(name: str) -> str | None:
         value = previous_modes.get(name)
@@ -325,8 +454,8 @@ def main() -> int:
         selections["runtime_hooks"] = "blocked"
 
     materialize_skills(ROOT, args.target, args.dry_run)
-    migrate_legacy_agent_models(ROOT, args.dry_run)
-    write_agents(ROOT, args.target, args.dry_run)
+    write_agents(ROOT, args.target, routing, args.dry_run)
+    routing["effective_roles"] = effective_role_models(ROOT, args.target)
     if "army" in selections.values():
         write_runtime_sources(ROOT, args.target, selections["runtime_hooks"] == "army", args.dry_run)
     git_mode, git_evidence = install_precommit(ROOT, selections["git_precommit"], found["git_precommit"], args.dry_run)
@@ -335,6 +464,7 @@ def main() -> int:
         "version": 2,
         "target": args.target,
         "profile": "agent-army",
+        "model_routing": {"target": args.target, **routing},
         "quality": previous.get("quality") if isinstance(previous.get("quality"), dict) else default_quality(ROOT),
         "policy": previous.get("policy") if isinstance(previous.get("policy"), dict) else {},
         "enforcement": {
@@ -348,13 +478,14 @@ def main() -> int:
     print("\nAgent Army v2 status:")
     for layer, value in config["enforcement"].items():
         print(f"  {layer}: {value['mode']}" + (f" ({', '.join(value['evidence'])})" if value["evidence"] else ""))
+    print(f"  role model routing: {routing['strategy']} ({routing['source']}; effort: {routing['effort']})")
     if args.dry_run or args.skip_apm:
         return 0
     result = run_apm(ROOT, args.target)
     # APM may clean directories it does not integrate. Reassert the two
     # explicitly degraded adapters after its native pass.
     if result == 0 and args.target in {"gemini", "windsurf"}:
-        write_agents(ROOT, args.target, False)
+        write_agents(ROOT, args.target, routing, False)
     return result
 
 

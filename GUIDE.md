@@ -58,9 +58,9 @@ Greenfield (empty repo) → full interview + bootstrap of the foundations. Quali
 Pipeline: **Discovery/interview → mode choice → Blueprint (architect, design-docs/) → implementation in strict TDD (tester: RED → code → GREEN) → review (code-reviewer) → security → docs → summary + commit proposal** (commit only with your approval).
 
 At the start `/ship` asks about the **execution mode**:
-- **A) Autonomous** — the team does everything on its own; it stops only at hook gates and for commit approval.
-- **B) Supervised** — the orchestrator pauses at checkpoints (after the blueprint, after RED tests, after GREEN, before an escalation) and waits for "ok/fix". You can take the wheel and correct the agent.
-Switch on the fly: "switch to autonomous/supervised".
+- **A) Autonomous** — after you accept the blueprint and choose `one task`/`one PR`/`all unfinished PRs`, the team proceeds on its own and stops at hook gates or commit approval. Where bootstrap configured per-role models, each subagent starts with its assigned profile; an inherited-model fallback may additionally ask `switch and continue` or `stay current`.
+- **B) Interactive** — after the same mandatory gate, the team pauses after each RED test and verified task. Each Interaction Card says what changed, which test/diff/report to inspect and asks one specific question, so you can redirect work without inferring what needs review.
+Both modes pause for real ambiguity, risk, scope expansion and final human review. Switch on the fly: "switch to autonomous/interactive".
 
 ## Command cheatsheet
 - `/bootstrap` — ONCE: repo analysis + interview + building the team.

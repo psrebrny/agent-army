@@ -28,7 +28,7 @@ capabilities:
 
 model_control:
   main_session: inherit
-  subagent_model: per_role_static
+  subagent_model: per_role_static  # requires exact user-provided model IDs at bootstrap
   subagent_effort: unsupported
 
 hooks_live:

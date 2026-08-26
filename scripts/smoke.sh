@@ -49,12 +49,35 @@ cp -R "$ROOT/.apm/skills" "$MIG/apm_modules/psrebrny/agent-army/.apm/"
 LEGACY="$WORK/legacy-model"; init_repo "$LEGACY"
 bootstrap "$LEGACY" opencode --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null
 sed -i.bak '3i\
-model: opus' "$LEGACY/.apm/agents/agent-army-architect.agent.md"; rm -f "$LEGACY/.apm/agents/agent-army-architect.agent.md.bak"
-bootstrap "$LEGACY" opencode --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null
-if grep -q '^model:' "$LEGACY/.apm/agents/agent-army-architect.agent.md"; then
-  bad "legacy model tier was retained"
+model: user-owned/custom-model' "$LEGACY/.apm/agents/agent-army-architect.agent.md"; rm -f "$LEGACY/.apm/agents/agent-army-architect.agent.md.bak"
+bootstrap "$LEGACY" opencode --runtime-hooks disabled --git-precommit disabled --ci disabled \
+  --model-light test/light --model-mid test/mid --model-strong test/strong >/dev/null
+if grep -q '^model: user-owned/custom-model$' "$LEGACY/.apm/agents/agent-army-architect.agent.md"; then
+  ok "user-owned role model preserved on re-bootstrap"
 else
-  ok "legacy model tier migrated to runtime inheritance"
+  bad "user-owned role model was overwritten"
+fi
+grep -A4 '"architect"' "$LEGACY/.agent-army/config.json" | grep -q '"source": "user-override"' \
+  && ok "user-owned role override recorded" || bad "user-owned role override not recorded"
+
+ROUTED="$WORK/role-routing"; init_repo "$ROUTED"
+bootstrap "$ROUTED" opencode --runtime-hooks disabled --git-precommit disabled --ci disabled \
+  --model-light test/light-v1 --model-mid test/mid-v1 --model-strong test/strong-v1 >/dev/null
+grep -q '^model: "test/strong-v1" # agent-army-role-profile: strong$' "$ROUTED/.apm/agents/agent-army-architect.agent.md" \
+  && grep -q '^model: "test/light-v1" # agent-army-role-profile: light$' "$ROUTED/.apm/agents/agent-army-tester.agent.md" \
+  && ok "exact target model IDs route by role" || bad "role model routing missing or wrong"
+bootstrap "$ROUTED" opencode --runtime-hooks disabled --git-precommit disabled --ci disabled \
+  --model-light test/light-v2 --model-mid test/mid-v2 --model-strong test/strong-v2 >/dev/null
+grep -q '^model: "test/strong-v2" # agent-army-role-profile: strong$' "$ROUTED/.apm/agents/agent-army-architect.agent.md" \
+  && ok "generated role model updated on re-bootstrap" || bad "generated role model did not update"
+grep -q '"strategy": "per_role_static"' "$ROUTED/.agent-army/config.json" \
+  && ok "role model routing recorded" || bad "role model routing not recorded"
+bootstrap "$ROUTED" opencode --runtime-hooks disabled --git-precommit disabled --ci disabled \
+  --role-model-routing inherit >/dev/null
+if grep -q '^model:' "$ROUTED/.apm/agents/agent-army-architect.agent.md"; then
+  bad "managed role model was not removed for inherit fallback"
+else
+  ok "managed role model removed for inherit fallback"
 fi
 
 printf '\n\033[1mGATE 1 · ownership and non-clobbering\033[0m\n'
@@ -95,7 +118,13 @@ else ok "failed structured quality command fails"; fi
 printf '\n\033[1mGATE 3 · real APM rendering\033[0m\n'
 for target in claude codex cursor copilot opencode gemini windsurf; do
   dir="$WORK/apm-$target"; mkdir -p "$dir/.agents"; cp -R "$ROOT/.apm/skills" "$dir/.agents/skills"; init_repo "$dir"
-  if ! bootstrap_apm "$dir" "$target" --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null; then
+  case "$target" in
+    cursor|opencode)
+      render_args=(--model-light test/light --model-mid test/mid --model-strong test/strong)
+      ;;
+    *) render_args=(--role-model-routing auto) ;;
+  esac
+  if ! bootstrap_apm "$dir" "$target" --runtime-hooks disabled --git-precommit disabled --ci disabled "${render_args[@]}" >/dev/null; then
     bad "$target: frozen APM rendering failed"; continue
   fi
   case "$target" in
@@ -110,13 +139,33 @@ for target in claude codex cursor copilot opencode gemini windsurf; do
   [ -f "$dir/.agents/skills/ship/SKILL.md" ] && ok "$target: shared skills present" || bad "$target: shared skills missing"
   if [ -f "$agent" ]; then
     ok "$target: expected native/degraded output rendered"
-    if grep -Eq '^(model:|model =)' "$agent"; then
-      bad "$target: native agent pins a model"
-    else
-      ok "$target: native agent inherits runtime model"
-    fi
+    case "$target" in
+      claude|cursor|opencode)
+        grep -Eq '^(model:|model =)' "$agent" && ok "$target: native agent has static role model" || bad "$target: native role model missing"
+        ;;
+      *)
+        if grep -Eq '^(model:|model =)' "$agent"; then
+          bad "$target: native agent unexpectedly pins a model"
+        else
+          ok "$target: native agent inherits runtime model"
+        fi
+        ;;
+    esac
     grep -q 'Delegation Contract' "$agent" && ok "$target: delegation contract rendered" || bad "$target: delegation contract missing after render"
     grep -q '## Execution State' "$agent" && ok "$target: execution state rendered" || bad "$target: execution state missing after render"
+    grep -q 'Active roles' "$agent" && ok "$target: active-role state rendered" || bad "$target: active-role state missing after render"
+    grep -q 'Execution scope' "$agent" && ok "$target: scope-selection state rendered" || bad "$target: scope-selection state missing after render"
+    grep -q 'Scope Profile' "$agent" && ok "$target: scope-profile state rendered" || bad "$target: scope-profile state missing after render"
+    grep -q 'autonomous | interactive' "$agent" && ok "$target: two interaction modes rendered" || bad "$target: two interaction modes missing after render"
+    grep -q '## Interaction Card' "$agent" && ok "$target: interaction card rendered" || bad "$target: interaction card missing after render"
+    grep -q 'Checkpoint:' "$agent" && grep -q 'Question:' "$agent" && grep -q 'Options:' "$agent" \
+      && ok "$target: interaction card has a decision contract" || bad "$target: interaction card decision contract missing after render"
+    if grep -Eq '^[- ]*\*\*(Checkpoints|Interactive checkpoint):' "$agent"; then
+      bad "$target: legacy checkpoint selection remains after render"
+    else
+      ok "$target: no legacy checkpoint selection rendered"
+    fi
+    grep -q 'Configuration source' "$agent" && ok "$target: manual-config state rendered" || bad "$target: manual-config state missing after render"
     grep -q 'Execution Profile' "$agent" && ok "$target: execution profile rendered" || bad "$target: execution profile missing after render"
     if grep -q 'Model & Effort Recommendation' "$agent"; then
       bad "$target: concrete model recommendation leaked into blueprint"

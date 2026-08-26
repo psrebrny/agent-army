@@ -18,7 +18,8 @@ v0.2 generator, and the absence of shell-sourced/evaluated runtime config.
 - unmanaged hooks cannot be replaced silently;
 - protected-file shell redirects and staged secret values fail;
 - every generated agent retains the shared Handoff contract, while the architect and reviewer retain delegation and clean-packet rules;
-- every adapter declares conservative `model_control`; unsupported model/effort selectors degrade to inheritance rather than guessed settings;
+- generated blueprints expose only `autonomous`/`interactive` interaction modes, persist an Interaction Card, and contain no raw checkpoint selector;
+- every adapter declares conservative `model_control`; confirmed native model fields can route static role models, while unsupported fields, missing exact IDs and effort selectors degrade to inheritance rather than guessed settings;
 - native/degraded APM rendering preserves the delegation contract, Execution State/Execution Profile and Handoff text;
 - a failing `{cwd, argv}` command fails verification;
 - APM renders the expected native output for Claude, Codex, Cursor, Copilot

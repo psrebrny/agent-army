@@ -21,7 +21,7 @@ capabilities:
 
 model_control:
   main_session: inherit
-  subagent_model: per_role_static
+  subagent_model: per_role_static  # bootstrap emits proven opus/sonnet/haiku role defaults
   subagent_effort: unsupported
 
 # Only Claude reads settings.json, so ALL lifecycle hooks are live here.

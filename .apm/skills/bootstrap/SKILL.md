@@ -63,6 +63,25 @@ python3 "$SKILLS_DIR/bootstrap/bootstrap.py" <target> \
   --ci <army|external|disabled>
 ```
 
+Model routing is configured at this same boundary, never improvised by `/ship`.
+Claude uses its documented `haiku`/`sonnet`/`opus` role defaults. For Cursor or
+OpenCode, inspect the user's actually available target-native model IDs and ask
+once whether to enable static per-role routing. If yes, pass all three exact
+IDs; do not synthesize provider names or versions:
+
+```bash
+python3 "$SKILLS_DIR/bootstrap/bootstrap.py" <cursor|opencode> \
+  --model-light '<exact available model ID>' \
+  --model-mid '<exact available model ID>' \
+  --model-strong '<exact available model ID>'
+```
+
+`--role-model-routing inherit` deliberately disables this behavior. The three
+IDs must be supplied together. Codex, Copilot, Gemini and Windsurf have no
+confirmed native role-model field in this profile, so they inherit the active
+tool configuration. No current adapter has a confirmed role-level effort
+selector; effort always remains the tool default.
+
 It creates local APM agent sources in `.apm/agents`, optional hook primitives
 in `.apm/hooks`, `.agent-army/config.json`, and then asks APM to render the
 native format. OpenCode discovers the four skills in the shared `.agents/skills`
@@ -82,10 +101,13 @@ Read the status before continuing:
   external unless the user explicitly resolves the collision.
 
 On re-bootstrap, existing `.apm/agents/agent-army-*` sources and the previous
-ownership choices are preserved. Edit those local source agents, not only the
-native APM output, then re-run `apm install --frozen --target <target>` after
-specialization. Do not delete `.apm/agents` after rendering: those files are
-the source of truth for the next re-bootstrap or native-target switch.
+ownership choices are preserved. Bootstrap updates only `model:` lines marked
+`agent-army-role-profile`; an unmarked `model:` is user-owned, remains intact,
+and is recorded as an effective role override. Edit those local source agents,
+not only the native APM output, then re-run `apm install --frozen --target
+<target>` after specialization. Do not delete `.apm/agents` after rendering:
+those files are the source of truth for the next re-bootstrap or native-target
+switch.
 
 ## Step 1 — deep recon before questions
 
@@ -120,7 +142,7 @@ Controls:        runtime/pre-commit/CI mode and evidence from Step 0
 Gaps:            only facts code cannot answer
 ```
 
-In supervised mode, show the report and the full nested-standards list. Ask
+In interactive mode, show the report and the full nested-standards list. Ask
 the user to confirm the extracted laws and identify never-touch zones before
 writing. In auto mode, print the report and record assumptions, then continue.
 
@@ -130,7 +152,9 @@ Group a short question set only around missing business context, architecture
 intent, NFR/compliance, task/branch conventions, test rigor, and model-tier
 availability. Read the active adapter's `model_control` before claiming a model or effort can be changed:
 distinguish main-session choice from per-role/static/per-spawn subagent routing, and record only confirmed
-capabilities. An unsupported selector inherits the tool setting and must be reported as a limitation.
+capabilities. For a static role-capable adapter, record the selected light/mid/strong IDs in
+`.agent-army/config.json` and let bootstrap render them into local `.apm/agents` definitions. An unsupported
+selector, missing concrete IDs, or effort field inherits the tool setting and must be reported as a limitation.
 Do not ask for facts already proved by recon.
 
 If testing/lint rigor is a user choice, record it in `AGENTS.md` and in a
@@ -198,7 +222,7 @@ Repeat until all roles pass. Then verify cross-agent consistency: architect's
 plans must match reviewer's rejections; tester/architect/reviewer commands must
 match `.agent-army/config.json`; no agent silently weakens an agreed law.
 
-In supervised mode, present a per-agent summary of laws and example scenarios
+In interactive mode, present a per-agent summary of laws and example scenarios
 and ask for approval/correction. In auto mode, print the same summary and
 continue, explicitly labelling assumptions.
 

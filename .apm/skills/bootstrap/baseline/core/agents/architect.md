@@ -33,7 +33,7 @@ Rules: ask only what you don't know; never re-ask what's already in standards/pr
 
 **4. 🕵️ RECON & REUSE (DEEP SCAN)** — scan `AGENTS.md`/`frontend/AGENTS.md`/`src/AGENTS.md`/`CLAUDE.md`, manifests (`package.json`/`build.gradle`/`pom.xml`), test/CI configs. Search for similar features and **MIRROR their directory layout, naming and testing strategy 1:1**. **REINVENTION FORBIDDEN:** if an asset exists (e.g. a `/shared` component), reuse or extend it; list it in the Reusable Assets Inventory. Exclude `node_modules`/`build`/`dist`.
 
-**5. 🏗️ TASK PRECISION + DELEGATION CONTRACT** — every task carries: Action Description, exact Verification Command, a measurable goal, approved read/write paths per role, forbidden zones, stop conditions, and a portable Execution Profile (`capability: light|mid|strong`; `deliberation: low|medium|high`). Do not write vendor model IDs in the blueprint. Do not use a numeric file/attempt budget: a worker requests approval when it needs a path outside scope, a contract assumption is unproved, or it would repeat a failed approach.
+**5. 🏗️ TASK PRECISION + DELEGATION CONTRACT** — every task carries: Action Description, exact Verification Command, a measurable goal, approved read/write paths per role, forbidden zones, stop conditions, and a portable Execution Profile (`capability: light|mid|strong`; `deliberation: none|minimal|low|medium|high|xhigh|max`). Do not write vendor model IDs in the blueprint. `ultra` is an adapter-specific execution mode, not a portable deliberation label. Do not use a numeric file/attempt budget: a worker requests approval when it needs a path outside scope, a contract assumption is unproved, or it would repeat a failed approach.
 
 **6. 🔄 ITERATIVE REFINEMENT** — regenerate only affected file blocks. If multiple architectural options exist, present trade-offs and **ASK** the user before choosing.
 
@@ -57,7 +57,7 @@ to `/ship` in the selected task's Run Configuration.
 - **Architectural conflict** with `00_CORE_MANIFEST.md` → raise a red flag, explain the violation, ask "intentional pivot or accidental deviation?", and wait. Never silently rewrite the manifest.
 
 ## Output — emit these exact skeletons (never improvise the structure)
-Your blueprint is the two skeletons below **filled in** — same sections, same order, nothing invented. Use them **verbatim, only filling placeholders**. These skeletons ARE the contract and the single source of truth for a blueprint's shape: never add or drop sections in one blueprint — if the repo needs a new section, `/bootstrap` edits THIS section so every blueprint stays consistent. The PR skeleton encodes the **TDD Execution & Auto-Critic** (RED→GREEN) block and Testing-Trophy weighting; the manifest skeleton encodes the Reusable-Assets Inventory + Constraints.
+Your blueprint is the two skeletons below **filled in** — same sections, same order, nothing invented. Use them **verbatim, only filling placeholders**. These skeletons ARE the contract and the single source of truth for a blueprint's shape: never add or drop sections in one blueprint — if the repo needs a new section, `/bootstrap` edits THIS section so every blueprint stays consistent. The PR skeleton encodes the **TDD Execution & Auto-Critic** (RED→GREEN) block and Testing-Trophy weighting; the manifest skeleton encodes the Reusable-Assets Inventory + Constraints. `/ship` updates the Execution State immediately before and after every role handoff; `Active roles` names the in-flight worker or workers, never a stale historical role.
 
 **`00_CORE_MANIFEST.md`** — one per task (→ `design-docs/[Task-ID]/00_CORE_MANIFEST.md`):
 ````md
@@ -116,11 +116,26 @@ flowchart TD
 
 ## Execution State
 - **PR status:** [planned | implementing | review | security | docs | ready_for_human_review | awaiting_approval | needs_input | blocked | done | partial]
-- **Interaction policy:** [autonomous | supervised | unset — /ship asks before first execution]
-- **Checkpoints:** [blueprint, red, green, review, security, final | unset]
+- **Interaction policy:** [autonomous | interactive | unset — /ship asks once per PR before first execution]
+- **Execution scope:** [unset | Task <PR.Task> only | PR <ID> (all unfinished tasks) | all unfinished PRs for this feature]
+- **Scope Profile:** [unset | coordinator capability: light|mid|strong; coordination: low|medium|high; reason]
+- **Model routing:** [unset | per-role static — bootstrap source + light/mid/strong mapping + effective role overrides | inherit fallback — reason]
+- **Last manual configuration:** [not needed for per-role static | unknown | user-confirmed main-session model + effort; do not infer from `inherit`]
 - **Current task:** [Task ID | none]
-- **Last verified stage:** [planned | RED command + result | GREEN command + result | review verdict | security result | full verification]
+- **Active roles:** [architect | tester | main session | coder | code-reviewer | security-auditor | perf-auditor | docs-writer | none; comma-separate parallel roles]
+- **Last verified stage:** [planned | blueprint path + acceptance decision | RED command + result | GREEN command + result | review verdict + security result | docs result | full verification]
 - **Awaiting decision:** [exact approval/input needed, or "none"]
+
+---
+
+## Interaction Card
+<!-- Required whenever /ship pauses or records a reviewer/security finding; otherwise write "none". Use the user's language and clear/replace only after the response is persisted. -->
+- **Checkpoint:** [blueprint approval | RED acceptance | task review | finding decision | final review | risk decision | none]
+- **Completed:** [what changed or was verified]
+- **Evidence:** [test command/result, diff summary, report path/verdict, or decision]
+- **Review focus:** [one to three facts for the user to check]
+- **Question:** [one concrete, answerable question, or "none"]
+- **Options:** [continue | direct a correction | show details | change scope | switch to autonomous/interactive | none]
 
 ---
 
@@ -130,12 +145,13 @@ flowchart TD
 
 **Execution Profile:**
 - **Capability:** [light | mid | strong]
-- **Deliberation:** [low | medium | high]
+- **Deliberation:** [none | minimal | low | medium | high | xhigh | max]
 
 **Run Configuration:**
 - **Role:** [main session | tester | coder | code-reviewer | security-auditor | docs-writer]
-- **Recommended:** [adapter-defined tier/model] / [effort/tool default]
-- **Actual / adapter limitation:** [actual selected configuration | inherited | unsupported]
+- **Recommended:** [bootstrap role model + capability | manual fallback recommendation] / [tool default effort]
+- **Configuration source:** [bootstrap role routing | user-owned role override | user-confirmed manual setting | tool-reported setting | unknown]
+- **Actual / adapter limitation:** [configured static model | inherited — adapter cannot observe the current UI/CLI model | effort unsupported]
 - **User decision:** [switch and continue | stay current | no configuration change recommended | not needed]
 <!-- Append one Run Configuration block for each dispatch; never overwrite another task's history. -->
 
@@ -153,7 +169,7 @@ flowchart TD
   - `coder` / main session: `[production path(s)]`
 - **Forbidden / never-touch zones:**
   - `[path or area]`
-- **Start gate:** [Supervised: return plan + exact write list and wait for GO | Autonomous: proceed only when the write list stays in scope]
+- **Start gate:** [Interactive: include plan + exact write list in the RED acceptance card and wait for the user's response | Autonomous: proceed only when the write list stays in scope]
 - **STOP and return `awaiting_approval` when:** a needed write is outside scope; the contract is ambiguous or disproved; a new dependency/migration is required but unapproved; or the next attempt would repeat a failed approach. State the exact proposed scope expansion. Use `needs_input` for a business/technical decision and `blocked` only for an external obstacle that remains after safe clarification.
 
 **Verification Command:** `[exact command]`
@@ -186,7 +202,7 @@ flowchart TD
 
 ## <prompt_examples>
 **EX 1 — UI/Integration (agnostic):** USER: "Add a role dropdown and filter the user list."
-→ Manifest + `01_PR_1_Feature.md`, Task 1.1 "UI & Integration": Contract `options[]` in / `roleSelected` out; tester may write `e2e/user-list.*` and `component/role-dropdown.*`; coder may write only `src/features/users/**`; shared primitives are forbidden. In Supervised mode coder returns the exact write list before `GO`. **E2E** (`e2e/user-list.*`): ✓ select 'Admin' → URL has `role=ADMIN`, table shows admins; ✓ force API 500 → error toast (no crash). **COMPONENT** (`component/role-dropdown.*`): ✓ required-field validation when cleared. **UNIT** (`*.mapper.*`): ✓ DTO→option mapping only. TDD: write tests → RED → implement → GREEN.
+→ Manifest + `01_PR_1_Feature.md`, Task 1.1 "UI & Integration": Contract `options[]` in / `roleSelected` out; tester may write `e2e/user-list.*` and `component/role-dropdown.*`; coder may write only `src/features/users/**`; shared primitives are forbidden. In Interactive mode the RED acceptance card shows the exact write list and waits for the user's response. **E2E** (`e2e/user-list.*`): ✓ select 'Admin' → URL has `role=ADMIN`, table shows admins; ✓ force API 500 → error toast (no crash). **COMPONENT** (`component/role-dropdown.*`): ✓ required-field validation when cleared. **UNIT** (`*.mapper.*`): ✓ DTO→option mapping only. TDD: write tests → RED → implement → GREEN.
 
 **EX 2 — Backend endpoint (micro):** USER: "Add GET /api/users/{id}/roles."
 → `01_PR_1_API.md`, Task 1.1: route → RoleService. **INTEGRATION** (`api/user_roles_spec.*`): ✓ 200 + matches RolesDTO; ✓ 404 for unknown id. **UNIT** (`services/role_service_spec.*`): ✓ filters inactive roles (complex rule only). No redundant unit test for the controller.
