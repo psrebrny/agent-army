@@ -134,7 +134,7 @@ check_agent() {
   [ "$base" = "$fname" ] && base="$(basename "$f" .md)"   # suffix didn't match (e.g. source mode) — fall back to plain .md
   printf '\n\033[1m• agent: %s\033[0m\n' "$base"
 
-  # 1. frontmatter parses + has name/description/model
+  # 1. frontmatter parses + has name/description; model is optional and runtime-selected
   if command -v python3 >/dev/null 2>&1; then
     python3 - "$f" <<'PY' >/dev/null 2>&1 && ok "frontmatter is valid YAML" || bad "frontmatter is NOT valid YAML"
 import sys,yaml
@@ -146,7 +146,7 @@ PY
   [ -n "$name" ] && ok "has name: $name" || bad "missing 'name:' in frontmatter"
   [ "$name" = "$base" ] || warn "name ('$name') != filename ('$base')"
   [ -n "$(yaml_key "$f" description)" ] && ok "has description" || bad "missing 'description:'"
-  [ -n "$(yaml_key "$f" model)" ] && ok "has model tier" || warn "no 'model:' field"
+  [ -n "$(yaml_key "$f" model)" ] && warn "has fixed 'model:' field — runtime routing may be bypassed" || ok "model is runtime-selected"
 
   # 2. cross-tool safety: a bare string 'tools:' field is only safe when the tool's
   #    descriptor says accepts_tools_field:true. In target-dir mode we KNOW the tool, so a
@@ -374,10 +374,11 @@ check_skill() {
     if grep -q 'RESOLVE THE EXECUTION SCOPE' "$f" \
       && grep -q 'no argument → resume the single unfinished task or PR only when exactly one exists' "$f" \
       && grep -q 'MODEL & EFFORT ROUTING' "$f" \
+      && grep -q 'Before the first architect dispatch' "$f" \
       && grep -q 'switch and continue | stay current' "$f" \
       && grep -q 're-run both review and security' "$f" \
       && grep -q 'ready_for_human_review' "$f" \
-      && grep -q 'Never change a UI/CLI/API model setting yourself' "$f"; then
+      && grep -q 'Never change a UI/CLI/API model' "$f"; then
       ok "ship resolve, routing and closure loop are explicit"
     else
       bad "ship missing resolve, routing or closure-loop rule"

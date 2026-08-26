@@ -50,16 +50,22 @@ Use these execution statuses exactly:
 ## 1.5 · MODEL & EFFORT ROUTING
 Every atomic task has a portable `Execution Profile`: `capability` (`light`, `mid`, `strong`) and
 `deliberation` (`low`, `medium`, `high`). The architect sets the profile from task complexity/risk; it
-does not put a vendor model ID in the manifest.
+does not put a vendor model ID in the manifest. Agent definitions also do not pin a model by default:
+an absent `model` field means inherit the active session/tool configuration.
 
-Before dispatching a role, consult the active adapter's `model_control`. For `per_spawn`, create the
-fresh subagent with the profile's supported model/effort; for `per_role_static`, use the role definition;
-for `inherit` or `unsupported`, retain the current configuration and state that limitation. Record the
-role, profile, recommendation, actual configuration or limitation, and any user decision in the selected
-task's `Run Configuration` history.
+Before dispatching a role, consult the active adapter's `model_control`. For `per_spawn`, use the
+profile only to form a recommendation unless the user explicitly approves a model switch. For
+`per_role_static`, an absent role-level model still means inherit; never manufacture a vendor/model ID
+from a tier. For `inherit` or `unsupported`, retain the current configuration and state that limitation.
+For every atomic task, show or record the recommendation before its first role dispatch. If the current
+model is adequate, say `no configuration change recommended` and continue without a pause. If a switch
+would materially affect quality, risk or cost, pause and ask the user. Record the role, profile,
+recommendation, actual configuration or limitation, and any user decision in the selected task's `Run
+Configuration` history.
 
-For the main session, recommend a concrete model only when the adapter confirms the selector. If the
-recommended configuration is materially different in quality, risk or cost, pause and show:
+Before the first architect dispatch for every non-trivial task, show a model recommendation and pause
+for the user's decision. The recommendation may be that the current model is sufficient; the pause is
+not permission to force a stronger model. Show:
 ```
 Model & Effort Recommendation
 - Scope / role: [task ID / main session or role]
@@ -68,8 +74,11 @@ Model & Effort Recommendation
 - Lower-cost alternative: [profile] — [trade-off]
 - Decision needed: switch and continue | stay current
 ```
-Never change a UI/CLI/API model setting yourself. Record the response in that task's `Run Configuration`;
-do not ask again for the same role/task unless the contract materially changes.
+The user changes the model in the UI/CLI, then tells `/ship` to continue. If the user chooses `stay
+current`, invoke the architect with the current model and continue. Never change a UI/CLI/API model
+setting yourself. Record the response in that task's `Run Configuration`; do not ask again for the same
+role/task unless the contract materially changes. After the architect returns, honor the `blueprint`
+checkpoint in supervised mode and wait for `ok` or requested changes before implementation.
 
 ## 2 · BLUEPRINT OR RESUME  → `architect`
 Architect writes `design-docs/[Task-ID]/00_CORE_MANIFEST.md` plus `0X_PR_*.md` (one PR per file) and

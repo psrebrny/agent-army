@@ -85,6 +85,11 @@ review/security → repairs and re-audit → docs/full verification → ready fo
 human review. Workers receive explicit read/write scope, and the reviewer
 receives only the task contract, diff and human decisions.
 
+Native agent definitions do not pin a vendor model. Before every non-trivial
+architect dispatch, `/ship` pauses with a model recommendation; the user
+changes the model if desired and then resumes. An absent native `model` field
+means that the agent inherits the active tool/session configuration.
+
 ## Development
 
 ```bash

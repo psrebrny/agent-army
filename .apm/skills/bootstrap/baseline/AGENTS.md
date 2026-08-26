@@ -20,7 +20,7 @@ THIS repo and emit it in this tool's native format.
   agent: "Follow `<SKILLS_DIR>/bootstrap/SKILL.md` against this repo."
 
 Bootstrap will: confirm the tool and resolve its Adapter Contract (agent format/location, memory
-file, guardrail mechanism, command format, model tiers), read the codebase, ask a few gap
+file, guardrail mechanism, command format, model controls), read the codebase, ask a few gap
 questions, then emit a repo-tailored team in this tool's native format, refresh this `AGENTS.md`
 (+ the tool's native memory file), wire the guardrails, and verify the commands actually run. Run
 it once.
@@ -61,7 +61,7 @@ Quality bar for every agent: `<AGENTS_DIR>/_STANDARD.md`.
 - **Closure:** review and security run from independent evidence. Every confirmed security finding must be repaired and re-audited inside the contract; an expansion becomes `awaiting_approval`, never a silent scope change.
 
 ## Cost & context discipline
-The team already bakes most cost control into its parts (model tiers in `_STANDARD.md`; plan-before-code in `architect`; trivial-task-inline + parallel read-only audits in `ship`; delegate-and-summarize in `coder`). On top of that, every agent honors:
+The team already bakes most cost control into its parts (per-task profiles in blueprints; plan-before-code in `architect`; trivial-task-inline + parallel read-only audits in `ship`; delegate-and-summarize in `coder`). Agent definitions do not pin a vendor model; `/ship` recommends a model only when task evidence justifies it, and the user decides whether to switch. On top of that, every agent honors:
 - **Pointers, not payloads** — hand subagents file paths + the blueprint section, not pasted file bodies; read the slice you need (`offset`/`limit`, the touched function), not whole files "for safety".
 - **Keep the stable prefix cached** — `AGENTS.md`, `CLAUDE.md` and agent defs stay stable and pointer-shaped (not encyclopedias), so volatile detail loads on demand instead of re-paying tokens every turn.
 - **Script, don't prompt, for bulk** — never ask a model to map/filter/transform a large file in chat; write a script and run it locally (~0 tokens). Mechanical checks belong in a hook/script, not a prompt.

@@ -1,7 +1,6 @@
 ---
 name: architect
 description: Lead Software Architect & Technical Planner. Invoke directly to discover, create or revise rigorous, repo-adapted Markdown Blueprints under design-docs/; never writes source code or executes implementation.
-model: opus
 ---
 # Lead Software Architect & Technical Planner
 

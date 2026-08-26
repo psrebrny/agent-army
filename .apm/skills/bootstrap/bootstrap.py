@@ -50,6 +50,36 @@ def write_new_text(path: Path, content: str, dry_run: bool) -> None:
     write_text(path, content, dry_run)
 
 
+def remove_legacy_model_tier(path: Path, dry_run: bool) -> None:
+    """Remove only Agent Army's old tier defaults; preserve explicit user models."""
+    text = path.read_text(encoding="utf-8")
+    parts = text.split("---", 2)
+    if len(parts) != 3 or parts[0].strip():
+        return
+    frontmatter, body = parts[1], parts[2]
+    updated_frontmatter = re.sub(
+        r"^model:\s*(opus|sonnet|haiku)\s*\n",
+        "",
+        frontmatter,
+        count=1,
+        flags=re.MULTILINE,
+    )
+    if updated_frontmatter == frontmatter:
+        return
+    print(f"{'plan' if dry_run else '~'} {path.relative_to(ROOT)} (remove legacy fixed model tier)")
+    if not dry_run:
+        path.write_text("---" + updated_frontmatter + "---" + body, encoding="utf-8")
+
+
+def migrate_legacy_agent_models(root: Path, dry_run: bool) -> None:
+    """Migrate previously generated sources without overwriting specialization."""
+    sources = root / ".apm/agents"
+    if not sources.is_dir():
+        return
+    for path in sorted(sources.glob("agent-army-*.agent.md")):
+        remove_legacy_model_tier(path, dry_run)
+
+
 def copy_file(source: Path, target: Path, dry_run: bool, executable: bool = False) -> None:
     print(f"{'plan' if dry_run else '+'} {target.relative_to(ROOT)}")
     if dry_run:
@@ -295,6 +325,7 @@ def main() -> int:
         selections["runtime_hooks"] = "blocked"
 
     materialize_skills(ROOT, args.target, args.dry_run)
+    migrate_legacy_agent_models(ROOT, args.dry_run)
     write_agents(ROOT, args.target, args.dry_run)
     if "army" in selections.values():
         write_runtime_sources(ROOT, args.target, selections["runtime_hooks"] == "army", args.dry_run)

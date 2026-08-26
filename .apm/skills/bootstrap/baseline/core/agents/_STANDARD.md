@@ -5,7 +5,7 @@ Every agent in `<AGENTS_DIR>/` — shipped, repo-specialized by `/bootstrap`, or
 hand-crafted `architect.md` (use it as the reference exemplar).
 
 ## Required structure (every agent file)
-1. **Frontmatter** — `name`; `description` that says **WHEN to delegate** ("Use when…"); `tools` = the **minimal** set (read-only unless it must write); `model` — the concrete model name for this repo/tool, assigned during `/bootstrap` by tier: **strong** (hard reasoning/planning/audit), **mid** (review/test/structured analysis), **light** (docs/high-volume/cheap edits). Choice must be justifiable; don't default to the strongest if mid is sufficient.
+1. **Frontmatter** — `name`; `description` that says **WHEN to delegate** ("Use when…"); `tools` = the **minimal** set (read-only unless it must write). `model` is optional and MUST be omitted from the portable baseline unless the user explicitly approves a tool-specific default. Model choice belongs to `/ship`'s per-task execution profile and the active session; never hardcode a vendor/model ID into a reusable agent.
 2. **Role & Purpose** — one tight paragraph; a single clear responsibility.
 3. **Principles** — the non-negotiables. Use **BAD/GOOD** contrasts where a behavior is easy to get wrong.
 4. **Scope / What it checks or produces** — concrete and domain-specific, never generic.
@@ -26,7 +26,7 @@ hand-crafted `architect.md` (use it as the reference exemplar).
 - Concrete beats generic: every rule must change behavior — cut filler.
 
 ## Self-check before saving an agent (ALL must be YES)
-- [ ] Frontmatter complete; `description` states WHEN to use it; tools minimal; model justified.
+- [ ] Frontmatter complete; `description` states WHEN to use it; tools minimal; no model is hardcoded unless the user explicitly approved a tool-specific default.
 - [ ] Contains Role, Principles, Scope, Workflow, Output(embeds its skeleton), Edge cases.
 - [ ] Its primary output skeleton ends with `Handoff`: STATUS, VERIFIED, ASSUMPTIONS, OUT_OF_SCOPE, OPEN_QUESTIONS.
 - [ ] ≥2 concrete `<prompt_examples>` with real paths/assertions, and they are VARIED (different scenario types, not duplicates).

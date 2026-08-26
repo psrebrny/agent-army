@@ -46,6 +46,17 @@ cp -R "$ROOT/.apm/skills" "$MIG/apm_modules/psrebrny/agent-army/.apm/"
 [ -f "$MIG/.agents/skills/ship/SKILL.md" ] && ok "cache migration: skills materialized to .agents/skills" || bad "cache migration: skills not materialized"
 [ -f "$MIG/.opencode/agents/agent-army-architect.md" ] && ok "cache migration: native agents rendered" || bad "cache migration: native agents missing"
 
+LEGACY="$WORK/legacy-model"; init_repo "$LEGACY"
+bootstrap "$LEGACY" opencode --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null
+sed -i.bak '3i\
+model: opus' "$LEGACY/.apm/agents/agent-army-architect.agent.md"; rm -f "$LEGACY/.apm/agents/agent-army-architect.agent.md.bak"
+bootstrap "$LEGACY" opencode --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null
+if grep -q '^model:' "$LEGACY/.apm/agents/agent-army-architect.agent.md"; then
+  bad "legacy model tier was retained"
+else
+  ok "legacy model tier migrated to runtime inheritance"
+fi
+
 printf '\n\033[1mGATE 1 · ownership and non-clobbering\033[0m\n'
 OWN="$WORK/ownership"; init_repo "$OWN"
 mkdir -p "$OWN/.github/workflows"; printf 'name: user-ci\n' > "$OWN/.github/workflows/user.yml"
@@ -99,6 +110,11 @@ for target in claude codex cursor copilot opencode gemini windsurf; do
   [ -f "$dir/.agents/skills/ship/SKILL.md" ] && ok "$target: shared skills present" || bad "$target: shared skills missing"
   if [ -f "$agent" ]; then
     ok "$target: expected native/degraded output rendered"
+    if grep -Eq '^(model:|model =)' "$agent"; then
+      bad "$target: native agent pins a model"
+    else
+      ok "$target: native agent inherits runtime model"
+    fi
     grep -q 'Delegation Contract' "$agent" && ok "$target: delegation contract rendered" || bad "$target: delegation contract missing after render"
     grep -q '## Execution State' "$agent" && ok "$target: execution state rendered" || bad "$target: execution state missing after render"
     grep -q 'Execution Profile' "$agent" && ok "$target: execution profile rendered" || bad "$target: execution profile missing after render"
