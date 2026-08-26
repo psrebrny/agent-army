@@ -1,57 +1,114 @@
 ---
 name: ship
-description: Full SDD pipeline with the agent team — discovery/interview, blueprint in design-docs/, implementation in strict TDD (Red→Green), architectural audit, security, docs. Run /ship to take a task end-to-end with quality control.
+description: Resumable SDD executor — resolves a task, PR, feature or small fix from the blueprint, runs strict TDD and repair loops, then returns work ready for human review.
 ---
-# /ship — SDD pipeline + Testing Trophy + strict TDD
+# /ship — resumable SDD execution + Testing Trophy + strict TDD
 
 > Token discipline for every step lives in `AGENTS.md` → "Cost & context discipline"
 > (cheapest adequate model, pointers not payloads, match the fan-out to task size).
 > This pipeline honors the repo's **Project policy** (`.agent-army/config.json`): when the recorded test policy is `none`
-> skip step 2's tester/TDD loop entirely (implement → security → docs); at `light`/`pragmatic`
+> skip the RED-first loop entirely (implement → audit → docs); at `light`/`pragmatic`
 > scale the tests down. Security barriers stay on at every level.
 
-## 0 · DISCOVERY & INTERVIEW  → agent `architect` (Phase 0)
-Understand the project first. `architect` classifies the repo:
-- **GREENFIELD** (no AGENTS.md/CLAUDE.md, little/no code) → interview + **bootstrap** (AGENTS.md/CLAUDE.md, directory structure, test tooling, `design-docs/` skeleton).
-- **EXISTING** → recon (scan AGENTS.md/CLAUDE.md, detect stack, mirror patterns) + ask only about gaps.
-Group the questions: business (what the project is, users, MVP) · architecture (stack, style, state, data) · testing (Testing Trophy, tools, commands) · NFR · process (Task-ID, commits). **Do not create files** until goal/stack/test strategy/acceptance criteria are clear. "Assume and go" → record ASSUMPTIONS and continue.
+## 0 · RESOLVE THE EXECUTION SCOPE
+`/ship` is an executor, not the planning agent. It reads `design-docs/**/00_CORE_MANIFEST.md` and
+`0*_PR_*.md` first, including every `Execution State`, and resolves the narrowest unambiguous scope:
 
-### Choose the EXECUTION MODE (ask right after the interview)
-Ask the user how execution should run, and record the choice in `00_CORE_MANIFEST.md` (field `Execution Mode`):
-- **A) Autonomous** — the team runs the whole pipeline on its own, without interrupting. It stops ONLY at hard gates (hooks) and at the end for commit approval. Fastest, fewest questions.
-- **B) Supervised (checkpoints)** — the orchestrator pauses at key points, shows state, and waits for your "ok / fix it":
-  1. after the **blueprint** (plan approval),
-  2. after the **RED tests** for a task — shows the tests, you review/fix, BEFORE any implementation,
-  3. after **GREEN** of each task/PR — you can correct course before the next one,
-  4. before an escalation/larger architecture change.
-  In this mode the user can take the wheel at any time and correct the agent; the orchestrator returns to the plan after the correction.
-  **If a correction is a durable, repo-wide convention** (not a one-off for this task) — "always do X", "we never do Y", "change the test policy" — OFFER to bake it into the whole team via the `/adapt-army` skill before resuming. Don't rewrite agents silently; a one-off tweak stays task-local.
-Default if unspecified: **B (supervised)** for non-trivial tasks, **A** for small ones. The mode can be changed mid-run with "switch to autonomous/supervised".
+- explicit task ID → resume or execute that task;
+- explicit PR ID/file → execute its unfinished tasks;
+- explicit feature/ticket → select its one unfinished PR, or present the candidates and ask;
+- a small self-contained description with no blueprint → treat it as one full pipeline scope;
+- no argument → resume the single unfinished task or PR only when exactly one exists; when none or
+  several exist, present the candidates and ask what to start or resume.
 
-## 1 · BLUEPRINT  → `architect` (Phase 2)
-Writes `design-docs/[Task-ID]/00_CORE_MANIFEST.md` + `0X_PR_*.md` (1 PR = 1 file). Atomic tasks (Logic + UI/Endpoint + Test), with explicit test paths and API contracts. When there are multiple options — asks which to take.
+Never select the most recently edited plan merely because it is recent. If no blueprint exists for a
+feature/ticket, invoke `architect` to create one. Continue automatically only if that plan contains one
+unambiguous PR; otherwise ask which PR/task to execute. Users may invoke `architect` directly for
+planning or replanning; it creates/updates `design-docs/` and never implements source code.
 
-## 2 · IMPLEMENTATION per task — STRICT TDD `<auto_critic>` with `tester`
+## 1 · EXECUTION POLICY
+Read the selected PR's `Execution State`. If its interaction policy or checkpoints are absent, ask once
+and persist the answer in that PR file:
+
+- **Autonomous** — continue through normal stages without pauses and return only at
+  `ready_for_human_review`, a configured checkpoint, or a stop condition.
+- **Supervised** — pause only at the selected checkpoints: `blueprint`, `red`, `green`, `review`,
+  `security`, and/or `final`.
+
+At any mode, ask instead of guessing when a requirement is missing, the scope is ambiguous, or a change
+needs expanded authority. A durable repo-wide correction is an occasion to offer `/adapt-army`; one-off
+guidance remains in the selected task/PR.
+
+Use these execution statuses exactly:
+- `planned`, `red`, `implementing`, `green`, `verified`, `review`, `security`, `docs`,
+  `ready_for_human_review` for normal progress;
+- `awaiting_approval` for a precisely described scope expansion;
+- `needs_input` for a business/technical decision only the user can provide;
+- `blocked` only for an external obstacle that remains after a safe attempt to clarify;
+- `done` and `partial` for completed or intentionally incomplete work.
+
+## 1.5 · MODEL & EFFORT ROUTING
+Every atomic task has a portable `Execution Profile`: `capability` (`light`, `mid`, `strong`) and
+`deliberation` (`low`, `medium`, `high`). The architect sets the profile from task complexity/risk; it
+does not put a vendor model ID in the manifest.
+
+Before dispatching a role, consult the active adapter's `model_control`. For `per_spawn`, create the
+fresh subagent with the profile's supported model/effort; for `per_role_static`, use the role definition;
+for `inherit` or `unsupported`, retain the current configuration and state that limitation. Record the
+role, profile, recommendation, actual configuration or limitation, and any user decision in the selected
+task's `Run Configuration` history.
+
+For the main session, recommend a concrete model only when the adapter confirms the selector. If the
+recommended configuration is materially different in quality, risk or cost, pause and show:
+```
+Model & Effort Recommendation
+- Scope / role: [task ID / main session or role]
+- Recommended: [confirmed model or adapter-defined tier] / [confirmed effort or tool default]
+- Why: [task evidence]
+- Lower-cost alternative: [profile] — [trade-off]
+- Decision needed: switch and continue | stay current
+```
+Never change a UI/CLI/API model setting yourself. Record the response in that task's `Run Configuration`;
+do not ask again for the same role/task unless the contract materially changes.
+
+## 2 · BLUEPRINT OR RESUME  → `architect`
+Architect writes `design-docs/[Task-ID]/00_CORE_MANIFEST.md` plus `0X_PR_*.md` (one PR per file) and
+never writes production code. Each atomic task has an API contract, a Delegation Contract, an Execution
+Profile and an Execution State. On a review escalation, architect updates only affected plan blocks and
+the relevant state; it does not silently rewrite completed work.
+
+## 3 · IMPLEMENTATION per task — STRICT TDD `<auto_critic>` with `tester`
 _(Applies at `TEST_POLICY=strict`/`pragmatic`. At `light`: thin happy-path tests, no strict RED-first. At `none`: skip this whole step — the main session just implements; lint/security still apply.)_
 For EACH task in the blueprint:
-1. **`tester` writes the tests (RED)** — independently, from the contract/acceptance criteria (not from the implementation), in Testing-Trophy weighting. Runs them → **MUST FAIL (RED)** for the right reason.
-2. **The main session implements** the smallest change that satisfies the task (does not rewrite the tests).
-3. **`tester` verifies (GREEN)** — runs again → **MUST PASS**. Still red → diagnose (bug vs test), fix and repeat. Never weaken the assertions.
+1. Set task status to `red`; **`tester` writes the tests (RED)** independently from the contract/acceptance criteria and proves they fail for the right reason.
+2. At a `red` checkpoint, pause only when configured. Then set status to `implementing`. The main session implements the smallest change; a delegated `coder` receives only the Delegation Contract, RED tests and approved read paths. In Supervised mode it returns its plan + exact write list and waits for `GO`; in Autonomous mode it proceeds only when that list is wholly inside approved scope.
+3. **`tester` verifies (GREEN)**. Set status to `green` only when the command passes; otherwise diagnose and fix without weakening assertions. A required path outside scope, ambiguous/disproved contract, unapproved dependency/migration or repeated failed approach becomes `awaiting_approval`, `needs_input` or `blocked`, never silent expansion.
 No batching without verification. *Exception:* for trivial tasks the main session may do the whole Red→Green cycle inline, without a round-trip to the subagent (the cheaper default — see AGENTS.md "Cost & context discipline"). Run the configured verification command after every GREEN step; runtime hooks are feedback, while the user-selected pre-commit/CI controls provide repository enforcement.
-**In Supervised mode:** after RED show the tests and wait for "ok/fix" before implementing; after GREEN stop before the next task. **In Autonomous mode:** keep going without pauses (except the hook gates).
+At a configured `green` checkpoint, pause; otherwise mark the task `verified` and continue.
 
-## 3 · REVIEW  → `code-reviewer` (Architectural Auditor)
-Audit the finished diff vs blueprint + standards + business goal. Saves a report under `design-docs/[Task-ID]/reviews/`. Verdict:
-- `CHANGES_REQUESTED` → produce Micro-Blueprints and return to step 2.
-- `ARCHITECTURAL_ALIGNMENT_NEEDED` → back to `architect` (course correction, blueprint update).
-- `APPROVED` → continue.
+## 4 · REVIEW + SECURITY  → independent read-only agents
+Start a fresh reviewer context where the tool supports subagents; otherwise invoke the review role with a
+clean packet. The packet contains **only** the task contract, finished diff and human decisions. Do not
+include coder/tester reports, rationales or transcripts. Audit that packet against standards + business
+goal; if the contract is absent, label the result `Diff-Only Review`. Run `security-auditor` independently
+against the finished diff at the same time. Neither auditor receives implementation/tester reports or
+transcripts.
 
-## 4 · SECURITY  → `security-auditor` (read-only)
-Remove CRITICAL/HIGH findings. Steps 3 and 4 are read-only analyses of the finished diff — run them in parallel (fan-out).
+- reviewer `CHANGES_REQUESTED` → create an in-scope Micro-Blueprint, repair it through RED/GREEN,
+  then re-run both review and security;
+- reviewer `ARCHITECTURAL_ALIGNMENT_NEEDED` → architect performs targeted course correction, then
+  return to implementation;
+- every confirmed security finding → repair within the existing contract, prove GREEN, then re-run both
+  audits; one that needs a new scope becomes `awaiting_approval` with the exact expansion;
+- proceed only after `APPROVED` and zero open confirmed security findings.
 
-## 5 · DOCS  → `docs-writer`
+Repeat this loop until the selected PR is clean. At configured `review` or `security` checkpoints, pause
+with the relevant evidence; otherwise continue autonomously.
 
-## 6 · SUMMARY
-Diff, test result, review verdict, security findings. Propose a commit (Conventional Commits). DO NOT commit without my approval.
+## 5 · DOCS + FINAL VERIFICATION
+`docs-writer` updates only necessary, truthful docs. Run the configured full verification, record its
+output in `Execution State`, set the PR to `ready_for_human_review`, and pause at `final` when configured.
+Return a compact summary: scope, diff, tests, review verdict, security result, actual role configurations
+and any non-blocking assumptions. Propose a Conventional Commit but **DO NOT commit without approval**.
 
 The runtime hooks act independently as deterministic feedback. Whether pre-commit and CI are Agent Army barriers, user-owned controls, or disabled is recorded in `.agent-army/config.json`; never claim an external control is owned by this package.

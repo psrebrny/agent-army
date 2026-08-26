@@ -26,6 +26,11 @@ capabilities:
   commands_dir: null
   skill_invocation: invoke-by-path
 
+model_control:
+  main_session: inherit
+  subagent_model: per_role_static
+  subagent_effort: unsupported
+
 hooks_live:
   - verify.sh
   - detect.sh

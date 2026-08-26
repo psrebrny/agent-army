@@ -185,7 +185,46 @@ PY
     ' "$f"; then ok "Output embeds a fenced skeleton"
   else bad "Output section has no embedded skeleton (fenced block)"; fi
 
-  # 6. (materialized output only) no unresolved path placeholders leaked through /bootstrap
+  # 6. every report/artifact has the common handoff contract. It gives the
+  # orchestrator a stable, compact surface even though the body of each role's
+  # report remains role-specific.
+  if grep -q '^## Handoff' "$f"; then
+    local handoff_missing="" field
+    for field in STATUS VERIFIED ASSUMPTIONS OUT_OF_SCOPE OPEN_QUESTIONS; do
+      grep -q "\*\*$field:\*\*" "$f" || handoff_missing="$handoff_missing $field"
+    done
+    [ -z "$handoff_missing" ] && ok "Handoff has all required fields" || bad "Handoff missing:$handoff_missing"
+  else
+    bad "missing Handoff section"
+  fi
+
+  # 7. workflow guarantees have one owning agent each. Validate
+  # them in source and materialized profiles so specialization cannot turn
+  # them back into optional prose.
+  if [ "$name" = "architect" ]; then
+    if grep -q 'Delegation Contract' "$f" \
+      && grep -q 'approved read/write paths' "$f" \
+      && grep -q 'STOP and return `awaiting_approval`' "$f" \
+      && grep -q '## Execution State' "$f" \
+      && grep -q '\*\*Execution Profile:\*\*' "$f" \
+      && grep -q '\*\*Run Configuration:\*\*' "$f" \
+      && grep -q 'ready_for_human_review' "$f"; then
+      ok "Delegation Contract is explicit"
+    else
+      bad "architect missing explicit contract/execution-state rules"
+    fi
+  fi
+  if [ "$name" = "code-reviewer" ]; then
+    if grep -q 'FRESH-EYES ISOLATION' "$f" \
+      && grep -q 'Do not open or accept implementation/tester reports' "$f" \
+      && grep -q 'Diff-Only Review' "$f"; then
+      ok "reviewer clean-packet isolation is explicit"
+    else
+      bad "reviewer missing clean-packet isolation"
+    fi
+  fi
+
+  # 8. (materialized output only) no unresolved path placeholders leaked through /bootstrap
   if [ -n "$TARGET_DIR" ]; then
     if grep -qE '<(SKILLS|AGENTS|TOOL)_DIR>' "$f"; then
       bad "unresolved placeholder(s): $(grep -oE '<(SKILLS|AGENTS|TOOL)_DIR>' "$f" | sort -u | tr '\n' ' ')— /bootstrap must substitute these"
@@ -201,20 +240,33 @@ check_tools_descriptors() {
     name="$(basename "$f")"
     RC="$(python3 - "$f" <<'PY'
 import sys, yaml
-req = {"dirs", "frontmatter", "capabilities", "hooks_live"}
+req = {"dirs", "frontmatter", "capabilities", "model_control", "hooks_live"}
 try:
     d = yaml.safe_load(open(sys.argv[1]))
 except Exception as e:
     print(f"PARSE_ERROR {e}")
     sys.exit(0)
 missing = req - set((d or {}).keys())
-print(f"MISSING {' '.join(sorted(missing))}" if missing else "OK")
+if missing:
+    print(f"MISSING {' '.join(sorted(missing))}")
+    sys.exit(0)
+mc = d.get("model_control") or {}
+need_mc = {"main_session", "subagent_model", "subagent_effort"}
+missing_mc = need_mc - set(mc)
+if missing_mc:
+    print(f"MODEL_CONTROL_MISSING {' '.join(sorted(missing_mc))}")
+    sys.exit(0)
+allowed = {"per_spawn", "per_role_static", "inherit", "unsupported"}
+invalid = {k: v for k, v in mc.items() if k in need_mc and v not in allowed}
+print(f"MODEL_CONTROL_INVALID {invalid}" if invalid else "OK")
 PY
 )"
     case "$RC" in
       OK) ok "$name: valid YAML, all required keys present" ;;
       PARSE_ERROR*) bad "$name: $RC" ;;
       MISSING*) bad "$name: missing required key(s): ${RC#MISSING }" ;;
+      MODEL_CONTROL_MISSING*) bad "$name: missing model_control key(s): ${RC#MODEL_CONTROL_MISSING }" ;;
+      MODEL_CONTROL_INVALID*) bad "$name: invalid model_control value(s): ${RC#MODEL_CONTROL_INVALID }" ;;
     esac
   done
 }
@@ -318,6 +370,19 @@ check_skill() {
   [ -f "$f" ] && ok "SKILL.md present" || { bad "no SKILL.md"; return; }
   [ -n "$(yaml_key "$f" name)" ] && ok "has name" || bad "missing 'name:'"
   [ -n "$(yaml_key "$f" description)" ] && ok "has description" || bad "missing 'description:'"
+  if [ "$base" = "ship" ]; then
+    if grep -q 'RESOLVE THE EXECUTION SCOPE' "$f" \
+      && grep -q 'no argument → resume the single unfinished task or PR only when exactly one exists' "$f" \
+      && grep -q 'MODEL & EFFORT ROUTING' "$f" \
+      && grep -q 'switch and continue | stay current' "$f" \
+      && grep -q 're-run both review and security' "$f" \
+      && grep -q 'ready_for_human_review' "$f" \
+      && grep -q 'Never change a UI/CLI/API model setting yourself' "$f"; then
+      ok "ship resolve, routing and closure loop are explicit"
+    else
+      bad "ship missing resolve, routing or closure-loop rule"
+    fi
+  fi
 }
 
 # --- argument routing -------------------------------------------------------

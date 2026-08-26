@@ -37,6 +37,11 @@ capabilities:
   commands_dir: null
   skill_invocation: invoke-by-path  # "@.agents/skills/<skill>/SKILL.md" until apm wires native routing
 
+model_control:
+  main_session: inherit
+  subagent_model: per_role_static
+  subagent_effort: unsupported
+
 # Only the hooks that can actually fire without settings.json: the git-commit barrier
 # and what it calls, plus command auto-detection.
 hooks_live:

@@ -67,6 +67,22 @@ Runtime hooks provide quick deterministic feedback. Agent Army only claims
 repository enforcement for chosen, active `army` pre-commit and CI layers;
 external layers remain the user's responsibility.
 
+Use `architect` directly when you want discovery and a blueprint only; it never
+implements source code. `/ship` resolves and resumes the narrowest unambiguous
+task or PR from `design-docs/` (plain `/ship` resumes only when one open scope
+exists). Each PR persists execution mode, checkpoints and task state, so a new
+session can continue without reconstructing chat history.
+
+Architect assigns each task a portable capability/effort profile. `/ship` maps
+it through the target adapter's confirmed model controls: it may select a fresh
+subagent configuration only when the adapter supports that, otherwise it
+inherits and reports the limitation. It never changes the main tool setting;
+when a main-session recommendation is material, the user chooses `switch and
+continue` or `stay current` for that task. The delivery loop is TDD → independent
+review/security → repairs and re-audit → docs/full verification → ready for
+human review. Workers receive explicit read/write scope, and the reviewer
+receives only the task contract, diff and human decisions.
+
 ## Development
 
 ```bash

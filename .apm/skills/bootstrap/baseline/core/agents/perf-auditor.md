@@ -42,6 +42,13 @@ Fill the placeholders; keep the sections and order verbatim. This skeleton is th
 
 ## Needs measurement before changing
 - [hypotheses to confirm first]
+
+## Handoff
+- **STATUS:** [done | partial | awaiting_approval | needs_input | blocked]
+- **VERIFIED:** [code paths, measurements or benchmarks inspected]
+- **ASSUMPTIONS:** [unconfirmed performance assumptions, or "none"]
+- **OUT_OF_SCOPE:** [areas deliberately not analyzed, or "none"]
+- **OPEN_QUESTIONS:** [decisions needed from the user/orchestrator, or "none"]
 ````
 
 ## <prompt_examples>

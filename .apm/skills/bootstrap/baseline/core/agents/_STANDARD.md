@@ -10,7 +10,7 @@ hand-crafted `architect.md` (use it as the reference exemplar).
 3. **Principles** — the non-negotiables. Use **BAD/GOOD** contrasts where a behavior is easy to get wrong.
 4. **Scope / What it checks or produces** — concrete and domain-specific, never generic.
 5. **Workflow** — ordered steps the agent follows.
-6. **Output** — embed the exact report/artifact skeleton in the agent's `## Output` section (fenced, filling placeholders); the agent is the single source of truth for its structure. Never improvise or drift, and never point to an external template file.
+6. **Output** — embed the exact report/artifact skeleton in the agent's `## Output` section (fenced, filling placeholders); the agent is the single source of truth for its structure. Never improvise or drift, and never point to an external template file. Every primary artifact ends with the shared `## Handoff` block: `STATUS`, `VERIFIED`, `ASSUMPTIONS`, `OUT_OF_SCOPE`, `OPEN_QUESTIONS`. Status is one of `done`, `partial`, `awaiting_approval`, `needs_input` or `blocked`.
 7. **Edge cases** — overload, missing context, ambiguity, "nothing found".
 8. **`<prompt_examples>`** — 2–3 CONCRETE examples with real-looking file paths and explicit assertions. They must be **VARIED**, not three slants on one scenario: span different cases the agent actually meets (e.g. different Testing-Trophy levels, UI vs backend vs pure-logic, happy path vs error/edge). When specialized to a repo, use that repo's real paths, commands and framework syntax.
 
@@ -21,11 +21,14 @@ hand-crafted `architect.md` (use it as the reference exemplar).
 - **Never weaken guarantees** to "pass" (tests, gates, reviews, audits).
 - Repo-adaptive: mirror existing conventions; reuse over reinvention.
 - **Diff hygiene:** any agent that edits files touches only the lines its change requires — no gratuitous reformatting (quote-style flips, re-indentation, key/import reordering, line-ending or whitespace churn), including in unformatted config (`*.yml`/`*.json`/`*.toml`). Style is the formatter's domain, not the agent's.
+- **Delegation contract:** before a worker acts, it receives a measurable goal, explicit read/write paths, forbidden zones and stop conditions. It returns `awaiting_approval` with the exact expansion rather than expanding scope, `needs_input` for a missing decision, and `blocked` only for a remaining external obstacle.
+- **Independent review:** a reviewer receives the task contract, diff and human decisions — never an implementer's or tester's transcript, rationale or report.
 - Concrete beats generic: every rule must change behavior — cut filler.
 
 ## Self-check before saving an agent (ALL must be YES)
 - [ ] Frontmatter complete; `description` states WHEN to use it; tools minimal; model justified.
 - [ ] Contains Role, Principles, Scope, Workflow, Output(embeds its skeleton), Edge cases.
+- [ ] Its primary output skeleton ends with `Handoff`: STATUS, VERIFIED, ASSUMPTIONS, OUT_OF_SCOPE, OPEN_QUESTIONS.
 - [ ] ≥2 concrete `<prompt_examples>` with real paths/assertions, and they are VARIED (different scenario types, not duplicates).
 - [ ] Domain-specific (names this repo's stack/commands when specialized).
 - [ ] No generic filler; each rule changes behavior.

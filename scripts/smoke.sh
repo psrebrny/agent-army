@@ -81,14 +81,28 @@ for target in claude codex cursor copilot opencode gemini windsurf; do
     bad "$target: frozen APM rendering failed"; continue
   fi
   case "$target" in
-    claude) [ -f "$dir/.claude/agents/agent-army-architect.md" ] ;;
-    codex) [ -f "$dir/.codex/agents/agent-army-architect.toml" ] ;;
-    cursor) [ -f "$dir/.cursor/agents/agent-army-architect.md" ] ;;
-    copilot) [ -f "$dir/.github/agents/agent-army-architect.agent.md" ] ;;
-    opencode) [ -f "$dir/.opencode/agents/agent-army-architect.md" ] ;;
-    gemini) [ -f "$dir/.gemini/agents/agent-army-architect.md" ] ;;
-    windsurf) [ -f "$dir/.windsurf/skills/agent-army-architect/SKILL.md" ] ;;
-  esac && ok "$target: expected native/degraded output rendered" || bad "$target: expected output missing"
+    claude) agent="$dir/.claude/agents/agent-army-architect.md" ;;
+    codex) agent="$dir/.codex/agents/agent-army-architect.toml" ;;
+    cursor) agent="$dir/.cursor/agents/agent-army-architect.md" ;;
+    copilot) agent="$dir/.github/agents/agent-army-architect.agent.md" ;;
+    opencode) agent="$dir/.opencode/agents/agent-army-architect.md" ;;
+    gemini) agent="$dir/.gemini/agents/agent-army-architect.md" ;;
+    windsurf) agent="$dir/.windsurf/skills/agent-army-architect/SKILL.md" ;;
+  esac
+  if [ -f "$agent" ]; then
+    ok "$target: expected native/degraded output rendered"
+    grep -q 'Delegation Contract' "$agent" && ok "$target: delegation contract rendered" || bad "$target: delegation contract missing after render"
+    grep -q '## Execution State' "$agent" && ok "$target: execution state rendered" || bad "$target: execution state missing after render"
+    grep -q 'Execution Profile' "$agent" && ok "$target: execution profile rendered" || bad "$target: execution profile missing after render"
+    if grep -q 'Model & Effort Recommendation' "$agent"; then
+      bad "$target: concrete model recommendation leaked into blueprint"
+    else
+      ok "$target: blueprint has no global model recommendation"
+    fi
+    grep -q '## Handoff' "$agent" && ok "$target: handoff rendered" || bad "$target: handoff missing after render"
+  else
+    bad "$target: expected output missing"
+  fi
 done
 
 printf '\n\033[1mResult: %d passed, %d failed\033[0m\n' "$PASS" "$FAIL"

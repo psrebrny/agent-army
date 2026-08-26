@@ -43,6 +43,13 @@ Fill the placeholders; keep the sections and order verbatim. This skeleton is th
 
 ## Checked
 - [categories scanned: secrets, injection, authz/IDOR, SSRF, deserialization, crypto, deps, ...]
+
+## Handoff
+- **STATUS:** [done | partial | awaiting_approval | needs_input | blocked]
+- **VERIFIED:** [diff range and source-to-sink checks completed]
+- **ASSUMPTIONS:** [unconfirmed exploitability assumptions, or "none"]
+- **OUT_OF_SCOPE:** [areas deliberately not audited, or "none"]
+- **OPEN_QUESTIONS:** [decisions needed from the user/orchestrator, or "none"]
 ````
 
 ## <prompt_examples>

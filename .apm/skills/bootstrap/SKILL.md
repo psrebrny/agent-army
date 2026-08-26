@@ -110,7 +110,10 @@ writing. In auto mode, print the report and record assumptions, then continue.
 
 Group a short question set only around missing business context, architecture
 intent, NFR/compliance, task/branch conventions, test rigor, and model-tier
-availability. Do not ask for facts already proved by recon.
+availability. Read the active adapter's `model_control` before claiming a model or effort can be changed:
+distinguish main-session choice from per-role/static/per-spawn subagent routing, and record only confirmed
+capabilities. An unsupported selector inherits the tool setting and must be reported as a limitation.
+Do not ask for facts already proved by recon.
 
 If testing/lint rigor is a user choice, record it in `AGENTS.md` and in a
 `policy` object in `.agent-army/config.json`. Keep executable quality commands
@@ -147,15 +150,16 @@ For every agent, require all of the following:
 
 Apply role-specific depth:
 
-- `architect`: layers, public contracts, real manifest defaults and blueprint
+- `architect`: layers, public contracts, real manifest defaults, delegation contracts and blueprint
   skeletons consistent with its examples.
 - `tester`: real RED→GREEN idioms, fixtures and all relevant stack commands.
-- `code-reviewer`: an explicit checklist made from the repository's laws.
+- `code-reviewer`: an explicit checklist made from the repository's laws and an isolated review
+  packet (contract + diff + human decisions, never a worker transcript/report).
 - `security-auditor` and `perf-auditor`: stack-specific sinks and bottlenecks.
 - `docs-writer` and `coder`: actual documentation ownership and module limits.
 
 Write or refresh root `AGENTS.md` first: stacks, commands, laws, reusable
-assets, policy, roster and the ownership status of controls. Claude alone gets
+assets, policy, roster, delegation/review rules, PR execution-state conventions, adapter model-control availability and the ownership status of controls. Claude alone gets
 a thin `CLAUDE.md` pointer to it. Keep `architect`, `tester`, `ship` and the
 architect's embedded blueprint skeletons in lockstep.
 

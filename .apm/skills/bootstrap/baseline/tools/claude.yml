@@ -19,6 +19,11 @@ capabilities:
   commands_dir: null                 # skills dir doubles as the commands dir
   skill_invocation: native-command
 
+model_control:
+  main_session: inherit
+  subagent_model: per_role_static
+  subagent_effort: unsupported
+
 # Only Claude reads settings.json, so ALL lifecycle hooks are live here.
 hooks_live:
   - guard.sh

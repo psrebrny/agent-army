@@ -30,12 +30,17 @@ it once.
 > __ARMY_TOOL__. Honor `<AGENTS_DIR>/_STANDARD.md` and the "Cost & context discipline" section below.
 > Ask only for gaps recon can't settle, then specialize the team in this tool's native format.
 
-## Day-to-day — ship a task
-For each feature/fix, run the pipeline in `<SKILLS_DIR>/ship/SKILL.md`:
-discovery/interview → blueprint in `design-docs/` → strict TDD (Red → Green) → architectural
-review → security → docs → commit (only with your approval).
-- **Claude Code:** `/ship "<task>"`.
+## Day-to-day — plan, ship, resume
+Invoke `architect` directly when you want only discovery and a blueprint in `design-docs/`; it never
+implements source code. Use `<SKILLS_DIR>/ship/SKILL.md` to execute or resume work:
+
+- **Claude Code:** `/ship "<task, PR, ticket, or small fix>"`, or plain `/ship` to resume the one
+  unambiguous open scope.
 - **Other tools:** "Follow `<SKILLS_DIR>/ship/SKILL.md` for this task: <task>."
+
+`/ship` resolves the narrowest unambiguous scope from blueprint state. If no scope or several candidates
+exist, it asks; it never guesses from recency. Its closed loop is strict TDD (Red → Green) → independent
+review + security → repairs → Green + re-audit → docs + full verification → `ready_for_human_review`.
 
 ## The team (delegate by role)
 - `architect` — interview (greenfield/existing) + blueprint in `design-docs/` (never writes source)
@@ -46,6 +51,14 @@ review → security → docs → commit (only with your approval).
 - `docs-writer` — minimal, truthful documentation updates
 **Who writes what code:** `tester` writes and runs the **test** code (never production). **Production code** is written by the `/ship` orchestrator (main session) by default — it holds the warm context (blueprint + RED tests + your conversation), so small/medium tasks need no extra hop. For **large, file-heavy, or parallel-PR** tasks, delegate production coding to the `coder` subagent (ships off the default `/ship` pipeline; `/bootstrap` tailors it): its exploration stays in its own throwaway context window and it returns a short summary, which keeps the orchestrator's session lean (see "Cost & context discipline" below).
 Quality bar for every agent: `<AGENTS_DIR>/_STANDARD.md`.
+
+## Delegation, review & model gates
+- **Contract before action:** every delegated task names its goal, allowed read/write paths, forbidden paths and stop conditions. A worker stops and reports when it needs to leave that scope or a contract assumption is unproved; it never silently broadens a task.
+- **Supervised preflight:** before delegated production coding, the coder returns its plan and exact write list, then waits for `GO`. In autonomous mode it may continue only when that list is inside the blueprint's write scope.
+- **Fresh review:** give `code-reviewer` only the task contract, diff and human decisions. Do not forward implementation/tester reports, reasoning or transcripts; call a missing contract a `Diff-Only Review`.
+- **Execution state:** each PR blueprint persists its interaction policy, selected checkpoints and task/PR status. `/ship` resumes that state across sessions; it asks when a preference, requirement or scope is not unambiguous.
+- **Model & effort routing:** architect sets portable per-task `Execution Profile` (`light`/`mid`/`strong`, `low`/`medium`/`high`). `/ship` uses only the active adapter's confirmed `model_control`: it may configure fresh subagents where supported, otherwise inherits and reports the limitation. A main-session change remains a user decision (`switch and continue` or `stay current`), recorded with the task rather than the feature manifest.
+- **Closure:** review and security run from independent evidence. Every confirmed security finding must be repaired and re-audited inside the contract; an expansion becomes `awaiting_approval`, never a silent scope change.
 
 ## Cost & context discipline
 The team already bakes most cost control into its parts (model tiers in `_STANDARD.md`; plan-before-code in `architect`; trivial-task-inline + parallel read-only audits in `ship`; delegate-and-summarize in `coder`). On top of that, every agent honors:

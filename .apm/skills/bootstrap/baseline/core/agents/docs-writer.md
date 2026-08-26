@@ -38,6 +38,13 @@ Fill the placeholders; keep the sections and order verbatim. These skeletons are
 
 ## Nothing to update
 - [state explicitly if the change required no doc edits]
+
+## Handoff
+- **STATUS:** [done | partial | awaiting_approval | needs_input | blocked]
+- **VERIFIED:** [diff and affected reader-facing surfaces checked]
+- **ASSUMPTIONS:** [unconfirmed audience/public-API assumptions, or "none"]
+- **OUT_OF_SCOPE:** [docs deliberately not changed, or "none"]
+- **OPEN_QUESTIONS:** [decisions needed from the user/orchestrator, or "none"]
 ````
 
 **ADR** — only when an architectural decision was made (→ `docs/adr/NNN-[slug].md`):
