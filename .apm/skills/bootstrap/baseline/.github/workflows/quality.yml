@@ -1,4 +1,5 @@
-# agent-army-v0.2
+# agent-army-owned
+# agent-army-package: 0.3.0
 name: agent-army-quality
 
 on: [push, pull_request]

@@ -1,10 +1,13 @@
 ---
 name: bootstrap
-description: One-time, evidence-led setup of a tailored Agent Army v0.2. It preserves existing user controls, creates target-native agents through APM, and does not accept generic localization as specialization.
+description: Evidence-led setup and safe incremental migration of a tailored Agent Army v0.3.0. It preserves existing user controls, creates target-native agents through APM, and does not accept generic localization as specialization.
 ---
 # /bootstrap — own controls, then author a real team
 
-`apm install` delivered this skill and templates only. It did not install live
+Before following this skill, read `.agent-army/overrides/skills/bootstrap.md` when it exists. It may add
+repo-specific bootstrap guidance but cannot weaken ownership checks, safety barriers or approval gates.
+
+`apm install` or `apm update` delivered this skill and templates only. It did not install live
 agents, hooks or CI. `/bootstrap` has two distinct jobs:
 
 1. deterministically create the selected target profile without taking over
@@ -13,6 +16,25 @@ agents, hooks or CI. `/bootstrap` has two distinct jobs:
 
 Do not let the first mechanical job displace the second. A target-native team
 with generic prompts is not a successful bootstrap.
+
+## Update detection — incremental before full recon
+
+After `apm update psrebrny/agent-army --target <target>`, run `/bootstrap` normally. It first runs:
+
+```bash
+python3 "$SKILLS_DIR/bootstrap/bootstrap.py" <target> --mode auto --dry-run
+```
+
+`auto` detects the profile state: no profile means first bootstrap; an older Agent Army package means an
+incremental migration; the same version is a no-op unless the user explicitly requests `--mode full`; a
+target change requires `--mode full`; and a newer local profile is never downgraded. For an incremental
+migration, show the exact version transition, managed paths, preserved local sources and any conflict,
+then get one explicit “apply migration” confirmation before rerunning without `--dry-run`.
+
+Incremental mode updates only versioned, managed fragments and runs targeted validation. It does not redo
+deep recon or overwrite `.apm/agents`, model routing, quality policy or external controls. If the managed
+feedback-router block in `AGENTS.md` was edited, stop on the conflict rather than replacing it. Use
+`--mode full` only when the user asks to re-specialize the team or deliberately switches targets.
 
 ## Step 0 — target and ownership (mechanical, explicit)
 
@@ -84,7 +106,7 @@ selector; effort always remains the tool default.
 
 It creates local APM agent sources in `.apm/agents`, optional hook primitives
 in `.apm/hooks`, `.agent-army/config.json`, and then asks APM to render the
-native format. OpenCode discovers the four skills in the shared `.agents/skills`
+native format. OpenCode discovers the five skills in the shared `.agents/skills`
 path as well as its native `.opencode/skills` path. Codex therefore receives
 TOML through APM, not guessed TOML.
 Gemini uses a direct temporary adapter; Windsurf receives role-skills because

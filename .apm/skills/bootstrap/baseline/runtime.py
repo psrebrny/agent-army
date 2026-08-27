@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Runtime side of Agent Army v0.2.
+"""Runtime side of Agent Army profile schema v2 (package 0.3.0).
 
 Commands are read from .agent-army/config.json as {cwd, argv}; no project
 configuration is sourced as shell and no command is passed through a shell.

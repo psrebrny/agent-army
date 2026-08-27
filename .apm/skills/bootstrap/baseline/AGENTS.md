@@ -70,15 +70,26 @@ The team already bakes most cost control into its parts (per-task profiles in bl
 - **Script, don't prompt, for bulk** — never ask a model to map/filter/transform a large file in chat; write a script and run it locally (~0 tokens). Mechanical checks belong in a hook/script, not a prompt.
 - **English + right-sized model** — agent-facing text in English (Polish morphology costs ~1.5× the tokens); prefer a local/open model when it's adequate for routine, low-judgment work.
 
-## Keeping the team current — offer `/adapt-army` (do not auto-apply)
-The team is only as good as it stays current. When, during ANY conversation, the user states a
-**durable, repo-wide** guideline or corrects an architectural behavior that should hold beyond the
-current task — e.g. "from now on always X", "we never do Y", "switch to strict TDD", "no custom CSS" —
-**offer to propagate it into the whole team**: "That sounds like a new repo convention — want me to bake
-it into the army? (`/adapt-army`)". Only OFFER; never rewrite agents silently. Be conservative: a
-one-off task tweak ("for this PR skip the e2e") is NOT a guideline — apply it to the task only and leave
-the team untouched. The routine lives in `<SKILLS_DIR>/adapt-army/SKILL.md` (it routes the guideline to
-every agent that owns it and keeps `AGENTS.md` the source of truth).
+<!-- agent-army:feedback-router:start -->
+## Keeping Agent Army current
+
+In **any conversation**, treat a user correction, repeatable weakness, workflow improvement or missing
+specialist as a possible lesson for the Army. First correct the current task inside its approved scope.
+Then use `<SKILLS_DIR>/adapt-army/SKILL.md` to classify it as task-local, repo convention, existing agent,
+existing skill, deterministic control, new agent or new skill. Ask one durability question only when the
+signal is ambiguous.
+
+Never silently mutate the Army. For every durable change present an **Army Improvement Proposal** with
+evidence, recommended target, alternatives, planned write scope, verification and one approval question.
+Record its normalized status locally in `.agent-army/state.json`; do not store raw user messages or
+secrets. A declined proposal stays quiet unless materially new evidence appears.
+
+Core skills in `<SKILLS_DIR>/` are APM-managed. A repo-specific refinement goes in
+`.agent-army/overrides/skills/<skill>.md`, which core skills read before acting. It can add local guidance
+but cannot weaken security, approval gates or hard rules. Existing agents are authored in `<AGENTS_DIR>/`;
+new user-invoked workflows are created by `/new-skill` in `.apm/skills/`. A package-wide issue is an
+upstream candidate, never permission to edit or publish another repository.
+<!-- agent-army:feedback-router:end -->
 
 ## Hardening the formatter config — offer once, never nag
 When an agent keeps hitting the SAME style gap the formatter doesn't enforce (e.g. the diff repeatedly

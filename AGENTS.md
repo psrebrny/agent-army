@@ -18,11 +18,11 @@ No build step, no test suite, no installer script — apm is the install mechani
 - `apm.yml` — apm manifest (name, version, `includes`, deps).
 - `.apm/skills/` — the four live skills apm deploys: `/bootstrap`, `/ship`, `/new-agent`, `/adapt-army`.
 - `.apm/commands/` — thin command wrappers for tools that surface a `command/` dir rather than `skills/`; each just points at the matching `.agents/skills/<skill>/SKILL.md`. (apm's own placement varies by tool/version; when a native command isn't registered, invoke the skill directly by its `.agents/skills/…/SKILL.md` path.)
-- `.apm/skills/bootstrap/bootstrap.py` — deterministic v0.2 generator: `python3 bootstrap.py <tool> [--runtime-hooks …] [--git-precommit …] [--ci …]`. It creates local `.apm/agents`, optional `.apm/hooks`, `.agent-army/runtime.py`, and structured ownership/config state, then invokes APM for native rendering. `assemble.sh` is a no-APM compatibility wrapper.
+- `.apm/skills/bootstrap/bootstrap.py` — deterministic v0.3.0 generator/migrator: `python3 bootstrap.py <tool> [--mode auto|incremental|full] [--runtime-hooks …] [--git-precommit …] [--ci …]`. It creates local `.apm/agents`, optional `.apm/hooks`, `.agent-army/runtime.py`, versioned ownership/config state, then invokes APM for native rendering. `assemble.sh` is a no-APM compatibility wrapper.
 - `.apm/skills/bootstrap/baseline/` — **the single source of truth** for everything `/bootstrap` installs:
   - `core/agents/` — seven source agent definitions + `_STANDARD.md`; APM converts the generated local `.apm/agents/*.agent.md` to each native format, including Codex TOML.
   - `runtime.py` — the only barrier runtime. It accepts structured `{cwd, argv}` commands and never sources or evaluates project configuration.
-  - `tools/` and legacy hook wrappers remain migration references; v0.2 does not materialize them as active controls.
+  - `tools/` and legacy hook wrappers remain migration references; profile schema v2 does not materialize them as active controls.
   - `AGENTS.md` — canonical cross-tool entry point (written into target repos). `CLAUDE.md` is NOT here — `/bootstrap` writes a thin Claude-only pointer to AGENTS.md.
   - `.github/workflows/quality.yml` — owned CI template which runs `runtime.py verify` and fails if no quality command exists.
 
@@ -56,7 +56,7 @@ scripts/check.sh --target-dir <dir>   # validate a MATERIALIZED tool dir (e.g. a
                                        # descriptor-driven: correct agents dir, exact hooks_live set,
                                        # settings.json iff claude-settings, per that tool's tools/<tool>.yml
 ```
-**Generator preview — `python3 .apm/skills/bootstrap/bootstrap.py codex --dry-run`** prints what the v0.2 profile would create.
+**Generator preview — `python3 .apm/skills/bootstrap/bootstrap.py codex --mode auto --dry-run`** prints what the v0.3.0 profile would create or migrate.
 
 **Smoke test — `scripts/smoke.sh`.** Deterministic gates cover all target profiles, external-control preservation, unsafe hook collision handling, shell secret writes, staged secret content, failing structured commands, and a real frozen APM render for each target. See `tests/GUIDE.md` for the full testing guide.
 

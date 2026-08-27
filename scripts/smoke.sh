@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deterministic v0.2 smoke tests.  They intentionally exercise the generator
+# Deterministic v0.3 smoke tests.  They intentionally exercise the generator
 # without APM network/install state; the generator itself owns the frozen APM
 # handoff in normal bootstrap mode.
 set -uo pipefail
@@ -43,7 +43,8 @@ MIG="$WORK/cache-migration"; init_repo "$MIG"
 mkdir -p "$MIG/apm_modules/psrebrny/agent-army/.apm"
 cp -R "$ROOT/.apm/skills" "$MIG/apm_modules/psrebrny/agent-army/.apm/"
 (cd "$MIG" && python3 apm_modules/psrebrny/agent-army/.apm/skills/bootstrap/bootstrap.py opencode --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null 2>&1)
-[ -f "$MIG/.agents/skills/ship/SKILL.md" ] && ok "cache migration: skills materialized to .agents/skills" || bad "cache migration: skills not materialized"
+[ -f "$MIG/.agents/skills/ship/SKILL.md" ] && [ -f "$MIG/.agents/skills/new-skill/SKILL.md" ] \
+  && ok "cache migration: all skills materialized to .agents/skills" || bad "cache migration: skills not materialized"
 [ -f "$MIG/.opencode/agents/agent-army-architect.md" ] && ok "cache migration: native agents rendered" || bad "cache migration: native agents missing"
 
 LEGACY="$WORK/legacy-model"; init_repo "$LEGACY"
@@ -98,6 +99,48 @@ mkdir -p "$BLOCK/.git/hooks"; printf '#!/usr/bin/env node\n' > "$BLOCK/.git/hook
 bootstrap "$BLOCK" codex --runtime-hooks disabled --git-precommit army --ci disabled >/dev/null
 grep -A2 'git_precommit' "$BLOCK/.agent-army/config.json" | grep -q blocked && ok "unsafe hook replacement blocked" || bad "unsafe hook replacement was not blocked"
 
+printf '\n\033[1mGATE 1.5 · incremental package migration\033[0m\n'
+UPGRADE="$WORK/upgrade"; init_repo "$UPGRADE"
+bootstrap "$UPGRADE" opencode --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null
+printf '# Existing repo specialization\n' > "$UPGRADE/AGENTS.md"
+printf '\n# MIGRATION-SPECIALIZATION\n' >> "$UPGRADE/.apm/agents/agent-army-architect.agent.md"
+sed -i.bak '/^[[:space:]]*"package": {$/,/^[[:space:]]*},$/d' "$UPGRADE/.agent-army/config.json"; rm -f "$UPGRADE/.agent-army/config.json.bak"
+(cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --dry-run --skip-apm > "$WORK/upgrade-plan.txt")
+grep -q '0.2.0 -> 0.3.0' "$WORK/upgrade-plan.txt" && ok "legacy v0.2 profile gets an incremental plan" || bad "legacy migration plan missing"
+grep -q 'agent-army:feedback-router:start' "$UPGRADE/AGENTS.md" && bad "incremental dry-run changed AGENTS.md" || ok "incremental dry-run preserves AGENTS.md"
+(cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --skip-apm >/dev/null)
+grep -q 'agent-army:feedback-router:start' "$UPGRADE/AGENTS.md" && ok "incremental migration adds managed feedback router" || bad "feedback router missing after migration"
+grep -q '"version": "0.3.0"' "$UPGRADE/.agent-army/config.json" && ok "incremental migration records package version" || bad "package version not recorded"
+grep -q 'MIGRATION-SPECIALIZATION' "$UPGRADE/.apm/agents/agent-army-architect.agent.md" && ok "incremental migration preserves specialized agent" || bad "incremental migration overwrote specialized agent"
+count="$(grep -c 'agent-army:feedback-router:start' "$UPGRADE/AGENTS.md")"
+(cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --skip-apm >/dev/null)
+[ "$count" = "$(grep -c 'agent-army:feedback-router:start' "$UPGRADE/AGENTS.md")" ] && ok "incremental migration is idempotent" || bad "incremental migration duplicated managed block"
+mkdir -p "$UPGRADE/.agent-army/overrides/skills"; printf 'local /ship guidance\n' > "$UPGRADE/.agent-army/overrides/skills/ship.md"
+(cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --skip-apm >/dev/null)
+[ -f "$UPGRADE/.agent-army/overrides/skills/ship.md" ] && ok "local skill overlay survives bootstrap" || bad "local skill overlay was removed"
+
+CONFLICT="$WORK/migration-conflict"; init_repo "$CONFLICT"
+bootstrap "$CONFLICT" opencode --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null
+printf '<!-- agent-army:feedback-router:start -->\nuser edit\n<!-- agent-army:feedback-router:end -->\n' > "$CONFLICT/AGENTS.md"
+sed -i.bak '/^[[:space:]]*"package": {$/,/^[[:space:]]*},$/d' "$CONFLICT/.agent-army/config.json"; rm -f "$CONFLICT/.agent-army/config.json.bak"
+if (cd "$CONFLICT" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode incremental --skip-apm) >/dev/null 2>&1; then
+  bad "modified managed block was overwritten"
+else
+  ok "modified managed block blocks incremental migration"
+fi
+grep -q '"package"' "$CONFLICT/.agent-army/config.json" && bad "conflicting migration rewrote config" || ok "conflicting migration preserves config"
+if (cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" codex --mode auto --skip-apm) >/dev/null 2>&1; then
+  bad "target switch bypassed full bootstrap"
+else
+  ok "target switch requires full bootstrap"
+fi
+sed -i.bak 's/"version": "0.3.0"/"version": "9.0.0"/' "$UPGRADE/.agent-army/config.json"; rm -f "$UPGRADE/.agent-army/config.json.bak"
+if (cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --skip-apm) >/dev/null 2>&1; then
+  bad "newer profile downgrade was allowed"
+else
+  ok "newer profile downgrade is blocked"
+fi
+
 printf '\n\033[1mGATE 2 · runtime safety\033[0m\n'
 SAFE="$WORK/safety"; init_repo "$SAFE"
 printf '{"scripts":{"lint":"true","test":"true"}}\n' > "$SAFE/package.json"
@@ -136,7 +179,8 @@ for target in claude codex cursor copilot opencode gemini windsurf; do
     gemini) agent="$dir/.gemini/agents/agent-army-architect.md" ;;
     windsurf) agent="$dir/.windsurf/skills/agent-army-architect/SKILL.md" ;;
   esac
-  [ -f "$dir/.agents/skills/ship/SKILL.md" ] && ok "$target: shared skills present" || bad "$target: shared skills missing"
+  [ -f "$dir/.agents/skills/ship/SKILL.md" ] && [ -f "$dir/.agents/skills/new-skill/SKILL.md" ] \
+    && ok "$target: five shared skills present" || bad "$target: shared skills missing"
   if [ -f "$agent" ]; then
     ok "$target: expected native/degraded output rendered"
     case "$target" in

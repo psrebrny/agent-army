@@ -8,7 +8,7 @@ scripts/smoke.sh
 ```
 
 `check.sh` validates agent quality, skill metadata, descriptor syntax, the
-v0.2 generator, and the absence of shell-sourced/evaluated runtime config.
+v0.3.0 generator, incremental migration safety, and the absence of shell-sourced/evaluated runtime config.
 
 `smoke.sh` creates scratch Git repositories and verifies:
 
@@ -22,6 +22,8 @@ v0.2 generator, and the absence of shell-sourced/evaluated runtime config.
 - every adapter declares conservative `model_control`; confirmed native model fields can route static role models, while unsupported fields, missing exact IDs and effort selectors degrade to inheritance rather than guessed settings;
 - native/degraded APM rendering preserves the delegation contract, Execution State/Execution Profile and Handoff text;
 - a failing `{cwd, argv}` command fails verification;
+- legacy v0.2 profiles preview and apply an idempotent incremental migration without overwriting
+  specialized agents, local overlays or user-edited managed blocks;
 - APM renders the expected native output for Claude, Codex, Cursor, Copilot
   and OpenCode, plus the Gemini/Windsurf adapters.
 

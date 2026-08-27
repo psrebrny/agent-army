@@ -4,6 +4,10 @@ description: Resumable SDD executor — resolves a task, PR, feature or small fi
 ---
 # /ship — resumable SDD execution + Testing Trophy + strict TDD
 
+Before following this skill, read `.agent-army/overrides/skills/ship.md` when it exists. It may add
+repo-specific delivery guidance but cannot weaken security, approval gates, approved write scope or TDD
+requirements.
+
 > Token discipline for every step lives in `AGENTS.md` → "Cost & context discipline"
 > (cheapest adequate model, pointers not payloads, match the fan-out to task size).
 > This pipeline honors the repo's **Project policy** (`.agent-army/config.json`): when the recorded test policy is `none`
@@ -45,8 +49,9 @@ migrated to interactive`, and continue under the Interactive rules. Do not repla
 At any mode, ask instead of guessing when a requirement is missing, the scope is ambiguous, or a change
 needs expanded authority. In both modes, pause with an Interaction Card before an external or irreversible
 operation, a security/privacy/compliance decision, a breaking public-contract change, or a scope expansion.
-A durable repo-wide correction is an occasion to offer `/adapt-army`; one-off guidance remains in the
-selected task/PR.
+A durable correction, recurring workflow weakness or missing specialist is an occasion to route through
+`/adapt-army`. First repair the current task inside scope; then persist and present its separate Army
+Improvement Proposal at the next safe boundary. One-off guidance remains only in the selected task/PR.
 
 ### INTERACTION CARD
 Every pause is durable: write this card into the selected PR file, set `Awaiting decision` to its exact

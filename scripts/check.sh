@@ -308,7 +308,7 @@ check_tool_packaging() {
 
 check_v2_profile() {
   [ "$V2_TARGET" = 1 ] || return
-  printf '\n\033[1m• v0.2 profile\033[0m\n'
+  printf '\n\033[1m• v0.3 profile\033[0m\n'
   [ -f "$BASE/.agent-army/config.json" ] && ok "config.json present" || return
   python3 - "$BASE" <<'PY'
 import json, pathlib, sys
@@ -325,7 +325,7 @@ except Exception as e:
     print(e)
     sys.exit(1)
 PY
-  [ $? -eq 0 ] && ok "config ownership + structured commands valid" || bad "invalid v0.2 config"
+  [ $? -eq 0 ] && ok "config ownership + structured commands valid" || bad "invalid v0.3 config"
   if grep -q '"mode": "army"' "$BASE/.agent-army/config.json"; then
     [ -f "$BASE/.agent-army/runtime.py" ] && ok "runtime.py present for owned control" || bad "runtime.py missing for owned control"
   else
@@ -345,7 +345,7 @@ PY
 
 check_v2_source() {
   [ -z "$TARGET_DIR" ] || return
-  printf '\n\033[1m• v0.2 generator safety\033[0m\n'
+  printf '\n\033[1m• v0.3 generator safety\033[0m\n'
   if python3 - "$ROOT/.apm/skills/bootstrap/bootstrap.py" "$BASE/runtime.py" <<'PY'
 import sys
 for path in sys.argv[1:]:
@@ -398,6 +398,37 @@ check_skill() {
       ok "ship interaction modes, routing and closure loop are explicit"
     else
       bad "ship missing resolve, routing or closure-loop rule"
+    fi
+  fi
+  if [ "$base" = "adapt-army" ]; then
+    if grep -q 'Army Improvement Proposal' "$f" \
+      && grep -q 'state.json' "$f" \
+      && grep -q 'overrides/skills' "$f" \
+      && grep -q '/new-skill' "$f" \
+      && grep -q 'Never silently mutate' "$f"; then
+      ok "adapt-army feedback routing and approval boundary are explicit"
+    else
+      bad "adapt-army missing feedback routing or approval rule"
+    fi
+  fi
+  if [ "$base" = "new-skill" ]; then
+    if grep -q '\.apm/skills/<name>/SKILL.md' "$f" \
+      && grep -q 'apm install --frozen' "$f" \
+      && grep -q 'must not weaken' "$f" \
+      && grep -q '## New Skill Result' "$f"; then
+      ok "new-skill owns a local source, render and safety contract"
+    else
+      bad "new-skill missing source, render or safety contract"
+    fi
+  fi
+  if [ "$base" = "bootstrap" ]; then
+    if grep -q 'Update detection' "$f" \
+      && grep -q -- '--mode auto --dry-run' "$f" \
+      && grep -q 'incremental migration' "$f" \
+      && grep -q 'feedback-router block' "$f"; then
+      ok "bootstrap incremental-update contract is explicit"
+    else
+      bad "bootstrap missing incremental-update contract"
     fi
   fi
 }

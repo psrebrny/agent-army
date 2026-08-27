@@ -36,7 +36,7 @@ Claude Code v2.x · `bash` · `python3` (barriers; a fallback runs without it). 
 cd my-repo
 apm install psrebrny/agent-army --target opencode   # or: claude | cursor | codex | gemini | copilot | windsurf
 ```
-apm deploys the four skills only. The baseline agents/hooks/CI ride bundled as raw assets inside the `bootstrap` skill — they become live, repo-tailored files only when you run `/bootstrap` below (it also installs the git pre-commit hook and appends to `.gitignore`).
+apm deploys the five skills only. The baseline agents/hooks/CI ride bundled as raw assets inside the `bootstrap` skill — they become live, repo-tailored files only when you run `/bootstrap` below (it also installs the git pre-commit hook and appends to `.gitignore`).
 
 ## STEP 1 — entry point: `/bootstrap`  (run first)
 ```
@@ -66,7 +66,8 @@ Both modes pause for real ambiguity, risk, scope expansion and final human revie
 - `/bootstrap` — ONCE: repo analysis + interview + building the team.
 - `/ship "<task>"` — take a feature end-to-end with quality control.
 - `/new-agent` — add a new agent (always to `_STANDARD.md`).
-- `/adapt-army` — propagate a new repo-wide convention/correction into the whole team (routes to every owner, keeps AGENTS.md the source of truth). The agent also OFFERS this on its own when you state a durable convention.
+- `/new-skill` — add a focused local workflow when no existing skill or agent is the right owner.
+- `/adapt-army` — turn recurring feedback into an approved Army improvement: existing agent/skill overlay, convention, deterministic control, new agent or new skill. The agent also recognizes these signals during ordinary conversations.
 - `/agents` — list the team.
 
 ## What's in the repo after install
@@ -77,7 +78,7 @@ Both modes pause for real ambiguity, risk, scope expansion and final human revie
     _STANDARD.md                # the quality bar for EVERY agent
                                 # each agent embeds its own output skeleton (blueprint / report) in its ## Output section
   hooks/                        # guard / format / verify / gate / detect / git-pre-commit
-  skills/                       # bootstrap · ship · new-agent · adapt-army
+  skills/                       # bootstrap · ship · new-agent · new-skill · adapt-army
 CLAUDE.md                       # project memory (tailored to the repo after /bootstrap)
 .github/workflows/quality.yml   # CI: the same verify.sh
 ```
@@ -90,7 +91,18 @@ CLAUDE.md                       # project memory (tailored to the repo after /bo
 - **git pre-commit** → secret scan + lint/tests, even when someone bypasses Claude Code.
 
 ## Extending
-New agent: `/new-agent` (holds `_STANDARD.md`). Per-repo override: drop your own `.claude/agents/<name>.md` — it overrides the general one.
+New agent: `/new-agent` (holds `_STANDARD.md`). New reusable workflow: `/new-skill`. Core-skill refinements
+live in `.agent-army/overrides/skills/<skill>.md`, not in APM-managed `.agents/skills/`.
+
+## Updating Agent Army
+
+```bash
+apm update psrebrny/agent-army --target opencode
+```
+
+Then run `/bootstrap`. It previews an incremental migration from the prior Agent Army version, preserves
+specialized agents and external controls, and asks once before updating marked managed fragments. Use a
+full bootstrap only when intentionally re-specializing the team or switching target.
 
 ## Troubleshooting
 - `claude doctor` — diagnostics (hooks, MCP, shell).

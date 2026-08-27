@@ -1,67 +1,119 @@
 ---
 name: adapt-army
-description: Propagate a NEW durable guideline or an architectural correction into the whole agent team, consistently. Use when the user states a repo-wide convention ("from now on always X", "we never do Y"), corrects an architectural behavior that should hold beyond this one task, or changes project policy. Routes the guideline to EVERY agent that owns it (not just one), updates AGENTS.md as the source of truth, and keeps the team internally consistent. NOT for one-off task tweaks.
+description: Turn user feedback into a safe, durable improvement to this repo's Agent Army. Use when the user corrects an agent, identifies a repeatable weakness, asks for a better workflow, or needs a missing specialist. Not for one-off task changes.
 ---
-# /adapt-army — team-level course correction
+# /adapt-army — feedback router and team-level evolution
 
-A repo's conventions evolve. When a new law emerges mid-work, editing one agent leaves the rest
-contradicting it. This skill keeps the **whole army** in lockstep with the new guideline. It is the
-`architect`'s Course-Correction role (Rule 9) raised to the level of the team itself.
+Before following this skill, read `.agent-army/overrides/skills/adapt-army.md` when it exists. It may
+refine this repo's routing, but never weakens security, approval gates or hard rules.
 
-## Step 1 · Capture & qualify the guideline
-Restate the guideline in one crisp sentence and confirm it is **durable and repo-wide**, not a one-off.
-- **Durable & repo-wide** ("we always use the Facade", "no custom CSS — PrimeFlex only", "switch test policy to pragmatic") → continue.
-- **One-off / task-local** ("for this PR skip the integration test", "name THIS variable x") → **STOP**. Do not touch the army; apply it to the current task only and say so. Polluting agents with task-specifics is the failure mode here.
-If unsure which it is, ASK the user: "Should this hold for the whole repo going forward, or just this task?"
+## 0 · Fix the present, then learn the lesson
 
-## Step 2 · Classify
-Put the guideline in a bucket — it decides where it lands:
-- **Architectural law** (boundaries, patterns, forbidden moves) → agents' rules/checklists + `AGENTS.md`.
-- **Test idiom / strategy** (framework, layer weighting, base classes) → `tester`, `architect` (its inline PR/manifest Output skeleton).
-- **Naming / layout convention** → `architect` + `code-reviewer` + `AGENTS.md`.
-- **Security / perf rule** → `security-auditor` / `perf-auditor` (+ `code-reviewer` if it's a review gate).
-- **Project policy** (test rigor / lint commands) → `.agent-army/config.json` (`quality` as `{cwd, argv}`), not agent prose. Control ownership is also stored there; never change it without explicit user approval.
+When feedback identifies a defect in the active task, first repair it inside the already approved scope.
+If the task is under `/ship`, use the required RED → implementation → GREEN/review loop; do not turn a
+lesson proposal into a shortcut around verification. A durable Army change is a separate change set and
+normally waits for the next safe task/PR boundary. Apply it immediately only when it is necessary to
+continue correctly.
 
-## Step 3 · Route — find EVERY owner (the key step)
-A guideline usually touches **multiple** agents. Match it against each agent's `description` + current rules and list the full blast radius. Report it before changing anything:
+## 1 · Qualify the signal
+
+Normalize the feedback without copying private text, secrets or a full transcript. Decide:
+
+- **Task-local** — applies only here. Correct the task; do not propose an Army change.
+- **Ambiguous** — ask one question: “Should this become a rule for future work in this repo?”
+- **Durable** — classify and propose below. Explicit “from now on”, repeated evidence, a broken handoff,
+  or a missing recurring capability is sufficient evidence; do not require a magic phrase.
+
+Do not repeatedly raise a declined proposal unless new, material evidence changes its scope or risk.
+
+## 2 · Route to the smallest correct owner
+
+Choose the narrowest owner and explain why it wins over the alternatives:
+
+| Signal | Owner |
+|---|---|
+| Repo-wide law, naming, architecture or policy | `AGENTS.md` plus every owning agent |
+| One role's judgment, checklist or report | that existing `.apm/agents/agent-army-<role>.agent.md` |
+| Handoff, scope, execution state or multi-role sequencing | local overlay `.agent-army/overrides/skills/<core-skill>.md` |
+| Machine-enforceable rule | existing formatter/linter/test/config control; never a second conflicting control |
+| Recurring, independent specialist with its own contract/tools/output | `/new-agent` |
+| Recurring, user-invoked workflow with its own entry point | `/new-skill` |
+
+Creating a new agent is justified only when no existing role can own the responsibility without losing
+single-purpose scope. Creating a new skill is justified only when the user needs a distinct reusable
+workflow, not merely a longer existing prompt. Core skills under `.agents/skills/` are APM-managed: never
+edit them in a target repository. In the Agent Army source repo, a confirmed package-wide improvement may
+edit the packaged source directly.
+
+## 3 · Persist the proposal locally and ask
+
+Use `.agent-army/state.json` as ignored operational memory. Keep a small `improvements` collection keyed
+by a stable fingerprint of the normalized signal, classification and targets:
+
+```json
+{
+  "version": 1,
+  "improvements": {
+    "imp-<fingerprint>": {
+      "status": "proposed | declined | approved | applied | superseded",
+      "summary": "normalized, non-sensitive lesson",
+      "classification": "existing_skill",
+      "targets": [".agent-army/overrides/skills/ship.md"],
+      "evidence": ["design-docs/ABC/01_PR_1.md"],
+      "upstream_candidate": false
+    }
+  }
+}
 ```
-Guideline: <one line>
-Touches:
-  architect      → <plan rule to add/change>           [yes/no]
-  tester         → <test idiom to add>                   [yes/no]
-  code-reviewer  → <checklist item to add>               [yes/no]
-  security/perf  → <sink/check to add>                   [yes/no]
-  AGENTS.md      → <law/convention section>              [yes/no]
-  Output skeleton→ <blueprint/report skeleton change, in its owning agent>  [yes/no]
-  .agent-army/config.json → <structured policy command>   [yes/no]
+
+Write an **Army Improvement Proposal** in the user's language before every durable mutation:
+
+```md
+## Army Improvement Proposal
+- Feedback: [normalized lesson and evidence]
+- Current-task correction: [done / next safe boundary]
+- Recommendation: [owner and exact paths]
+- Why this, not alternatives: [brief reason]
+- Planned write scope: [paths only]
+- Verification: [checks/render]
+- Upstream candidate: [yes/no and why]
+- Question: [one approval question]
+- Options: [apply | adjust | current fix only/decline | show details | prepare upstream proposal]
 ```
-If you can only find one owner, double-check: is there really no reviewer rule that should enforce what the architect now plans? Single-owner guidelines are rare.
 
-## Step 4 · Confirm scope
-Show the routing table from Step 3 and get the user's "ok / adjust". Don't silently rewrite half the team.
+Approval covers only the displayed paths. A new finding, scope expansion or weakened guarantee needs a new
+proposal. Never silently mutate the Army. Mark the local state `declined`, `approved` and `applied` as the
+decision progresses.
 
-## Step 5 · Apply (source of truth first, then sync)
-1. **`AGENTS.md` is the canonical record** — update its laws/conventions/policy section FIRST. Everything else is derived from it.
-2. **Sync each owning agent** to match: bake the law into `architect`'s rules, `code-reviewer`'s checklist, `tester`'s idioms, the auditors' sinks — using the same depth and BAD/GOOD style as `references/agent-worked-examples.md`. Update each agent's `<prompt_examples>` if the change affects what they'd produce.
-3. **Output skeletons / structured config** if Step 3 flagged them — a skeleton change is just an edit to the owning agent's `## Output` section; update only the relevant `{cwd, argv}` record in `.agent-army/config.json` after verifying it.
-4. **Rollback is git** — before overwriting, make sure the tool dir is committed (ask the user to commit or stash if it's dirty). No `.base`/backup files.
-5. **Cross-agent consistency check**: the law as `architect` plans it == the law as `code-reviewer` rejects it; commands stay identical across agents + `.agent-army/config.json`; no two agents now contradict each other.
+## 4 · Apply after approval
 
-## Step 6 · Report
-List exactly what changed (file → what), confirm the team is consistent, and note anything deliberately untouched. If a policy changed, restate the new structured config and ownership modes.
+1. Update `AGENTS.md` first when a repo law changes, then every routed agent so planning and review agree.
+2. For a core-skill behavior change, create or update its overlay with the durable rule, evidence and a
+   statement that it cannot weaken safety. For an actual package defect in this source repo, update the
+   packaged skill instead.
+3. Hand an independent role to `/new-agent`; hand a new user workflow to `/new-skill`.
+4. Preserve external/disabled controls. Extend only the formatter, linter or test control the repository
+   already owns; never create a competing config merely to enforce an agent preference.
+5. Render through `apm install --frozen --target <target>` when agents or local skills changed, then run
+   the relevant verification. Do not commit without explicit approval.
 
-## Rules
-- **Never weaken security barriers** — they are not adaptable via this skill.
-- **One-off ≠ guideline** — if Step 1 says task-local, do not touch agents.
-- **Evidence:** if the guideline references a code pattern, cite the proving path (as the worked examples do).
-- **Quality bar:** every edited agent must still pass `_STANDARD.md` and the evidence/internalization gates.
+For a package-wide issue discovered in a target repo, set `upstream_candidate: true`; never edit another
+checkout or publish. On “prepare upstream proposal”, write a concise, reviewable proposal under
+`design-docs/agent-army-improvements/` with reproduction, expected behavior, proposed source paths and
+tests.
 
 ## <prompt_examples>
-**EX 1 — architectural law, multi-owner.** USER (mid-task): "From now on no service may call a repository directly — always through a Facade."
-→ Qualify: durable, repo-wide. Classify: architectural law. Route → `architect` (plan rule: tasks name the Facade), `code-reviewer` (checklist: reject `*Repository` calls outside a Facade), `tester` (example specs target the Facade), `AGENTS.md` (Laws section). Confirm → apply → consistency check. Report: 4 files updated, team consistent.
+**EX 1 — task correction plus durable workflow lesson.** USER: “You started coding before I accepted the
+test interpretation. Fix this task, and this must not happen again.” → Repair the task through TDD, then
+propose an overlay for `ship` with the evidence and exact write scope. Do not edit `.agents/skills/ship`.
 
-**EX 2 — policy knob, not prose.** USER: "We're done prototyping — turn on strict TDD."
-→ Classify: project policy. Route → `.agent-army/config.json` plus a one-line note in `AGENTS.md`'s Project-policy block. Do NOT rewrite agent rules unless their behavior needs to change. Report the changed structured config.
+**EX 2 — existing agent, not a new one.** USER: “Reviewer should reject endpoints that expose internal
+database IDs.” → Route to `code-reviewer` and `AGENTS.md`; explain that this is a checklist addition, not
+a new API-review agent.
 
-**EX 3 — one-off, correctly refused.** USER: "For this PR, skip the e2e test, just unit-test it."
-→ Qualify: task-local. STOP — do not change `tester`/`architect`. Apply only to the current task and say: "Done for this PR; I did not change the team's testing strategy. Say so explicitly if you want this to become the repo default."
+**EX 3 — genuinely new capability.** USER: “Every release needs an explicit dependency-license report
+before approval.” → Propose a distinct `/license-readiness` skill if no existing role owns that reusable,
+user-invoked workflow; after approval route creation through `/new-skill`.
+
+**EX 4 — correctly leave Army untouched.** USER: “For this PR, do not update the README.” → Record the
+task-local direction and do not create an improvement proposal.

@@ -30,9 +30,9 @@ for the new target.
 On Claude, `/bootstrap` is normally a slash command. In the other tools,
 including OpenCode, open or invoke `.agents/skills/bootstrap/SKILL.md` directly
 when the tool does not register the command natively. Use the corresponding
-path for `/ship`, `/new-agent` and `/adapt-army` too.
+path for `/ship`, `/new-agent`, `/new-skill` and `/adapt-army` too.
 
-The install is intentionally passive: it ships four skills and templates only.
+The install is intentionally passive: it ships five skills and templates only.
 `/bootstrap` is the explicit second step that creates the tailored local APM
 agent sources and lets APM render the selected target's native agent format.
 The `.apm/agents` files remain the authoring source after rendering; do not
@@ -100,6 +100,26 @@ also pauses after each RED test and each verified task. Every pause is an
 Interaction Card in the blueprint: completed work, evidence, what to check, one
 question, and choices to continue, redirect, inspect details, change scope, or
 switch mode. Existing `supervised` PRs migrate to `interactive` when resumed.
+
+## Update an installed Army
+
+```bash
+apm update psrebrny/agent-army --target opencode
+```
+
+Then run `/bootstrap`. It detects an older Agent Army profile, previews a narrow incremental migration
+and asks once before applying it. The migration preserves repo-specialized `.apm/agents`, model routing,
+quality policy and external controls; it updates only marked Agent Army fragments. A manually edited
+marked fragment is reported as a conflict, never overwritten. Use `/bootstrap --mode full` only when you
+want to intentionally re-specialize the team or change target.
+
+## Keeping the team current
+
+When you correct an agent or identify a recurring workflow gap, Agent Army first fixes the current task
+and then offers an `Army Improvement Proposal`. `/adapt-army` recommends whether the lesson belongs in a
+repo convention, an existing agent, an overlay for a core skill, a deterministic control, a new agent or
+a new `/new-skill`. Core skills stay APM-managed; local refinements live under
+`.agent-army/overrides/skills/`, so a future `apm update` keeps them.
 
 ## Development
 

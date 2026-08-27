@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create an Agent Army v0.2 profile in the current repository.
+"""Create and incrementally migrate an Agent Army v0.3.0 profile.
 
 This is intentionally deterministic.  The chat skill decides *what the project
 needs*; this program owns filesystem layout, ownership boundaries and the APM
@@ -22,11 +22,17 @@ from typing import Any
 HERE = Path(__file__).resolve().parent
 BASE = HERE / "baseline"
 ROLES = ("architect", "coder", "tester", "code-reviewer", "security-auditor", "perf-auditor", "docs-writer")
-SKILLS = ("bootstrap", "ship", "new-agent", "adapt-army")
+SKILLS = ("bootstrap", "ship", "new-agent", "new-skill", "adapt-army")
 RUNTIME_TARGETS = {"claude", "codex", "cursor", "copilot", "gemini", "windsurf"}
 AGENT_TARGETS = {"claude", "codex", "cursor", "copilot", "opencode", "gemini"}
 ALL_TARGETS = AGENT_TARGETS | {"windsurf"}
-MARKER = "# agent-army-v0.2"
+PACKAGE_VERSION = "0.3.0"
+PROFILE_SCHEMA_VERSION = 2
+OWNERSHIP_MARKER = "# agent-army-owned"
+LEGACY_OWNERSHIP_MARKERS = ("# agent-army-v0.2",)
+MIGRATION_020_TO_030 = "0.2.0-to-0.3.0-feedback-router"
+MANAGED_ROUTER_START = "<!-- agent-army:feedback-router:start -->"
+MANAGED_ROUTER_END = "<!-- agent-army:feedback-router:end -->"
 ROLE_CAPABILITY = {
     "architect": "strong",
     "coder": "mid",
@@ -43,6 +49,67 @@ DEFAULT_MODEL_TIERS = {
     "claude": {"light": "haiku", "mid": "sonnet", "strong": "opus"},
 }
 ROLE_MODEL_MARKER = "# agent-army-role-profile:"
+
+
+def version_key(value: str) -> tuple[int, int, int]:
+    """Compare the package's stable semver releases without extra dependencies."""
+    match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", value)
+    if not match:
+        raise ValueError(f"unsupported Agent Army version: {value}")
+    return tuple(int(part) for part in match.groups())
+
+
+def owns_marker(text: str) -> bool:
+    return OWNERSHIP_MARKER in text or any(marker in text for marker in LEGACY_OWNERSHIP_MARKERS)
+
+
+def feedback_router_block() -> str:
+    """A small, explicitly-owned extension safe to add to specialized AGENTS.md files."""
+    return """\n""" + MANAGED_ROUTER_START + """
+## Keeping Agent Army current
+
+When the user corrects an agent, identifies a repeatable weakness, asks for a better workflow, or
+needs a missing specialist, first fix the current task inside its approved scope. Then classify the
+lesson with `.agents/skills/adapt-army/SKILL.md`: task-local correction, repo convention, existing
+agent, existing skill, deterministic control, new agent, or new skill. Never modify the Army
+silently. Show an **Army Improvement Proposal** with the evidence, recommended target, write scope,
+verification and one approval question. Durable proposals and decisions live locally in
+`.agent-army/state.json`; do not store raw user text or secrets there. A package-wide issue is an
+upstream candidate, not permission to edit another repository.
+
+Core skills in `.agents/skills/` are APM-managed. A repo-specific extension to one goes in
+`.agent-army/overrides/skills/<skill>.md`; it may refine local behavior but cannot weaken security,
+approval gates or hard rules. New local skills belong in `.apm/skills/` and are rendered by APM.
+""" + MANAGED_ROUTER_END + """\n"""
+
+
+def managed_router_status(path: Path) -> str:
+    """Return append, current or conflict without touching user-authored AGENTS content."""
+    if not path.exists():
+        return "append"
+    text = path.read_text(encoding="utf-8")
+    start = text.find(MANAGED_ROUTER_START)
+    end = text.find(MANAGED_ROUTER_END)
+    if start == -1 and end == -1:
+        return "append"
+    if start == -1 or end == -1 or end < start:
+        return "conflict"
+    current = text[start:end + len(MANAGED_ROUTER_END)].strip()
+    expected = feedback_router_block().strip()
+    return "current" if current == expected else "conflict"
+
+
+def ensure_feedback_router(root: Path, dry_run: bool) -> list[str]:
+    path = root / "AGENTS.md"
+    status = managed_router_status(path)
+    if status == "conflict":
+        return [str(path.relative_to(root)) + " has a modified Agent Army feedback-router block"]
+    if status == "current":
+        print(f"kept {path.relative_to(root)} (feedback-router migration already applied)")
+        return []
+    existing = path.read_text(encoding="utf-8") if path.exists() else "# AGENTS.md\n"
+    write_text(path, existing.rstrip() + "\n" + feedback_router_block(), dry_run)
+    return []
 
 
 def repo_root() -> Path:
@@ -304,7 +371,75 @@ def existing_profile(root: Path) -> dict[str, Any]:
         profile = json.loads((root / ".agent-army/config.json").read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {}
-    return profile if profile.get("version") == 2 else {}
+    return profile if profile.get("version") == PROFILE_SCHEMA_VERSION else {}
+
+
+def installed_package_version(profile: dict[str, Any]) -> str | None:
+    package = profile.get("package")
+    if isinstance(package, dict) and isinstance(package.get("version"), str):
+        return package["version"]
+    # v0.2 profiles used schema version 2 but had no package metadata.
+    if profile.get("version") == PROFILE_SCHEMA_VERSION and profile.get("profile") == "agent-army":
+        return "0.2.0"
+    return None
+
+
+def resolve_bootstrap_mode(previous: dict[str, Any], target: str, requested: str) -> tuple[str, str | None]:
+    """Choose a safe mode; target switches and downgrades require an explicit full bootstrap."""
+    if not previous:
+        if requested == "incremental":
+            raise ValueError("no existing Agent Army profile; incremental mode needs a prior bootstrap")
+        return "initial" if requested == "auto" else "full", None
+
+    previous_target = previous.get("target")
+    if previous_target and previous_target != target:
+        if requested != "full":
+            raise ValueError(f"profile target is {previous_target}; run with --mode full to switch to {target}")
+        return "full", installed_package_version(previous)
+
+    installed = installed_package_version(previous)
+    if installed is None:
+        if requested == "incremental":
+            raise ValueError("profile has no recognizable Agent Army package version; use --mode full")
+        return "full", None
+    if version_key(installed) > version_key(PACKAGE_VERSION):
+        raise ValueError(f"profile uses newer Agent Army {installed}; refusing downgrade to {PACKAGE_VERSION}")
+    if requested == "full":
+        return "full", installed
+    if version_key(installed) < version_key(PACKAGE_VERSION):
+        return "incremental", installed
+    if requested == "incremental":
+        raise ValueError(f"profile is already current at Agent Army {PACKAGE_VERSION}")
+    return "current", installed
+
+
+def has_explicit_profile_change(args: argparse.Namespace) -> bool:
+    """A current package may still need a safe re-bootstrap for user-requested settings."""
+    return bool(
+        args.runtime_hooks
+        or args.git_precommit
+        or args.ci
+        or args.model_light
+        or args.model_mid
+        or args.model_strong
+        or args.role_model_routing == "inherit"
+    )
+
+
+def migrate_profile(root: Path, previous: dict[str, Any], from_version: str, dry_run: bool) -> tuple[list[str], list[str]]:
+    """Apply narrowly-scoped, idempotent migrations before normal rendering.
+
+    The return values are applied migration IDs and conflicts. A conflict means no
+    configuration or rendering should proceed, so a hand-edited managed block is
+    never overwritten as a side effect of an APM update.
+    """
+    applied: list[str] = []
+    conflicts: list[str] = []
+    if version_key(from_version) < version_key("0.3.0"):
+        conflicts.extend(ensure_feedback_router(root, dry_run))
+        if not conflicts:
+            applied.append(MIGRATION_020_TO_030)
+    return applied, conflicts
 
 
 def hook_document(event: str, action: str) -> str:
@@ -315,7 +450,7 @@ def hook_document(event: str, action: str) -> str:
 
 
 def precommit_shim() -> str:
-    return "#!/usr/bin/env bash\n" + MARKER + "\nexec python3 \"$(git rev-parse --show-toplevel)/.agent-army/runtime.py\" precommit\n"
+    return "#!/usr/bin/env bash\n" + OWNERSHIP_MARKER + "\n# agent-army-package: " + PACKAGE_VERSION + "\nexec python3 \"$(git rev-parse --show-toplevel)/.agent-army/runtime.py\" precommit\n"
 
 
 def install_precommit(root: Path, mode: str, evidence: list[str], dry_run: bool) -> tuple[str, list[str]]:
@@ -323,12 +458,19 @@ def install_precommit(root: Path, mode: str, evidence: list[str], dry_run: bool)
         return mode, evidence
     hooks_path = subprocess.run(["git", "config", "core.hooksPath"], cwd=root, text=True, capture_output=True).stdout.strip()
     hook = root / (hooks_path if hooks_path else ".git/hooks") / "pre-commit"
-    if hook.exists() and MARKER not in hook.read_text(encoding="utf-8", errors="ignore"):
+    if hook.exists() and owns_marker(hook.read_text(encoding="utf-8", errors="ignore")):
+        data = hook.read_text(encoding="utf-8", errors="ignore")
+        updated = data
+        for marker in LEGACY_OWNERSHIP_MARKERS:
+            updated = updated.replace(marker, OWNERSHIP_MARKER + "\n# agent-army-package: " + PACKAGE_VERSION)
+        if updated != data:
+            write_text(hook, updated, dry_run)
+    if hook.exists() and not owns_marker(hook.read_text(encoding="utf-8", errors="ignore")):
         # A shell hook can be safely appended. Anything else remains user-owned.
         data = hook.read_text(encoding="utf-8", errors="ignore")
         if not data.startswith("#!") or not re.search(r"^#!.*(?:ba)?sh", data):
             return "blocked", [str(hook.relative_to(root))]
-        addition = f"\n{MARKER}\npython3 \"$(git rev-parse --show-toplevel)/.agent-army/runtime.py\" precommit || exit 1\n"
+        addition = f"\n{OWNERSHIP_MARKER}\n# agent-army-package: {PACKAGE_VERSION}\npython3 \"$(git rev-parse --show-toplevel)/.agent-army/runtime.py\" precommit || exit 1\n"
         write_text(hook, data.rstrip() + addition, dry_run)
     elif not hook.exists():
         write_text(hook, precommit_shim(), dry_run)
@@ -341,7 +483,7 @@ def write_ci(root: Path, mode: str, evidence: list[str], dry_run: bool) -> tuple
     if mode != "army":
         return mode, evidence
     path = root / ".github/workflows/agent-army-quality.yml"
-    if path.exists() and "agent-army-v0.2" not in path.read_text(encoding="utf-8", errors="ignore"):
+    if path.exists() and not owns_marker(path.read_text(encoding="utf-8", errors="ignore")):
         return "blocked", [str(path.relative_to(root))]
     copy_file(BASE / ".github/workflows/quality.yml", path, dry_run)
     return "army", [str(path.relative_to(root))]
@@ -409,7 +551,7 @@ def run_apm(root: Path, target: str) -> int:
             print("WARN: no apm.yml but .apm/skills already exists; refusing to guess ownership. Run `apm lock` and `apm install --frozen --target %s` yourself." % target, file=sys.stderr)
             return 0
         shutil.copytree(installed_skills, local_skills)
-        write_text(manifest, "name: agent-army-profile\nversion: 0.2.0\ndescription: Local Agent Army bootstrap profile\nincludes: auto\ndependencies:\n  apm: []\n  mcp: []\n", False)
+        write_text(manifest, "name: agent-army-profile\nversion: 0.3.0\ndescription: Local Agent Army bootstrap profile\nincludes: auto\ndependencies:\n  apm: []\n  mcp: []\n", False)
         lock = subprocess.run([apm, "lock"], cwd=root)
         if lock.returncode != 0:
             return lock.returncode
@@ -428,6 +570,7 @@ def main() -> int:
     parser.add_argument("--model-light", metavar="MODEL", help="exact target-native model ID for light roles")
     parser.add_argument("--model-mid", metavar="MODEL", help="exact target-native model ID for mid roles")
     parser.add_argument("--model-strong", metavar="MODEL", help="exact target-native model ID for strong roles")
+    parser.add_argument("--mode", choices=("auto", "incremental", "full"), default="auto", help="auto-detect, migrate only, or intentionally re-specialize")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--skip-apm", action="store_true", help="test-only: do not run apm install")
     args = parser.parse_args()
@@ -435,6 +578,27 @@ def main() -> int:
     global ROOT
     ROOT = repo_root()
     previous = existing_profile(ROOT)
+    try:
+        bootstrap_mode, from_version = resolve_bootstrap_mode(previous, args.target, args.mode)
+    except ValueError as exc:
+        parser.error(str(exc))
+    if bootstrap_mode == "current":
+        if not has_explicit_profile_change(args):
+            print(f"Agent Army {PACKAGE_VERSION} profile is current; no incremental changes needed. Use --mode full to re-specialize.")
+            return 0
+        bootstrap_mode = "full"
+        print("Agent Army package is current; applying explicitly requested profile configuration changes.")
+    applied_migrations: list[str] = []
+    if bootstrap_mode == "incremental":
+        print(f"\nAgent Army incremental migration plan: {from_version} -> {PACKAGE_VERSION}")
+        print("  apply: AGENTS.md managed feedback-router block; package metadata; owned marker refresh")
+        print("  preserve: .apm/agents, model routing, quality policy and external controls")
+        applied_migrations, conflicts = migrate_profile(ROOT, previous, from_version or "0.2.0", args.dry_run)
+        if conflicts:
+            print("ERROR: incremental migration needs a human decision:", file=sys.stderr)
+            for conflict in conflicts:
+                print(f"  - {conflict}", file=sys.stderr)
+            return 2
     try:
         routing = model_routing(args.target, previous, args)
     except ValueError as exc:
@@ -460,10 +624,22 @@ def main() -> int:
         write_runtime_sources(ROOT, args.target, selections["runtime_hooks"] == "army", args.dry_run)
     git_mode, git_evidence = install_precommit(ROOT, selections["git_precommit"], found["git_precommit"], args.dry_run)
     ci_mode, ci_evidence = write_ci(ROOT, selections["ci"], found["ci"], args.dry_run)
+    previous_package = previous.get("package") if isinstance(previous.get("package"), dict) else {}
+    recorded_migrations = previous_package.get("applied_migrations") if isinstance(previous_package.get("applied_migrations"), list) else []
+    migrations = [migration for migration in recorded_migrations if isinstance(migration, str)]
+    for migration in applied_migrations:
+        if migration not in migrations:
+            migrations.append(migration)
     config = {
-        "version": 2,
+        "version": PROFILE_SCHEMA_VERSION,
         "target": args.target,
         "profile": "agent-army",
+        "package": {
+            "name": "agent-army",
+            "version": PACKAGE_VERSION,
+            "profile_schema_version": PROFILE_SCHEMA_VERSION,
+            "applied_migrations": migrations,
+        },
         "model_routing": {"target": args.target, **routing},
         "quality": previous.get("quality") if isinstance(previous.get("quality"), dict) else default_quality(ROOT),
         "policy": previous.get("policy") if isinstance(previous.get("policy"), dict) else {},
@@ -475,7 +651,7 @@ def main() -> int:
     }
     write_text(ROOT / ".agent-army/config.json", json.dumps(config, indent=2) + "\n", args.dry_run)
     update_gitignore(ROOT, args.target, args.dry_run)
-    print("\nAgent Army v2 status:")
+    print(f"\nAgent Army package {PACKAGE_VERSION} status (profile schema v{PROFILE_SCHEMA_VERSION}):")
     for layer, value in config["enforcement"].items():
         print(f"  {layer}: {value['mode']}" + (f" ({', '.join(value['evidence'])})" if value["evidence"] else ""))
     print(f"  role model routing: {routing['strategy']} ({routing['source']}; effort: {routing['effort']})")
