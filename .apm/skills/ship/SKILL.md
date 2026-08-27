@@ -129,7 +129,46 @@ Show this compactly at the mandatory gate: selected scope, Scope Profile, the ne
 the next role. A whole feature therefore does not make a `light/low` ping endpoint run on a strong/high
 configuration; it only increases the coordinator recommendation when the dependency graph warrants it.
 
-## 1.5 · MODEL & EFFORT ROUTING
+## 1.5 · BOTTLENECK-AWARE EFFORT POLICY
+The `Execution Profile` is a recommendation backed by evidence, not a command to blindly use the
+strongest model or the highest effort. Before the first dispatch for a task, identify one dominant
+reasoning bottleneck and persist it in the task block as `Bottleneck`, `Routing rationale` and
+`Escalation trigger`. Use these labels:
+
+| Bottleneck | First move | Escalate when |
+|---|---|---|
+| `retrieval` — a file, API, convention or fact is unknown | improve pointers, search scope and the clean packet | the missing fact cannot be resolved from approved paths |
+| `design_decision` — several valid designs or a non-trivial trade-off | increase deliberation by one step and compare explicit options | the extra deliberation does not resolve the choice, or the decision changes architecture/scope |
+| `capability_gap` — the task is outside the selected role/tier's demonstrated ability | route to the next adequate capability or the proper specialist | the next capability still cannot satisfy the contract |
+| `context_noise` — the packet is large or contains distractors | reduce the packet to pointers and relevant slices; usually lower effort | the cleaned packet still leaves a genuine reasoning problem |
+| `verification` — the result cannot be checked reliably | strengthen the smallest deterministic test/measurement first | the contract remains unverifiable or a new control needs approval |
+| `multiple_approaches` — independent strategies are plausible | run bounded independent attempts when safe, then compare | attempts disagree or require expanded scope |
+| `unknown` | start with the cheapest adequate profile and gather evidence | the first verified result shows a concrete bottleneck |
+
+Routing rules:
+
+- Prefer the cheapest capability that is adequate for the role and contract. Within that capability,
+  spend deliberation on judgment, not on missing information. `high`, `xhigh` and `max` are justified
+  by architectural/security decisions, a hard reasoning problem or a failed lower setting — never by
+  task size alone.
+- Raise deliberation by at most one portable step per retry. If that does not improve the verified
+  result, stop repeating the same approach: improve context or raise capability. Effort is not a
+  substitute for a missing capability.
+- A strong verifier (tests, type-checker, contract or measurement) permits a cheaper worker plus
+  another short repair loop. With no reliable verifier, invest in the verification step before buying
+  more deliberation.
+- Do not use a whole-feature scope as a reason to raise every task. Scope affects coordination; the
+  task bottleneck affects worker routing.
+- This policy does not fabricate or mutate a native model/effort setting. With `per_role_static`, use
+  the configured role model and record the portable recommendation as rationale. With `inherit` or an
+  unsupported effort selector, write a `needs_input` configuration gap only when the recommendation is
+  material; the user changes the UI/CLI setting and `/ship` resumes at the next safe boundary.
+
+The escalation ladder is therefore: clean/retrieve context → adjust one effort step for a reasoning
+problem → route to a stronger capability or specialist → ask for a decision/scope change. Never spend
+unbounded effort on retrieval, context noise or a repeated failed approach.
+
+## 1.6 · MODEL & EFFORT ROUTING
 Every atomic task has a portable `Execution Profile`: `capability` (`light`, `mid`, `strong`) and
 `deliberation` (`none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`). The architect sets the profile from task complexity/risk; it
 does not put a vendor model ID in the blueprint. Bootstrap resolves a target-native model-routing record
@@ -177,7 +216,7 @@ always means effort inherits the tool default — do not present it as a role-le
 effort value: preserve it only as an adapter-specific execution mode, separate from deliberation, and never
 claim it was selected unless that adapter exposes and records such a mode.
 
-## 1.6 · PERSIST EVERY ROLE TRANSITION
+## 1.7 · PERSIST EVERY ROLE TRANSITION
 `Execution State` is the resumable source of truth, not the Todo list or a chat message. Immediately
 before and after every role dispatch, rewrite the selected PR file: set `PR status`, `Current task`,
 `Active roles`, `Last verified stage`, task status, `Awaiting decision`, and any Interaction Card. Never

@@ -146,6 +146,9 @@ flowchart TD
 **Execution Profile:**
 - **Capability:** [light | mid | strong]
 - **Deliberation:** [none | minimal | low | medium | high | xhigh | max]
+- **Bottleneck:** [retrieval | design_decision | capability_gap | context_noise | verification | multiple_approaches | unknown]
+- **Routing rationale:** [evidence for the selected capability and deliberation; do not write a vendor model ID]
+- **Escalation trigger:** [observable result that requires better context, one effort step, a stronger capability, a specialist or user input]
 
 **Run Configuration:**
 - **Role:** [main session | tester | coder | code-reviewer | security-auditor | docs-writer]
