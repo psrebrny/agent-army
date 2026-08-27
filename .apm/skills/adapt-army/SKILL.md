@@ -4,9 +4,6 @@ description: Turn user feedback into a safe, durable improvement to this repo's 
 ---
 # /adapt-army — feedback router and team-level evolution
 
-Before following this skill, read `.agent-army/overrides/skills/adapt-army.md` when it exists. It may
-refine this repo's routing, but never weakens security, approval gates or hard rules.
-
 ## 0 · Fix the present, then learn the lesson
 
 When feedback identifies a defect in the active task, first repair it inside the already approved scope.
@@ -26,15 +23,17 @@ Normalize the feedback without copying private text, secrets or a full transcrip
 
 Do not repeatedly raise a declined proposal unless new, material evidence changes its scope or risk.
 
-## 2 · Route to the smallest correct owner
+## 2 · Inspect, then route to the smallest correct owner
 
-Choose the narrowest owner and explain why it wins over the alternatives:
+Before proposing a change, read the live relevant `.agents/skills/<skill>/SKILL.md` files, applicable root
+and nested `AGENTS.md` files, and local `.apm/agents` sources. Do not use `.opencode/skills` or
+`apm_modules` as instruction sources. Choose the narrowest owner and explain why it wins over alternatives:
 
 | Signal | Owner |
 |---|---|
 | Repo-wide law, naming, architecture or policy | `AGENTS.md` plus every owning agent |
 | One role's judgment, checklist or report | that existing `.apm/agents/agent-army-<role>.agent.md` |
-| Handoff, scope, execution state or multi-role sequencing | local overlay `.agent-army/overrides/skills/<core-skill>.md` |
+| Handoff, scope, execution state or multi-role sequencing | the narrowest owning role, or a new skill only when it is a separate user-invoked workflow |
 | Machine-enforceable rule | existing formatter/linter/test/config control; never a second conflicting control |
 | Recurring, independent specialist with its own contract/tools/output | `/new-agent` |
 | Recurring, user-invoked workflow with its own entry point | `/new-skill` |
@@ -42,13 +41,13 @@ Choose the narrowest owner and explain why it wins over the alternatives:
 Creating a new agent is justified only when no existing role can own the responsibility without losing
 single-purpose scope. Creating a new skill is justified only when the user needs a distinct reusable
 workflow, not merely a longer existing prompt. Core skills under `.agents/skills/` are APM-managed: never
-edit them in a target repository. In the Agent Army source repo, a confirmed package-wide improvement may
-edit the packaged source directly.
+edit them in a target repository.
 
 ## 3 · Persist the proposal locally and ask
 
 Use `.agent-army/state.json` as ignored operational memory. Keep a small `improvements` collection keyed
-by a stable fingerprint of the normalized signal, classification and targets:
+by a stable fingerprint of the normalized observation, classification and chosen targets. It must contain
+no raw user message, secret, blueprint path or `design-docs` reference:
 
 ```json
 {
@@ -57,10 +56,8 @@ by a stable fingerprint of the normalized signal, classification and targets:
     "imp-<fingerprint>": {
       "status": "proposed | declined | approved | applied | superseded",
       "summary": "normalized, non-sensitive lesson",
-      "classification": "existing_skill",
-      "targets": [".agent-army/overrides/skills/ship.md"],
-      "evidence": ["design-docs/ABC/01_PR_1.md"],
-      "upstream_candidate": false
+      "classification": "existing_agent",
+      "targets": ["AGENTS.md", ".apm/agents/agent-army-tester.agent.md"]
     }
   }
 }
@@ -70,15 +67,14 @@ Write an **Army Improvement Proposal** in the user's language before every durab
 
 ```md
 ## Army Improvement Proposal
-- Feedback: [normalized lesson and evidence]
+- Observation: [normalized, non-sensitive lesson]
 - Current-task correction: [done / next safe boundary]
 - Recommendation: [owner and exact paths]
 - Why this, not alternatives: [brief reason]
 - Planned write scope: [paths only]
 - Verification: [checks/render]
-- Upstream candidate: [yes/no and why]
 - Question: [one approval question]
-- Options: [apply | adjust | current fix only/decline | show details | prepare upstream proposal]
+- Options: [apply | adjust | current fix only/decline | show details]
 ```
 
 Approval covers only the displayed paths. A new finding, scope expansion or weakened guarantee needs a new
@@ -88,24 +84,19 @@ decision progresses.
 ## 4 · Apply after approval
 
 1. Update `AGENTS.md` first when a repo law changes, then every routed agent so planning and review agree.
-2. For a core-skill behavior change, create or update its overlay with the durable rule, evidence and a
-   statement that it cannot weaken safety. For an actual package defect in this source repo, update the
-   packaged skill instead.
+2. Put a role-specific responsibility in the owning local `.apm/agents` source. Use `/new-skill` only for
+   a separate local, user-invoked workflow. Do not edit a package-managed core skill in a target repository.
 3. Hand an independent role to `/new-agent`; hand a new user workflow to `/new-skill`.
 4. Preserve external/disabled controls. Extend only the formatter, linter or test control the repository
    already owns; never create a competing config merely to enforce an agent preference.
 5. Render through `apm install --frozen --target <target>` when agents or local skills changed, then run
    the relevant verification. Do not commit without explicit approval.
 
-For a package-wide issue discovered in a target repo, set `upstream_candidate: true`; never edit another
-checkout or publish. On “prepare upstream proposal”, write a concise, reviewable proposal under
-`design-docs/agent-army-improvements/` with reproduction, expected behavior, proposed source paths and
-tests.
-
 ## <prompt_examples>
 **EX 1 — task correction plus durable workflow lesson.** USER: “You started coding before I accepted the
 test interpretation. Fix this task, and this must not happen again.” → Repair the task through TDD, then
-propose an overlay for `ship` with the evidence and exact write scope. Do not edit `.agents/skills/ship`.
+read the live `ship` skill and route the durable local rule to `AGENTS.md` and, if necessary, the owning
+local role source. Do not edit `.agents/skills/ship`.
 
 **EX 2 — existing agent, not a new one.** USER: “Reviewer should reject endpoints that expose internal
 database IDs.” → Route to `code-reviewer` and `AGENTS.md`; explain that this is a checklist addition, not

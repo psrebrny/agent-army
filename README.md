@@ -107,19 +107,21 @@ switch mode. Existing `supervised` PRs migrate to `interactive` when resumed.
 apm update psrebrny/agent-army --target opencode
 ```
 
-Then run `/bootstrap`. It detects an older Agent Army profile, previews a narrow incremental migration
-and asks once before applying it. The migration preserves repo-specialized `.apm/agents`, model routing,
-quality policy and external controls; it updates only marked Agent Army fragments. A manually edited
-marked fragment is reported as a conflict, never overwritten. Use `/bootstrap --mode full` only when you
-want to intentionally re-specialize the team or change target.
+Then run `/bootstrap`. It detects an older profile or changed live package materials, previews a narrow
+incremental migration and shows an **Incremental Upgrade Review** before any local specialization changes.
+The review compares shared `.agents/skills` and baseline-template hashes with the local inventory, then
+asks whether to apply selected recommendations, apply all, inspect details or skip. The migration preserves
+repo-specialized `.apm/agents`, model routing, quality policy and external controls; it updates only marked
+Agent Army fragments. A manually edited marked fragment is reported as a conflict, never overwritten. Use
+`/bootstrap --mode full` only when you want to intentionally re-specialize the team or change target.
 
 ## Keeping the team current
 
 When you correct an agent or identify a recurring workflow gap, Agent Army first fixes the current task
 and then offers an `Army Improvement Proposal`. `/adapt-army` recommends whether the lesson belongs in a
-repo convention, an existing agent, an overlay for a core skill, a deterministic control, a new agent or
-a new `/new-skill`. Core skills stay APM-managed; local refinements live under
-`.agent-army/overrides/skills/`, so a future `apm update` keeps them.
+repo convention, an existing agent, a deterministic control, a new agent or a new `/new-skill`. Core skills
+stay APM-managed; durable local changes go only to `AGENTS.md`, a local `.apm/agents` role, or a distinct
+local `.apm/skills` workflow after explicit approval.
 
 ## Development
 

@@ -4,9 +4,6 @@ description: Author a NEW subagent (or upgrade an existing one) to the project's
 ---
 # /new-agent — create an agent to the standard
 
-Before following this skill, read `.agent-army/overrides/skills/new-agent.md` when it exists. It may
-refine local role conventions but cannot lower the authoring standard, least privilege or approval gates.
-
 1. **Read the bar:** open `.agents/skills/bootstrap/baseline/core/agents/_STANDARD.md`. Use `.apm/agents/agent-army-architect.agent.md` as the exemplar when it exists; the rendered native output is `.opencode/agents` for OpenCode, so do not author directly in that rendered directory.
 2. **Clarify (few questions):** role & single responsibility · when to delegate (drives `description`) · minimal tools · model (opus/sonnet/haiku, justified) · what it outputs.
 3. **Recon the repo:** stack, conventions, exact commands — so the agent is repo-adaptive, not generic.

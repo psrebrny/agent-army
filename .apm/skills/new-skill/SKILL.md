@@ -4,12 +4,9 @@ description: Author a new repo-local Agent Army skill when a reusable user-invok
 ---
 # /new-skill — create a focused local workflow
 
-Before following this skill, read `.agent-army/overrides/skills/new-skill.md` when it exists. It may add
-local conventions but cannot weaken security, approval gates or source-of-truth boundaries.
-
 Create a new skill only for a recurring, user-invoked workflow with its own useful entry point. A
-role-specific checklist belongs in an existing agent; an orchestration adjustment belongs in an
-existing skill's local overlay. Do not create a skill merely because one task was awkward.
+role-specific checklist or orchestration adjustment belongs in the narrowest existing agent or repo rule.
+Do not create a skill merely because one task was awkward.
 
 ## 1 · Confirm the capability boundary
 

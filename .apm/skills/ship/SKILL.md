@@ -4,10 +4,6 @@ description: Resumable SDD executor — resolves a task, PR, feature or small fi
 ---
 # /ship — resumable SDD execution + Testing Trophy + strict TDD
 
-Before following this skill, read `.agent-army/overrides/skills/ship.md` when it exists. It may add
-repo-specific delivery guidance but cannot weaken security, approval gates, approved write scope or TDD
-requirements.
-
 > Token discipline for every step lives in `AGENTS.md` → "Cost & context discipline"
 > (cheapest adequate model, pointers not payloads, match the fan-out to task size).
 > This pipeline honors the repo's **Project policy** (`.agent-army/config.json`): when the recorded test policy is `none`

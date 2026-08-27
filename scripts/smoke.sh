@@ -25,6 +25,9 @@ bootstrap_apm(){
   local dir="$1" target="$2"; shift 2
   (cd "$dir" && python3 .agents/skills/bootstrap/bootstrap.py "$target" "$@")
 }
+legacy_profile(){
+  python3 -c 'import json, pathlib, sys; p=pathlib.Path(sys.argv[1]); data=json.loads(p.read_text()); data.pop("package", None); p.write_text(json.dumps(data, indent=2) + "\n")' "$1"
+}
 
 printf '\n\033[1mGATE 0 · profile generation for every target\033[0m\n'
 for target in claude codex cursor copilot opencode gemini windsurf; do
@@ -103,32 +106,38 @@ printf '\n\033[1mGATE 1.5 · incremental package migration\033[0m\n'
 UPGRADE="$WORK/upgrade"; init_repo "$UPGRADE"
 bootstrap "$UPGRADE" opencode --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null
 printf '# Existing repo specialization\n' > "$UPGRADE/AGENTS.md"
-printf '\n# MIGRATION-SPECIALIZATION\n' >> "$UPGRADE/.apm/agents/agent-army-architect.agent.md"
-sed -i.bak '/^[[:space:]]*"package": {$/,/^[[:space:]]*},$/d' "$UPGRADE/.agent-army/config.json"; rm -f "$UPGRADE/.agent-army/config.json.bak"
+printf '\n# PROFILE-SPECIALIZATION\n' >> "$UPGRADE/.apm/agents/agent-army-architect.agent.md"
+legacy_profile "$UPGRADE/.agent-army/config.json"
 (cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --dry-run --skip-apm > "$WORK/upgrade-plan.txt")
-grep -q '0.2.0 -> 0.3.0' "$WORK/upgrade-plan.txt" && ok "legacy v0.2 profile gets an incremental plan" || bad "legacy migration plan missing"
+grep -q 'legacy profile -> 0.3.0' "$WORK/upgrade-plan.txt" && ok "unversioned profile gets an incremental plan" || bad "incremental plan missing"
+grep -q 'Incremental Upgrade Review' "$WORK/upgrade-plan.txt" && grep -q 'new-skill' "$WORK/upgrade-plan.txt" && ok "unversioned profile previews package capabilities" || bad "upgrade review missing capabilities"
 grep -q 'agent-army:feedback-router:start' "$UPGRADE/AGENTS.md" && bad "incremental dry-run changed AGENTS.md" || ok "incremental dry-run preserves AGENTS.md"
 (cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --skip-apm >/dev/null)
 grep -q 'agent-army:feedback-router:start' "$UPGRADE/AGENTS.md" && ok "incremental migration adds managed feedback router" || bad "feedback router missing after migration"
 grep -q '"version": "0.3.0"' "$UPGRADE/.agent-army/config.json" && ok "incremental migration records package version" || bad "package version not recorded"
-grep -q 'MIGRATION-SPECIALIZATION' "$UPGRADE/.apm/agents/agent-army-architect.agent.md" && ok "incremental migration preserves specialized agent" || bad "incremental migration overwrote specialized agent"
+grep -q '"inventory"' "$UPGRADE/.agent-army/config.json" && grep -q '"upgrade_review"' "$UPGRADE/.agent-army/config.json" && ok "incremental migration records hash-only inventory and review" || bad "incremental inventory or review missing"
+grep -q 'PROFILE-SPECIALIZATION' "$UPGRADE/.apm/agents/agent-army-architect.agent.md" && ok "incremental update preserves specialized agent" || bad "incremental update overwrote specialized agent"
 count="$(grep -c 'agent-army:feedback-router:start' "$UPGRADE/AGENTS.md")"
 (cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --skip-apm >/dev/null)
 [ "$count" = "$(grep -c 'agent-army:feedback-router:start' "$UPGRADE/AGENTS.md")" ] && ok "incremental migration is idempotent" || bad "incremental migration duplicated managed block"
-mkdir -p "$UPGRADE/.agent-army/overrides/skills"; printf 'local /ship guidance\n' > "$UPGRADE/.agent-army/overrides/skills/ship.md"
-(cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --skip-apm >/dev/null)
-[ -f "$UPGRADE/.agent-army/overrides/skills/ship.md" ] && ok "local skill overlay survives bootstrap" || bad "local skill overlay was removed"
+printf '\n# local template change\n' >> "$UPGRADE/.agents/skills/bootstrap/baseline/core/agents/tester.md"
+(cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --dry-run --skip-apm > "$WORK/template-review.txt")
+grep -q 'changed baseline templates' "$WORK/template-review.txt" && grep -q 'baseline/core/agents/tester.md' "$WORK/template-review.txt" && ok "template change creates a recommendation" || bad "template change was not surfaced for review"
+grep -q 'PROFILE-SPECIALIZATION' "$UPGRADE/.apm/agents/agent-army-architect.agent.md" && ok "template review does not overwrite local agent" || bad "template review overwrote local agent"
+(cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --upgrade-review-outcome skipped --skip-apm >/dev/null)
+grep -A2 '"upgrade_review"' "$UPGRADE/.agent-army/config.json" | grep -q '"status": "skipped"' && ok "upgrade review decision is recorded" || bad "upgrade review decision was not recorded"
 
 CONFLICT="$WORK/migration-conflict"; init_repo "$CONFLICT"
 bootstrap "$CONFLICT" opencode --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null
 printf '<!-- agent-army:feedback-router:start -->\nuser edit\n<!-- agent-army:feedback-router:end -->\n' > "$CONFLICT/AGENTS.md"
-sed -i.bak '/^[[:space:]]*"package": {$/,/^[[:space:]]*},$/d' "$CONFLICT/.agent-army/config.json"; rm -f "$CONFLICT/.agent-army/config.json.bak"
+legacy_profile "$CONFLICT/.agent-army/config.json"
+cp "$CONFLICT/.agent-army/config.json" "$WORK/conflict-config-before.json"
 if (cd "$CONFLICT" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode incremental --skip-apm) >/dev/null 2>&1; then
   bad "modified managed block was overwritten"
 else
   ok "modified managed block blocks incremental migration"
 fi
-grep -q '"package"' "$CONFLICT/.agent-army/config.json" && bad "conflicting migration rewrote config" || ok "conflicting migration preserves config"
+cmp -s "$WORK/conflict-config-before.json" "$CONFLICT/.agent-army/config.json" && ok "conflicting migration preserves config" || bad "conflicting migration rewrote config"
 if (cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" codex --mode auto --skip-apm) >/dev/null 2>&1; then
   bad "target switch bypassed full bootstrap"
 else

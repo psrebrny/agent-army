@@ -403,7 +403,8 @@ check_skill() {
   if [ "$base" = "adapt-army" ]; then
     if grep -q 'Army Improvement Proposal' "$f" \
       && grep -q 'state.json' "$f" \
-      && grep -q 'overrides/skills' "$f" \
+      && grep -q 'live relevant `.agents/skills' "$f" \
+      && grep -q 'no raw user message, secret, blueprint path or `design-docs` reference' "$f" \
       && grep -q '/new-skill' "$f" \
       && grep -q 'Never silently mutate' "$f"; then
       ok "adapt-army feedback routing and approval boundary are explicit"

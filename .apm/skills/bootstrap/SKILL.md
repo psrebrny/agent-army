@@ -4,9 +4,6 @@ description: Evidence-led setup and safe incremental migration of a tailored Age
 ---
 # /bootstrap — own controls, then author a real team
 
-Before following this skill, read `.agent-army/overrides/skills/bootstrap.md` when it exists. It may add
-repo-specific bootstrap guidance but cannot weaken ownership checks, safety barriers or approval gates.
-
 `apm install` or `apm update` delivered this skill and templates only. It did not install live
 agents, hooks or CI. `/bootstrap` has two distinct jobs:
 
@@ -31,27 +28,46 @@ target change requires `--mode full`; and a newer local profile is never downgra
 migration, show the exact version transition, managed paths, preserved local sources and any conflict,
 then get one explicit “apply migration” confirmation before rerunning without `--dry-run`.
 
-Incremental mode updates only versioned, managed fragments and runs targeted validation. It does not redo
-deep recon or overwrite `.apm/agents`, model routing, quality policy or external controls. If the managed
-feedback-router block in `AGENTS.md` was edited, stop on the conflict rather than replacing it. Use
-`--mode full` only when the user asks to re-specialize the team or deliberately switches targets.
+Incremental mode first shows an **Incremental Upgrade Review**. Read the live shared skills under
+`.agents/skills`, the current root `AGENTS.md`, and local `.apm/agents`; use the deterministic package
+inventory as the delta, then recommend only concrete local improvements. The card
+lists new package capabilities, possibly affected local paths, a recommended diff, reason, test and the
+choices `apply selected`, `apply all`, `show details` or `skip`. Do not modify local specialization until
+the user chooses. After applying selected/all local diffs, rerun the generator without `--dry-run` with
+`--upgrade-review-outcome applied`; after `skip`, rerun it with `--upgrade-review-outcome skipped`. The
+mechanical migration then updates only versioned, managed fragments and runs targeted
+validation. It does not redo deep recon or overwrite `.apm/agents`, model routing, quality policy or
+external controls. If the managed feedback-router block in `AGENTS.md` was edited, stop on the conflict
+rather than replacing it. Use `--mode full` only when the user asks to re-specialize the team or deliberately
+switches targets.
+
+Use this exact user-facing card after the dry-run and live-material review:
+
+```md
+## Incremental Upgrade Review
+- New package capabilities: [from new/changed items in the deterministic inventory]
+- Local artifacts inspected: [live skills, AGENTS.md, .apm/agents paths]
+- Recommended diff: [selected paths only, or none]
+- Why: [concrete impact on this repository]
+- Verification: [render/checks/tests]
+- Question: [apply selected | apply all | show details | skip]
+```
+
+Keep the card and the generator's metadata separate from task blueprints: deleting `design-docs/` must
+never erase feedback or upgrade state.
 
 ## Step 0 — target and ownership (mechanical, explicit)
 
-Use the shared installed skill directory. OpenCode and the other targets use
-`.agents/skills`; bootstrap also recognizes older OpenCode installations under
-`.opencode/skills`:
+Every normal skill invocation uses the shared installed directory:
 
 ```bash
 SKILLS_DIR=".agents/skills"
-[ ! -f "$SKILLS_DIR/bootstrap/assemble.sh" ] && [ -f ".opencode/skills/bootstrap/assemble.sh" ] && SKILLS_DIR=".opencode/skills"
 ```
 
-Before creating the profile, bootstrap checks the selected skill directory,
-the older `.agents/skills` location, and the installed `apm_modules` cache. If
-the four Agent Army skills exist in one of those locations, it materializes any
-missing files in the selected target directory. It does not delete the source
-cache or local agent sources.
+If this directory is missing, stop and ask the user to repair the installation with `apm install` or
+`apm update`. Do not read `.opencode/skills` or `apm_modules` as instructions. The deterministic bootstrap
+program may use those locations only as a mechanical recovery source to restore a missing shared directory;
+they are never a source of workflow guidance or of the upgrade review.
 
 Run the detector; do not infer the active tool from a directory listing:
 
@@ -106,9 +122,9 @@ selector; effort always remains the tool default.
 
 It creates local APM agent sources in `.apm/agents`, optional hook primitives
 in `.apm/hooks`, `.agent-army/config.json`, and then asks APM to render the
-native format. OpenCode discovers the five skills in the shared `.agents/skills`
-path as well as its native `.opencode/skills` path. Codex therefore receives
-TOML through APM, not guessed TOML.
+native format for the selected target. All tools can use the same `.agents/skills`
+directory. Rendering native agents for another tool is optional and happens only
+when that tool needs those agents; Codex receives TOML through APM, not guessed TOML.
 Gemini uses a direct temporary adapter; Windsurf receives role-skills because
 it has no native project-subagent format. OpenCode has native agents but no
 runtime-hook adapter.

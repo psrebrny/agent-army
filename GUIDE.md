@@ -91,8 +91,9 @@ CLAUDE.md                       # project memory (tailored to the repo after /bo
 - **git pre-commit** → secret scan + lint/tests, even when someone bypasses Claude Code.
 
 ## Extending
-New agent: `/new-agent` (holds `_STANDARD.md`). New reusable workflow: `/new-skill`. Core-skill refinements
-live in `.agent-army/overrides/skills/<skill>.md`, not in APM-managed `.agents/skills/`.
+New agent: `/new-agent` (holds `_STANDARD.md`). New reusable workflow: `/new-skill`. Core skills under
+`.agents/skills/` remain APM-managed; a local improvement belongs in `AGENTS.md`, a local `.apm/agents`
+role, or a distinct local `.apm/skills` workflow.
 
 ## Updating Agent Army
 

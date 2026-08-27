@@ -84,11 +84,10 @@ evidence, recommended target, alternatives, planned write scope, verification an
 Record its normalized status locally in `.agent-army/state.json`; do not store raw user messages or
 secrets. A declined proposal stays quiet unless materially new evidence appears.
 
-Core skills in `<SKILLS_DIR>/` are APM-managed. A repo-specific refinement goes in
-`.agent-army/overrides/skills/<skill>.md`, which core skills read before acting. It can add local guidance
-but cannot weaken security, approval gates or hard rules. Existing agents are authored in `<AGENTS_DIR>/`;
-new user-invoked workflows are created by `/new-skill` in `.apm/skills/`. A package-wide issue is an
-upstream candidate, never permission to edit or publish another repository.
+Core skills in `<SKILLS_DIR>/` are APM-managed and shared across tools. Before proposing a durable
+improvement, read the live relevant skill, applicable `AGENTS.md` files and local `<AGENTS_DIR>/` sources.
+Put a repo-wide law in `AGENTS.md`, a role responsibility in `<AGENTS_DIR>/`, and a separate user-invoked
+workflow in a new `.apm/skills` skill. Never edit a package-managed core skill inside a target repository.
 <!-- agent-army:feedback-router:end -->
 
 ## Hardening the formatter config — offer once, never nag
