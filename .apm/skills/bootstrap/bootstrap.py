@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create and incrementally migrate an Agent Army v0.3.0 profile.
+"""Create and incrementally migrate an Agent Army v0.3.1 profile.
 
 This is intentionally deterministic.  The chat skill decides *what the project
 needs*; this program owns filesystem layout, ownership boundaries and the APM
@@ -26,12 +26,17 @@ ROLES = ("architect", "coder", "tester", "code-reviewer", "security-auditor", "p
 SKILLS = ("bootstrap", "ship", "new-agent", "new-skill", "adapt-army")
 RUNTIME_TARGETS = {"claude", "codex", "cursor", "copilot", "gemini", "windsurf"}
 AGENT_TARGETS = {"claude", "codex", "cursor", "copilot", "opencode", "gemini"}
+NATIVE_AGENT_TARGETS = {"claude", "codex", "cursor", "copilot", "gemini"}
 ALL_TARGETS = AGENT_TARGETS | {"windsurf"}
-PACKAGE_VERSION = "0.3.0"
+PACKAGE_VERSION = "0.3.1"
 PROFILE_SCHEMA_VERSION = 2
 OWNERSHIP_MARKER = "# agent-army-owned"
 MANAGED_ROUTER_START = "<!-- agent-army:feedback-router:start -->"
 MANAGED_ROUTER_END = "<!-- agent-army:feedback-router:end -->"
+LOCAL_AGENT_SOURCE_DIR = ".agent-army/agents"
+APM_AGENT_STAGING_DIR = ".apm/agents"
+APM_AGENT_SUFFIX = ".agent.md"
+LOCAL_AGENT_SUFFIX = ".agent"
 ROLE_CAPABILITY = {
     "architect": "strong",
     "coder": "mid",
@@ -41,7 +46,7 @@ ROLE_CAPABILITY = {
     "perf-auditor": "mid",
     "docs-writer": "light",
 }
-MODEL_CAPABLE_TARGETS = {"claude", "cursor", "opencode"}
+MODEL_CAPABLE_TARGETS = {"claude", "cursor"}
 # Claude documents these portable tier names. Other adapters require their exact
 # model IDs, which bootstrap receives explicitly rather than inventing them.
 DEFAULT_MODEL_TIERS = {
@@ -75,8 +80,8 @@ silently. Show an **Army Improvement Proposal** with the evidence, recommended t
 verification and one approval question. Durable proposals and decisions live locally in
 `.agent-army/state.json`; do not store raw user text, secrets, blueprint paths or `design-docs` references
 there. Core skills in `.agents/skills/` are APM-managed and shared across tools. Before a durable proposal,
-read the live skill, applicable `AGENTS.md` and local `.apm/agents` sources. Put a repo law in `AGENTS.md`,
-a role responsibility in `.apm/agents`, and a separate user-invoked workflow in a new `.apm/skills` skill;
+read the live skill, applicable `AGENTS.md` and local `.agent-army/agents` sources. Put a repo law in `AGENTS.md`,
+a role responsibility in `.agent-army/agents`, and a separate user-invoked workflow in a new `.apm/skills` skill;
 never edit a package-managed core skill in a target repository. After `apm update`, run `/bootstrap` to
 review new package skills and templates before choosing any local specialization changes.
 """ + MANAGED_ROUTER_END + """\n"""
@@ -114,6 +119,17 @@ def ensure_feedback_router(root: Path, dry_run: bool) -> list[str]:
 def repo_root() -> Path:
     found = subprocess.run(["git", "rev-parse", "--show-toplevel"], text=True, capture_output=True)
     return Path(found.stdout.strip()).resolve() if found.returncode == 0 else Path.cwd().resolve()
+
+
+def is_tracked(root: Path, path: Path) -> bool:
+    """Distinguish committed legacy input from ignored, regenerable staging."""
+    result = subprocess.run(
+        ["git", "ls-files", "--error-unmatch", "--", str(path.relative_to(root))],
+        cwd=root,
+        text=True,
+        capture_output=True,
+    )
+    return result.returncode == 0
 
 
 def write_text(path: Path, content: str, dry_run: bool) -> None:
@@ -158,7 +174,7 @@ def model_routing(target: str, previous: dict[str, Any], args: argparse.Namespac
         tiers, source = supplied, "user-provided"
     elif target in DEFAULT_MODEL_TIERS:
         tiers, source = DEFAULT_MODEL_TIERS[target], "target-default"
-    elif previous_routing.get("target") == target and previous_complete:
+    elif target in MODEL_CAPABLE_TARGETS and previous_routing.get("target") == target and previous_complete:
         tiers, source = {tier: previous_tiers[tier] for tier in supplied}, "previous-bootstrap"
     else:
         reason = (
@@ -239,10 +255,10 @@ def reconcile_role_model(path: Path, role: str, routing: dict[str, Any], dry_run
 def effective_role_models(root: Path, target: str) -> dict[str, dict[str, str | None]]:
     """Snapshot the rendered-source choice, including user-owned overrides."""
     effective: dict[str, dict[str, str | None]] = {}
-    if target not in AGENT_TARGETS:
+    if target not in MODEL_CAPABLE_TARGETS:
         return effective
     for role in ROLES:
-        path = root / f".apm/agents/agent-army-{role}.agent.md"
+        path = root / LOCAL_AGENT_SOURCE_DIR / f"agent-army-{role}{LOCAL_AGENT_SUFFIX}"
         if not path.is_file():
             continue
         parts = path.read_text(encoding="utf-8").split("---", 2)
@@ -260,6 +276,117 @@ def effective_role_models(root: Path, target: str) -> dict[str, dict[str, str | 
             "source": "bootstrap" if match and ROLE_MODEL_MARKER in match.group(0) else ("user-override" if value else "inherit"),
         }
     return effective
+
+
+def migrate_legacy_agent_sources(root: Path, dry_run: bool) -> list[str]:
+    """Move old tracked Markdown sources to the non-Markdown local source path."""
+    legacy_dir = root / APM_AGENT_STAGING_DIR
+    source_dir = root / LOCAL_AGENT_SOURCE_DIR
+    if not legacy_dir.is_dir():
+        return []
+
+    conflicts: list[str] = []
+    for legacy in sorted(legacy_dir.glob(f"agent-army-*{APM_AGENT_SUFFIX}")):
+        if not legacy.is_file():
+            continue
+        local_name = legacy.name[: -len(".md")]
+        destination = source_dir / local_name
+        if destination.exists():
+            if not destination.is_file():
+                conflicts.append(
+                    f"{legacy.relative_to(root)} cannot migrate because {destination.relative_to(root)} is not a file"
+                )
+                continue
+            if is_tracked(root, legacy) and destination.read_bytes() != legacy.read_bytes():
+                conflicts.append(
+                    f"{legacy.relative_to(root)} differs from {destination.relative_to(root)}"
+                )
+                continue
+            print(f"{'plan' if dry_run else 'remove'} {legacy.relative_to(root)} (canonical source wins over regenerable APM staging)")
+            if not dry_run:
+                legacy.unlink()
+            continue
+
+        print(
+            f"{'plan' if dry_run else 'move'} {legacy.relative_to(root)} -> "
+            f"{destination.relative_to(root)}"
+        )
+        if not dry_run:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(legacy), str(destination))
+    return conflicts
+
+
+def migrate_legacy_artifacts(root: Path, target: str, dry_run: bool) -> list[str]:
+    """Migrate old Agent Army agent sources without touching task documents."""
+    conflicts = migrate_legacy_agent_sources(root, dry_run)
+    if conflicts:
+        return conflicts
+    remove_legacy_native_agents(root, target, dry_run)
+    return []
+
+
+def remove_legacy_native_agents(root: Path, target: str, dry_run: bool) -> None:
+    """Remove old generated OpenCode agents now that this profile uses main-thread roles."""
+    if target != "opencode":
+        return
+    native_dir = root / ".opencode/agents"
+    for agent in sorted(native_dir.glob("agent-army-*.md")):
+        print(f"{'plan' if dry_run else 'remove'} {agent.relative_to(root)} (OpenCode main-thread fallback)")
+        if not dry_run:
+            agent.unlink()
+
+
+def sync_apm_agent_sources(root: Path, dry_run: bool) -> None:
+    """Stage canonical non-Markdown sources for APM's required *.agent.md input."""
+    source_dir = root / LOCAL_AGENT_SOURCE_DIR
+    staging_dir = root / APM_AGENT_STAGING_DIR
+    if not source_dir.is_dir():
+        return
+
+    for source in sorted(source_dir.glob(f"agent-army-*{LOCAL_AGENT_SUFFIX}")):
+        staging = staging_dir / f"{source.name}.md"
+        content = source.read_text(encoding="utf-8")
+        if staging.is_file() and staging.read_text(encoding="utf-8") == content:
+            print(f"kept {staging.relative_to(root)} (APM staging)")
+        else:
+            write_text(staging, content, dry_run)
+
+    for staging in sorted(staging_dir.glob(f"agent-army-*{APM_AGENT_SUFFIX}")):
+        source = source_dir / staging.name[: -len(".md")]
+        if source.is_file():
+            continue
+        print(f"{'plan' if dry_run else 'remove'} {staging.relative_to(root)} (stale APM staging)")
+        if not dry_run:
+            staging.unlink()
+
+
+def agent_sources_need_staging(root: Path, target: str) -> bool:
+    """Tell a current profile to rerender when canonical sources changed or staging is absent."""
+    if target not in NATIVE_AGENT_TARGETS:
+        return False
+    source_dir = root / LOCAL_AGENT_SOURCE_DIR
+    staging_dir = root / APM_AGENT_STAGING_DIR
+    sources = sorted(source_dir.glob(f"agent-army-*{LOCAL_AGENT_SUFFIX}"))
+    if not sources:
+        return False
+    for source in sources:
+        staging = staging_dir / f"{source.name}.md"
+        if not staging.is_file() or staging.read_bytes() != source.read_bytes():
+            return True
+    return any(
+        staging.is_file()
+        and not (source_dir / staging.name[: -len(".md")]).is_file()
+        for staging in staging_dir.glob(f"agent-army-*{APM_AGENT_SUFFIX}")
+    )
+
+
+def cleanup_apm_agent_staging(root: Path) -> None:
+    """Remove temporary APM Markdown inputs after a successful native render."""
+    staging_dir = root / APM_AGENT_STAGING_DIR
+    for staging in sorted(staging_dir.glob(f"agent-army-*{APM_AGENT_SUFFIX}")):
+        print(f"remove {staging.relative_to(root)} (temporary APM staging)")
+        staging.unlink()
 
 
 def copy_file(source: Path, target: Path, dry_run: bool, executable: bool = False) -> None:
@@ -413,7 +540,7 @@ def print_upgrade_review(
                 print(f"  {prefix} {label}: {', '.join(values)}")
     if not has_inventory_delta(delta):
         print("  package delta: no changed live package material detected")
-    print("  inspect before recommending a local diff: .agents/skills, AGENTS.md, .apm/agents")
+    print("  inspect before recommending a local diff: .agents/skills, AGENTS.md, .agent-army/agents")
     print("  decision: apply selected | apply all | show details | skip")
 
 
@@ -421,7 +548,7 @@ def source_agent(role: str, target: str, routing: dict[str, Any]) -> str:
     text = (BASE / "core/agents" / f"{role}.md").read_text(encoding="utf-8")
     # APM owns native conversion. These are the local authoring sources, with
     # the installed skill path made explicit for the selected target.
-    text = text.replace("<SKILLS_DIR>", skills_dir(target)).replace("<AGENTS_DIR>", ".apm/agents").replace("<TOOL_DIR>", ".agent-army")
+    text = text.replace("<SKILLS_DIR>", skills_dir(target)).replace("<AGENTS_DIR>", LOCAL_AGENT_SOURCE_DIR).replace("<TOOL_DIR>", ".agent-army")
     return with_role_model(text, role, routing)
 
 
@@ -485,18 +612,27 @@ def has_explicit_profile_change(args: argparse.Namespace) -> bool:
     )
 
 
-def apply_incremental_changes(root: Path, dry_run: bool) -> list[str]:
+def apply_incremental_changes(root: Path, target: str, dry_run: bool) -> list[str]:
     """Apply idempotent, package-owned fragments without version-specific routes."""
-    return ensure_feedback_router(root, dry_run)
+    return ensure_feedback_router(root, dry_run) + migrate_legacy_artifacts(root, target, dry_run)
 
 
 def needs_package_maintenance(previous: dict[str, Any], root: Path) -> bool:
     """Detect incomplete state or changed live package material on every update."""
     package = previous.get("package") if isinstance(previous.get("package"), dict) else {}
+    legacy_agents = any(
+        legacy.is_file()
+        for legacy in (root / APM_AGENT_STAGING_DIR).glob(f"agent-army-*{APM_AGENT_SUFFIX}")
+    )
+    legacy_native_agents = previous.get("target") == "opencode" and any(
+        agent.is_file() for agent in (root / ".opencode/agents").glob("agent-army-*.md")
+    )
     return (
         not isinstance(package.get("inventory"), dict)
         or has_inventory_delta(inventory_delta(package, package_inventory(root)))
         or managed_router_status(root / "AGENTS.md") != "current"
+        or legacy_agents
+        or legacy_native_agents
     )
 
 
@@ -550,23 +686,31 @@ def write_runtime_sources(root: Path, target: str, install_hooks: bool, dry_run:
 
 
 def write_agents(root: Path, target: str, routing: dict[str, Any], dry_run: bool) -> None:
-    if target in AGENT_TARGETS:
-        for role in ROLES:
-            path = root / f".apm/agents/agent-army-{role}.agent.md"
-            if path.exists():
-                reconcile_role_model(path, role, routing, dry_run)
-            else:
-                write_text(path, source_agent(role, target, routing), dry_run)
+    for role in ROLES:
+        path = root / LOCAL_AGENT_SOURCE_DIR / f"agent-army-{role}{LOCAL_AGENT_SUFFIX}"
+        if path.exists():
+            reconcile_role_model(path, role, routing, dry_run)
+        else:
+            write_text(path, source_agent(role, target, routing), dry_run)
+    if target in NATIVE_AGENT_TARGETS:
+        sync_apm_agent_sources(root, dry_run)
+    if target != "opencode":
+        write_degraded_adapters(root, target, dry_run)
+
+
+def write_degraded_adapters(root: Path, target: str, dry_run: bool) -> None:
     if target == "gemini":
         # APM 0.19 does not yet deploy project Gemini agents. Keep the adapter
         # local and explicit until that primitive is supported upstream.
         for role in ROLES:
-            write_new_text(root / f".gemini/agents/agent-army-{role}.md", source_agent(role, target, routing), dry_run)
+            source = root / LOCAL_AGENT_SOURCE_DIR / f"agent-army-{role}{LOCAL_AGENT_SUFFIX}"
+            write_new_text(root / f".gemini/agents/agent-army-{role}.md", source.read_text(encoding="utf-8"), dry_run)
     elif target == "windsurf":
         # Windsurf has no native subagent file; named skills retain roles without
         # pretending that it can delegate to native subagents.
         for role in ROLES:
-            content = "---\nname: agent-army-" + role + "\ndescription: Agent Army fallback role for Windsurf.\n---\n\n" + source_agent(role, target, routing)
+            source = root / LOCAL_AGENT_SOURCE_DIR / f"agent-army-{role}{LOCAL_AGENT_SUFFIX}"
+            content = "---\nname: agent-army-" + role + "\ndescription: Agent Army fallback role for Windsurf.\n---\n\n" + source.read_text(encoding="utf-8")
             write_new_text(root / f".windsurf/skills/agent-army-{role}/SKILL.md", content, dry_run)
 
 
@@ -574,16 +718,18 @@ def update_gitignore(root: Path, target: str, dry_run: bool) -> None:
     path = root / ".gitignore"
     existing = path.read_text(encoding="utf-8") if path.exists() else ""
     entries = [f"{skills_dir(target)}/", ".agent-army/state.json"]
+    if target in NATIVE_AGENT_TARGETS:
+        entries.insert(1, f"{APM_AGENT_STAGING_DIR}/")
     missing = [entry for entry in entries if entry not in existing.splitlines()]
     if missing:
         write_text(path, existing.rstrip() + "\n" + "\n".join(missing) + "\n", dry_run)
 
 
-def run_apm(root: Path, target: str) -> int:
+def run_apm(root: Path, target: str) -> tuple[int, bool]:
     apm = shutil.which("apm")
     if not apm:
         print("WARN: apm not found; generated sources are ready, run `apm install --frozen --target %s` later." % target, file=sys.stderr)
-        return 0
+        return 0, False
     manifest = root / "apm.yml"
     if not manifest.exists():
         # Package-style installs can deploy skills without creating a project
@@ -597,18 +743,18 @@ def run_apm(root: Path, target: str) -> int:
         local_skills = root / ".apm/skills"
         if not installed_skills.is_dir():
             print("WARN: no apm.yml and no installed skill directory; local agent sources were generated but cannot be rendered by APM.", file=sys.stderr)
-            return 0
+            return 0, False
         if local_skills.exists():
             print("WARN: no apm.yml but .apm/skills already exists; refusing to guess ownership. Run `apm lock` and `apm install --frozen --target %s` yourself." % target, file=sys.stderr)
-            return 0
+            return 0, False
         shutil.copytree(installed_skills, local_skills)
-        write_text(manifest, "name: agent-army-profile\nversion: 0.3.0\ndescription: Local Agent Army bootstrap profile\nincludes: auto\ndependencies:\n  apm: []\n  mcp: []\n", False)
+        write_text(manifest, f"name: agent-army-profile\nversion: {PACKAGE_VERSION}\ndescription: Local Agent Army bootstrap profile\nincludes: auto\ndependencies:\n  apm: []\n  mcp: []\n", False)
         lock = subprocess.run([apm, "lock"], cwd=root)
         if lock.returncode != 0:
-            return lock.returncode
+            return lock.returncode, False
     command = [apm, "install", "--frozen", "--target", target]
     result = subprocess.run(command, cwd=root)
-    return result.returncode
+    return result.returncode, result.returncode == 0
 
 
 def main() -> int:
@@ -638,6 +784,9 @@ def main() -> int:
         if needs_package_maintenance(previous, ROOT):
             bootstrap_mode = "incremental"
             print("Agent Army package is current; applying the pending shared-skills correction and upgrade review.")
+        elif agent_sources_need_staging(ROOT, args.target):
+            bootstrap_mode = "full"
+            print("Agent Army canonical agent sources changed; refreshing native output.")
         elif args.upgrade_review_outcome is not None:
             bootstrap_mode = "incremental"
             print("Agent Army package is current; recording the resolved Incremental Upgrade Review.")
@@ -650,10 +799,17 @@ def main() -> int:
     if bootstrap_mode == "incremental":
         print(f"\nAgent Army incremental migration plan: {from_version or 'legacy profile'} -> {PACKAGE_VERSION}")
         print("  apply: AGENTS.md managed feedback-router block; package metadata; inventory refresh")
-        print("  preserve: .apm/agents, model routing, quality policy and external controls")
-        conflicts = apply_incremental_changes(ROOT, args.dry_run)
+        print("  preserve: .agent-army/agents, model routing, quality policy and external controls")
+        conflicts = apply_incremental_changes(ROOT, args.target, args.dry_run)
         if conflicts:
             print("ERROR: incremental migration needs a human decision:", file=sys.stderr)
+            for conflict in conflicts:
+                print(f"  - {conflict}", file=sys.stderr)
+            return 2
+    else:
+        conflicts = migrate_legacy_artifacts(ROOT, args.target, args.dry_run)
+        if conflicts:
+            print("ERROR: bootstrap migration needs a human decision:", file=sys.stderr)
             for conflict in conflicts:
                 print(f"  - {conflict}", file=sys.stderr)
             return 2
@@ -694,7 +850,7 @@ def main() -> int:
             "from_version": from_version,
             "to_version": PACKAGE_VERSION,
             "delta": delta,
-            "review_targets": ["AGENTS.md", ".apm/agents"],
+            "review_targets": ["AGENTS.md", LOCAL_AGENT_SOURCE_DIR],
         }
     elif isinstance(previous_package.get("upgrade_review"), dict):
         review = previous_package["upgrade_review"]
@@ -726,11 +882,14 @@ def main() -> int:
     print(f"  role model routing: {routing['strategy']} ({routing['source']}; effort: {routing['effort']})")
     if args.dry_run or args.skip_apm:
         return 0
-    result = run_apm(ROOT, args.target)
-    # APM may clean directories it does not integrate. Reassert the two
-    # explicitly degraded adapters after its native pass.
-    if result == 0 and args.target in {"gemini", "windsurf"}:
-        write_agents(ROOT, args.target, routing, False)
+    result, rendered = run_apm(ROOT, args.target)
+    if rendered:
+        cleanup_apm_agent_staging(ROOT)
+        # APM may clean directories it does not integrate. Reassert only the
+        # explicitly degraded adapters after its native pass; do not recreate
+        # the temporary APM staging files.
+        if args.target in {"gemini", "windsurf"}:
+            write_degraded_adapters(ROOT, args.target, False)
     return result
 
 

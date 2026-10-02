@@ -1,5 +1,5 @@
 name: agent-army
-version: 0.3.0
+version: 0.3.1
 description: >-
   Self-checking agent team + deterministic barriers for any repo. Installs four
   live skills (bootstrap, ship, new-agent, new-skill, adapt-army). Run /bootstrap once

@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: Evidence-led setup and safe incremental migration of a tailored Agent Army v0.3.0. It preserves existing user controls, creates target-native agents through APM, and does not accept generic localization as specialization.
+description: Evidence-led setup and safe incremental migration of a tailored Agent Army v0.3.1. It preserves existing user controls, creates canonical role contracts, and uses native agent adapters only where enabled.
 ---
 # /bootstrap — own controls, then author a real team
 
@@ -29,14 +29,14 @@ migration, show the exact version transition, managed paths, preserved local sou
 then get one explicit “apply migration” confirmation before rerunning without `--dry-run`.
 
 Incremental mode first shows an **Incremental Upgrade Review**. Read the live shared skills under
-`.agents/skills`, the current root `AGENTS.md`, and local `.apm/agents`; use the deterministic package
+`.agents/skills`, the current root `AGENTS.md`, and local `.agent-army/agents`; use the deterministic package
 inventory as the delta, then recommend only concrete local improvements. The card
 lists new package capabilities, possibly affected local paths, a recommended diff, reason, test and the
 choices `apply selected`, `apply all`, `show details` or `skip`. Do not modify local specialization until
 the user chooses. After applying selected/all local diffs, rerun the generator without `--dry-run` with
 `--upgrade-review-outcome applied`; after `skip`, rerun it with `--upgrade-review-outcome skipped`. The
 mechanical migration then updates only versioned, managed fragments and runs targeted
-validation. It does not redo deep recon or overwrite `.apm/agents`, model routing, quality policy or
+validation. It does not redo deep recon or overwrite `.agent-army/agents`, model routing, quality policy or
 external controls. If the managed feedback-router block in `AGENTS.md` was edited, stop on the conflict
 rather than replacing it. Use `--mode full` only when the user asks to re-specialize the team or deliberately
 switches targets.
@@ -46,7 +46,7 @@ Use this exact user-facing card after the dry-run and live-material review:
 ```md
 ## Incremental Upgrade Review
 - New package capabilities: [from new/changed items in the deterministic inventory]
-- Local artifacts inspected: [live skills, AGENTS.md, .apm/agents paths]
+- Local artifacts inspected: [live skills, AGENTS.md, .agent-army/agents paths]
 - Recommended diff: [selected paths only, or none]
 - Why: [concrete impact on this repository]
 - Verification: [render/checks/tests]
@@ -102,13 +102,11 @@ python3 "$SKILLS_DIR/bootstrap/bootstrap.py" <target> \
 ```
 
 Model routing is configured at this same boundary, never improvised by `/ship`.
-Claude uses its documented `haiku`/`sonnet`/`opus` role defaults. For Cursor or
-OpenCode, inspect the user's actually available target-native model IDs and ask
-once whether to enable static per-role routing. If yes, pass all three exact
-IDs; do not synthesize provider names or versions:
+Claude uses its documented `haiku`/`sonnet`/`opus` role defaults. Cursor can use
+static per-role routing when the user provides exact native model IDs:
 
 ```bash
-python3 "$SKILLS_DIR/bootstrap/bootstrap.py" <cursor|opencode> \
+python3 "$SKILLS_DIR/bootstrap/bootstrap.py" cursor \
   --model-light '<exact available model ID>' \
   --model-mid '<exact available model ID>' \
   --model-strong '<exact available model ID>'
@@ -120,14 +118,11 @@ confirmed native role-model field in this profile, so they inherit the active
 tool configuration. No current adapter has a confirmed role-level effort
 selector; effort always remains the tool default.
 
-It creates local APM agent sources in `.apm/agents`, optional hook primitives
-in `.apm/hooks`, `.agent-army/config.json`, and then asks APM to render the
-native format for the selected target. All tools can use the same `.agents/skills`
-directory. Rendering native agents for another tool is optional and happens only
-when that tool needs those agents; Codex receives TOML through APM, not guessed TOML.
-Gemini uses a direct temporary adapter; Windsurf receives role-skills because
-it has no native project-subagent format. OpenCode has native agents but no
-runtime-hook adapter.
+It creates one canonical local role-contract set in `.agent-army/agents/*.agent`, optional hook
+primitives in `.apm/hooks`, and `.agent-army/config.json`. OpenCode deliberately does not receive
+APM agent staging or `.opencode/agents` output in this profile; `/ship` reads the role contracts
+and executes them in the main thread. Other targets may still use their native APM adapter.
+All tools can use the same `.agents/skills` directory.
 
 Read the status before continuing:
 
@@ -138,14 +133,14 @@ Read the status before continuing:
   non-shell pre-commit or an unmanaged `agent-army-quality.yml`; leave it
   external unless the user explicitly resolves the collision.
 
-On re-bootstrap, existing `.apm/agents/agent-army-*` sources and the previous
-ownership choices are preserved. Bootstrap updates only `model:` lines marked
-`agent-army-role-profile`; an unmarked `model:` is user-owned, remains intact,
-and is recorded as an effective role override. Edit those local source agents,
-not only the native APM output, then re-run `apm install --frozen --target
-<target>` after specialization. Do not delete `.apm/agents` after rendering:
-those files are the source of truth for the next re-bootstrap or native-target
-switch.
+On re-bootstrap, existing `.agent-army/agents/agent-army-*.agent` sources and the previous
+ownership choices are preserved. For adapters with native role routing, bootstrap updates only
+`model:` lines marked `agent-army-role-profile`; an unmarked `model:` is user-owned, remains intact,
+and is recorded as an effective role override. Edit those local source agents, then rerun
+`/bootstrap`. For OpenCode, the `.agent` files are the only agent artifacts;
+there is no native Markdown render. For other native adapters, bootstrap stages them into
+`.apm/agents/*.agent.md` temporarily and cleans that staging after a successful render.
+The canonical `.agent-army/agents/*.agent` files remain the source of truth.
 
 ## Step 1 — deep recon before questions
 
@@ -191,8 +186,10 @@ intent, NFR/compliance, task/branch conventions, test rigor, and model-tier
 availability. Read the active adapter's `model_control` before claiming a model or effort can be changed:
 distinguish main-session choice from per-role/static/per-spawn subagent routing, and record only confirmed
 capabilities. For a static role-capable adapter, record the selected light/mid/strong IDs in
-`.agent-army/config.json` and let bootstrap render them into local `.apm/agents` definitions. An unsupported
-selector, missing concrete IDs, or effort field inherits the tool setting and must be reported as a limitation.
+`.agent-army/config.json` and let bootstrap apply them only where the target has a confirmed
+native role-model field. OpenCode has no Agent Army native subagent routing in this profile, so
+roles inherit the main-session model. An unsupported selector, missing concrete IDs, or effort
+field inherits the tool setting and must be reported as a limitation.
 Do not ask for facts already proved by recon.
 
 If testing/lint rigor is a user choice, record it in `AGENTS.md` and in a

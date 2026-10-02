@@ -92,7 +92,7 @@ CLAUDE.md                       # project memory (tailored to the repo after /bo
 
 ## Extending
 New agent: `/new-agent` (holds `_STANDARD.md`). New reusable workflow: `/new-skill`. Core skills under
-`.agents/skills/` remain APM-managed; a local improvement belongs in `AGENTS.md`, a local `.apm/agents`
+`.agents/skills/` remain APM-managed; a local improvement belongs in `AGENTS.md`, a local `.agent-army/agents`
 role, or a distinct local `.apm/skills` workflow.
 
 ## Updating Agent Army

@@ -12,8 +12,10 @@ reads `tools/<tool>.yml` (or `_default.yml` if the name isn't found) and is the 
 that interprets this data — adding a new tool means adding one descriptor file here, not
 editing prose in `SKILL.md` or `assemble.sh`.
 `claude.yml`/`opencode.yml`/`cursor.yml`/`gemini.yml`/`copilot.yml` are `status: first-class`
-(dirs verified against each tool's real, current docs — dated in each file's header comment,
-since these products move fast and a stale "confirmed" is worse than an honest "unverified").
+for their declared capabilities (OpenCode is skills-first here and deliberately has no Agent Army
+native agent directory; dirs remain `null` where no materialized agent path is used). Dirs are
+verified against each tool's real, current docs — dated in each file's header comment, since these
+products move fast and a stale "confirmed" is worse than an honest "unverified".
 `codex.yml` is `status: stub` despite Codex having real subagents, because its format is TOML,
 not Markdown — our assembler can't emit it yet (see codex.yml). `windsurf.yml` is `status: stub`
 because Windsurf/Cascade genuinely has no per-agent file mechanism, only a plain AGENTS.md.

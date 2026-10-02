@@ -7,7 +7,7 @@
 #   scripts/check.sh --skills        # just the skills
 #   scripts/check.sh --pack          # also run `apm pack`/dry-run if apm is installed
 #   scripts/check.sh --target-dir <tooldir>   # validate GENERATED agents (e.g. a target
-#                                              # repo's .claude after /bootstrap), not the baseline
+#                                              # repo after /bootstrap), not the baseline
 #
 # Exit non-zero if any FAIL. Warnings (⚠) don't fail the run.
 set -uo pipefail
@@ -35,7 +35,7 @@ if [ -n "$TARGET_DIR" ]; then
   AGENTS_DIR="$BASE/agents"           # fallback; overridden below once the descriptor is read
   if [ -f "$BASE/.agent-army/config.json" ]; then
     V2_TARGET=1
-    AGENTS_DIR="$BASE/.apm/agents"
+    AGENTS_DIR="$BASE/.agent-army/agents"
   fi
 else
   AGENTS_DIR="$BASE/core/agents"       # source of truth: baseline/core/agents (assemble.sh materializes it per tool)
@@ -45,6 +45,7 @@ fi
 # _default.yml if unrecognized) so per-tool assertions (agents dir, hooks_live, settings.json,
 # tools: field rule) are driven by the SAME data assemble.sh uses — never re-guessed here.
 DESC_AGENTS_SUB=""; DESC_AGENT_SUFFIX=".md"; DESC_HOOKS_SUB=""; DESC_ACCEPTS_TOOLS=""; DESC_SUBAGENTS=""; DESC_HOOK_MECH=""; DESC_HOOKS_LIVE=""
+if [ "$V2_TARGET" = 1 ]; then DESC_AGENT_SUFFIX=".agent"; fi
 if [ -n "$TARGET_DIR" ] && [ "$V2_TARGET" = 0 ] && command -v python3 >/dev/null 2>&1; then
   DIR_BASENAME="$(basename "$BASE")"; DIR_BASENAME="${DIR_BASENAME#.}"
   # Basename-as-tool-name (.opencode -> opencode) holds for most tools, but NOT Copilot
@@ -308,7 +309,7 @@ check_tool_packaging() {
 
 check_v2_profile() {
   [ "$V2_TARGET" = 1 ] || return
-  printf '\n\033[1m• v0.3 profile\033[0m\n'
+  printf '\n\033[1m• v0.3.1 profile\033[0m\n'
   [ -f "$BASE/.agent-army/config.json" ] && ok "config.json present" || return
   python3 - "$BASE" <<'PY'
 import json, pathlib, sys
@@ -338,7 +339,7 @@ PY
     elif grep -q '"target": "gemini"' "$BASE/.agent-army/config.json"; then
       [ -f "$BASE/.gemini/agents/agent-army-$role.md" ] && ok "Gemini adapter role: $role" || bad "Gemini adapter role missing: $role"
     else
-      ls "$AGENTS_DIR"/agent-army-"$role".agent.md >/dev/null 2>&1 && ok "generated source role: $role" || bad "generated source role missing: $role"
+      ls "$AGENTS_DIR"/agent-army-"$role".agent >/dev/null 2>&1 && ok "canonical source role: $role" || bad "canonical source role missing: $role"
     fi
   done
 }
@@ -452,10 +453,14 @@ match() { # match <name>  against filters (empty filters = all)
   return 1
 }
 
-if [ "$do_agents" = 1 ] && [ -d "$AGENTS_DIR" ] && ls "$AGENTS_DIR"/*.md >/dev/null 2>&1; then
-  for f in "$AGENTS_DIR"/*.md; do
+agent_pattern="*.md"
+[ "$V2_TARGET" = 1 ] && agent_pattern="*.agent"
+if [ "$do_agents" = 1 ] && [ -d "$AGENTS_DIR" ] && ls "$AGENTS_DIR"/$agent_pattern >/dev/null 2>&1; then
+  for f in "$AGENTS_DIR"/$agent_pattern; do
     [ "$(basename "$f")" = "_STANDARD.md" ] && continue
-    match "$(basename "$f" .md)" && check_agent "$f"
+    agent_name="$(basename "$f")"
+    [ "$V2_TARGET" = 1 ] && agent_name="${agent_name%.agent}" || agent_name="${agent_name%.md}"
+    match "$agent_name" && check_agent "$f"
   done
 fi
 check_tool_packaging

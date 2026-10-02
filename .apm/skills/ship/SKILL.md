@@ -34,7 +34,7 @@ If `Interaction policy` is `unset`, ask once and persist one of two user-visible
 - **Autonomous** — after the mandatory blueprint + routing + scope gate, continue through normal stages
   without routine pauses. Stop only for a decision condition below, final human review, or commit approval.
 - **Interactive** — after that same gate, work one atomic task at a time and pause with an Interaction Card
-  after its RED test and after its GREEN result, before proceeding further.
+  after its RED test (or approved refactor baseline) and after its GREEN result, before proceeding further.
 
 Never ask the user to choose raw `red`/`green`/`review` checkpoints. The user may say `switch to
 autonomous` or `switch to interactive` at any time; persist the new mode immediately and apply it at the
@@ -56,7 +56,7 @@ emit a bare `ok/fix` pause or make the user infer what to inspect.
 
 ```md
 ## Interaction Card
-- **Checkpoint:** [blueprint approval | RED acceptance | task review | finding decision | final review | risk decision]
+- **Checkpoint:** [blueprint approval | RED acceptance | baseline acceptance | task review | finding decision | final review | risk decision]
 - **Completed:** [what changed or was verified]
 - **Evidence:** [test command/result, diff summary, report path/verdict, or decision]
 - **Review focus:** [the one to three facts the user should check]
@@ -72,6 +72,10 @@ the full verification result, review/security verdicts, docs change, and the pro
 For a plainly in-scope finding in Autonomous mode, record the same finding-decision card as evidence with
 `Question: none` and `Options: none`, then continue the repair immediately. If resolving the finding needs
 a decision, it becomes a pause in both modes.
+
+For an explicitly approved behavior-preserving refactor, use `baseline acceptance` in place of the RED
+card: show the passing before-change checks, preserved contract, refactor checkpoint/recovery and exact
+write list. Keep the same human interaction boundary; do not call a passing baseline RED.
 
 ### MANDATORY BLUEPRINT + ROUTING + SCOPE GATE
 When `architect` creates or materially revises a blueprint, this gate is mandatory even with
@@ -174,11 +178,17 @@ Every atomic task has a portable `Execution Profile`: `capability` (`light`, `mi
 does not put a vendor model ID in the blueprint. Bootstrap resolves a target-native model-routing record
 once in `.agent-army/config.json`; this is configuration, not an LLM decision.
 
-### Per-role static routing (preferred)
+### Per-role static routing (preferred for native adapters)
 When `model_routing.strategy` is `per_role_static`, the native agent definition selects its model before
 the agent is spawned. `/ship` dispatches it directly, including in autonomous mode: it does **not** pause
 or ask the user to switch at each role boundary. Read `effective_roles` in `model_routing` and record its
 configured model and source (`bootstrap` or `user-override`) in that dispatch's Run Configuration.
+
+### Main-thread fallback
+When the active adapter reports `capabilities.subagents: false` — including OpenCode in this profile —
+do not look for native agent files or try to spawn a worker. Read the relevant contract from
+`.agent-army/agents/agent-army-<role>.agent`, execute that role in the main session, and record the
+role as `Active roles`. The main-session model and effort remain unchanged; `model_routing` is `inherit`.
 
 The portable defaults intentionally distinguish roles:
 
@@ -228,6 +238,9 @@ leave the previous worker listed as active after it returns.
 - **Tester RED:** before → PR `implementing`, task `red`, active `tester`; after → active `none`,
   persist the exact RED command and result. In Interactive mode, write `RED acceptance` Interaction Card
   and wait before production implementation.
+- **Tester refactor baseline:** for an approved behavior-preserving task, before → PR `implementing`,
+  task `implementing`, active `tester`; after → active `none`, persist the actual passing baseline.
+  Do not set task `green` or `verified` before the change. In Interactive mode wait at `baseline acceptance`.
 - **Implementation:** before → task `implementing`, active `main session` or `coder`; after → retain
   `implementing` until the independent GREEN result is persisted.
 - **Tester GREEN:** before → active `tester`; after → task `green` then `verified`, active `none`,
@@ -244,10 +257,19 @@ Architect writes `design-docs/[Task-ID]/00_CORE_MANIFEST.md` plus `0X_PR_*.md` (
 never writes production code. Each atomic task has an API contract, a Delegation Contract, an Execution
 Profile and an Execution State. On a review escalation, architect updates only affected plan blocks and
 the relevant state; it does not silently rewrite completed work.
+If the architect finds that the goal is already met or recommends no implementation, return that finding
+and its evidence to the user without inventing a PR, selecting work, or activating a suggested service.
+A proposed configuration/adoption change still needs a concrete approved scope before execution.
 
 ## 3 · IMPLEMENTATION per task — STRICT TDD `<auto_critic>` with `tester`
 _(Applies at `TEST_POLICY=strict`/`pragmatic`. At `light`: thin happy-path tests, no strict RED-first. At `none`: skip this whole step — the main session just implements; lint/security still apply.)_
 For EACH task in the blueprint:
+Use the tester's risk-based selection and test-confidence guidance. Required repository checks remain
+mandatory; additional fault checks are targeted experiments, not a new gate for every task. Run mutations
+only in the tester's permitted isolated subject; never pass a mutated failure off as final verification.
+For an explicitly approved behavior-preserving refactor, substitute its passing before-change checks
+and `baseline acceptance` for RED in steps 1–2, preserving the same write-scope and interaction gates.
+This exception does not let a bugfix or new feature claim success without demonstrating the required behavior.
 1. Persist PR `implementing`, task `red`, `Active roles: tester`, then **`tester` writes the tests (RED)** independently from the contract/acceptance criteria and proves they fail for the right reason. On return, persist `Active roles: none` and the exact RED result.
 2. In Interactive mode, write the RED acceptance Interaction Card and wait for its response. In Autonomous mode, continue unless a decision condition applies. Then persist task `implementing` and `Active roles: main session` or `coder`. The main session implements the smallest change; a delegated `coder` receives only the Delegation Contract, RED tests and approved read paths. In Interactive mode the RED card already contains its plan and exact write list; after `continue`, it may proceed only within that list. In Autonomous mode it proceeds only when the list is wholly inside approved scope.
 3. Persist `Active roles: tester`; **`tester` verifies (GREEN)**. Set status to `green` only when the command passes, then `verified` after saving the exact GREEN result and `Active roles: none`; otherwise diagnose and fix without weakening assertions. A required path outside scope, ambiguous/disproved contract, unapproved dependency/migration or repeated failed approach becomes `awaiting_approval`, `needs_input` or `blocked`, never silent expansion.
@@ -262,6 +284,9 @@ packet contains **only** the task contract, finished diff and human decisions. D
 coder/tester reports, rationales or transcripts. Audit that packet against standards + business goal; if
 the contract is absent, label the result `Diff-Only Review`. Run `security-auditor` independently against
 the finished diff at the same time. Neither auditor receives implementation/tester reports or transcripts.
+The change scope includes relevant committed, staged, unstaged and untracked files; provide the comparison
+base and source pointers so a branch-only diff cannot hide current changes. Authoritative schemas and
+contract indices are source context, not implementation reports. Keep the packet focused on affected boundaries.
 
 - reviewer `CHANGES_REQUESTED` → `/ship` creates an in-scope Micro-Blueprint and writes a finding-decision
   Interaction Card. A plainly in-scope repair proceeds in Autonomous mode; Interactive mode waits for the

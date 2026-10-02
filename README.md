@@ -20,7 +20,7 @@ Choose the tool that is active for this repository:
 | `codex` | Native Codex TOML agents through APM |
 | `cursor` | Native Cursor agents through APM |
 | `copilot` | Native `.github/agents/*.agent.md` through APM |
-| `opencode` | Native agents through APM; skills via shared `.agents/skills`; no runtime-hook adapter |
+| `opencode` | Canonical role contracts in `.agent-army/agents`; main-thread execution via shared skills |
 | `gemini` | Agent sources plus a temporary direct Gemini adapter |
 | `windsurf` | Role-skills fallback; Windsurf has no native project subagents |
 
@@ -33,10 +33,9 @@ when the tool does not register the command natively. Use the corresponding
 path for `/ship`, `/new-agent`, `/new-skill` and `/adapt-army` too.
 
 The install is intentionally passive: it ships five skills and templates only.
-`/bootstrap` is the explicit second step that creates the tailored local APM
-agent sources and lets APM render the selected target's native agent format.
-The `.apm/agents` files remain the authoring source after rendering; do not
-delete them just because equivalent native files exist under `.opencode/agents`.
+`/bootstrap` is the explicit second step that creates the tailored local role contracts.
+For OpenCode, `.agent-army/agents/*.agent` is the only agent artifact: skills read it and
+`/ship` executes roles in the main thread. Other targets may use their native APM adapter.
 
 During bootstrap, choose the owner of each layer independently:
 
@@ -53,17 +52,18 @@ rewrites an unmanaged pre-commit hook or workflow. The resulting
 
 ## What bootstrap creates
 
-- `.apm/agents/agent-army-*.agent.md`, then native target files through
-  `apm install --frozen --target <target>`.
+- `.agent-army/agents/agent-army-*.agent` role contracts. OpenCode does not create `.apm/agents`
+  or `.opencode/agents` agent files; other native targets may create temporary APM staging and
+  native output through `apm install --frozen --target <target>`.
 - `.apm/hooks/agent-army-*.json` only when runtime hooks are owned by Agent
   Army and the target supports the adapter.
 - `.agent-army/runtime.py` and `.agent-army/config.json`; quality commands are
   structured `cwd` plus `argv`, never shell snippets.
 - An owned CI workflow only at `.github/workflows/agent-army-quality.yml`.
 
-OpenCode has native agents but no runtime-hook adapter. Windsurf receives
-role-skills fallback because it has no native project subagents. All other
-listed targets receive the full agent roster through APM.
+OpenCode uses the main-thread role-contract fallback in this profile. Windsurf
+receives role-skills fallback because it has no native project subagents. All
+other listed targets may receive the full agent roster through APM.
 
 Runtime hooks provide quick deterministic feedback. Agent Army only claims
 repository enforcement for chosen, active `army` pre-commit and CI layers;
@@ -80,9 +80,10 @@ combines it with the selected scope's coordinator profile, while bootstrap maps
 roles to the target's native model field where that field is confirmed. The
 static defaults are strong for architect/review/security, mid for coder/perf,
 and light for tester/docs, so autonomous execution can move between roles
-without a model-switch pause. Claude uses its documented tier names; Cursor and
-OpenCode receive this routing only after bootstrap is given three real
-target-native model IDs. The delivery loop is TDD → independent review/security
+without a model-switch pause. Claude uses its documented tier names; Cursor
+receives this routing only after bootstrap is given three real target-native
+model IDs. OpenCode uses the main-session model because this profile does not
+spawn native subagents. The delivery loop is TDD → independent review/security
 → repairs and re-audit → docs/full verification → ready for human review.
 
 When an architect creates or materially revises a blueprint, `/ship` always
@@ -111,7 +112,7 @@ Then run `/bootstrap`. It detects an older profile or changed live package mater
 incremental migration and shows an **Incremental Upgrade Review** before any local specialization changes.
 The review compares shared `.agents/skills` and baseline-template hashes with the local inventory, then
 asks whether to apply selected recommendations, apply all, inspect details or skip. The migration preserves
-repo-specialized `.apm/agents`, model routing, quality policy and external controls; it updates only marked
+repo-specialized `.agent-army/agents`, model routing, quality policy and external controls; it updates only marked
 Agent Army fragments. A manually edited marked fragment is reported as a conflict, never overwritten. Use
 `/bootstrap --mode full` only when you want to intentionally re-specialize the team or change target.
 
@@ -120,7 +121,7 @@ Agent Army fragments. A manually edited marked fragment is reported as a conflic
 When you correct an agent or identify a recurring workflow gap, Agent Army first fixes the current task
 and then offers an `Army Improvement Proposal`. `/adapt-army` recommends whether the lesson belongs in a
 repo convention, an existing agent, a deterministic control, a new agent or a new `/new-skill`. Core skills
-stay APM-managed; durable local changes go only to `AGENTS.md`, a local `.apm/agents` role, or a distinct
+stay APM-managed; durable local changes go only to `AGENTS.md`, a local `.agent-army/agents` role, or a distinct
 local `.apm/skills` workflow after explicit approval.
 
 ## Development

@@ -26,13 +26,13 @@ Do not repeatedly raise a declined proposal unless new, material evidence change
 ## 2 · Inspect, then route to the smallest correct owner
 
 Before proposing a change, read the live relevant `.agents/skills/<skill>/SKILL.md` files, applicable root
-and nested `AGENTS.md` files, and local `.apm/agents` sources. Do not use `.opencode/skills` or
+and nested `AGENTS.md` files, and local `.agent-army/agents` sources. Do not use `.opencode/skills` or
 `apm_modules` as instruction sources. Choose the narrowest owner and explain why it wins over alternatives:
 
 | Signal | Owner |
 |---|---|
 | Repo-wide law, naming, architecture or policy | `AGENTS.md` plus every owning agent |
-| One role's judgment, checklist or report | that existing `.apm/agents/agent-army-<role>.agent.md` |
+| One role's judgment, checklist or report | that existing `.agent-army/agents/agent-army-<role>.agent` |
 | Handoff, scope, execution state or multi-role sequencing | the narrowest owning role, or a new skill only when it is a separate user-invoked workflow |
 | Machine-enforceable rule | existing formatter/linter/test/config control; never a second conflicting control |
 | Recurring, independent specialist with its own contract/tools/output | `/new-agent` |
@@ -57,7 +57,7 @@ no raw user message, secret, blueprint path or `design-docs` reference:
       "status": "proposed | declined | approved | applied | superseded",
       "summary": "normalized, non-sensitive lesson",
       "classification": "existing_agent",
-      "targets": ["AGENTS.md", ".apm/agents/agent-army-tester.agent.md"]
+      "targets": ["AGENTS.md", ".agent-army/agents/agent-army-tester.agent"]
     }
   }
 }
@@ -84,7 +84,7 @@ decision progresses.
 ## 4 · Apply after approval
 
 1. Update `AGENTS.md` first when a repo law changes, then every routed agent so planning and review agree.
-2. Put a role-specific responsibility in the owning local `.apm/agents` source. Use `/new-skill` only for
+2. Put a role-specific responsibility in the owning local `.agent-army/agents` source. Use `/new-skill` only for
    a separate local, user-invoked workflow. Do not edit a package-managed core skill in a target repository.
 3. Hand an independent role to `/new-agent`; hand a new user workflow to `/new-skill`.
 4. Preserve external/disabled controls. Extend only the formatter, linter or test control the repository
