@@ -35,11 +35,13 @@ lists new package capabilities, possibly affected local paths, a recommended dif
 choices `apply selected`, `apply all`, `show details` or `skip`. Do not modify local specialization until
 the user chooses. After applying selected/all local diffs, rerun the generator without `--dry-run` with
 `--upgrade-review-outcome applied`; after `skip`, rerun it with `--upgrade-review-outcome skipped`. The
-mechanical migration then updates only versioned, managed fragments and runs targeted
-validation. It does not redo deep recon or overwrite `.agent-army/agents`, model routing, quality policy or
-external controls. If the managed feedback-router block in `AGENTS.md` was edited, stop on the conflict
-rather than replacing it. Use `--mode full` only when the user asks to re-specialize the team or deliberately
-switches targets.
+mechanical migration then updates only versioned, managed fragments and runs targeted validation. New shared
+role contracts appear in the inventory delta: `apply` adds missing role files while preserving every existing
+specialization; `skip` preserves the current local roster and role contracts. A local file colliding with a newly
+introduced role name stops the upgrade before writes and requires the user to resolve the exact path. The update
+does not redo deep recon or overwrite `.agent-army/agents`, user-owned model routing, quality policy or external
+controls. If the managed feedback-router block in `AGENTS.md` was edited, stop on the conflict rather than
+replacing it. Use `--mode full` only when the user asks to re-specialize the team or deliberately switches targets.
 
 Use this exact user-facing card after the dry-run and live-material review:
 

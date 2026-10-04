@@ -1,5 +1,16 @@
 # ARMY-CORE: shared agent core + per-tool descriptors + deterministic assembler
 
+## Aktualny status realizacji — 2026-10-04
+
+- Status: **rozliczony przez nowszą architekturę profilu v2**. Intencje planu są wdrożone i sprawdzone,
+  ale część mechanizmów została świadomie zastąpiona nowszym generatorem `bootstrap.py`.
+- Nie implementować osobnego aktywnego `assemble.sh` ani drugiego źródła logiki adapterów. Repozytoryjne
+  `AGENTS.md` wskazuje `bootstrap.py` jako jedyny generator; `assemble.sh` pozostaje wyłącznie zgodnościowym
+  wrapperem. `baseline/tools/*.yml` są materiałami migracyjnymi, a nie aktywną konfiguracją profilu v2.
+- Crosswalk z wymaganiami, źródłami i dowodami: [06 — reconciliation](06_RECONCILIATION.md).
+- Walidacja bieżącego źródła 2026-10-04: `scripts/check.sh` **151 passed, 0 failed, 0 warnings**;
+  `scripts/smoke.sh` **175 passed, 0 failed**. To potwierdza generator i profile, nie testuje zachowania LLM.
+
 - **Date**: 2026-07-02
 - **Stack**: apm package — Markdown agent/skill prompts + `bash` hooks + `scripts/check.sh` (structural) & `scripts/smoke.sh` (e2e). No app runtime; the "product" is the materialized agent team.
 - **Standards Source**: AGENTS.md

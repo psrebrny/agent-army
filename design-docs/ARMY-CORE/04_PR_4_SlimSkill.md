@@ -3,6 +3,8 @@
 > 2. **<auto_critic> EXECUTION LOCK:** after each task, run its Verification Command, fix errors, and DO NOT proceed until GREEN.
 
 ## PR #4: Slim `SKILL.md` — bootstrap keeps only the judgment work
+> Status realizacji: **wykonane z adaptacją**. Python generator obsługuje mechanikę, a skill prowadzi ocenę, wybór ownership, specjalizację i weryfikację. Szczegóły: [rozliczenie](06_RECONCILIATION.md).
+
 **Objective:** Remove the per-tool packaging prose from `bootstrap/SKILL.md` (it now lives in the assembler) and leave ONLY what needs an LLM: recon + specialization + AGENTS.md content + policy + calling the assembler + verify. (Depends on PR#2/#3.)
 
 ---

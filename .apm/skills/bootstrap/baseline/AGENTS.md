@@ -31,8 +31,10 @@ it once.
 > Ask only for gaps recon can't settle, then specialize the team in this tool's native format.
 
 ## Day-to-day — plan, ship, resume
-Invoke `architect` directly when you want only discovery and a blueprint in `design-docs/`; it never
-implements source code. Use `<SKILLS_DIR>/ship/SKILL.md` to execute or resume work:
+Invoke `architect` directly when you want discovery and an interactive blueprint in `design-docs/`; it never
+implements source code. The main session conditionally uses `planning-analyst` for material unknowns and
+requires `plan-reviewer` in a fresh context before handing a new blueprint to execution. Use
+`<SKILLS_DIR>/ship/SKILL.md` to execute or resume work:
 
 - **Claude Code:** `/ship "<task, PR, ticket, or small fix>"`, or plain `/ship` to resume the one
   unambiguous open scope.
@@ -45,6 +47,8 @@ review + security → repairs → Green + re-audit → docs + full verification 
 
 ## The team (delegate by role)
 - `architect` — interview (greenfield/existing) + blueprint in `design-docs/` (never writes source)
+- `planning-analyst` — conditional, read-only diagnosis/research with evidence; no blueprint or edits
+- `plan-reviewer` — independent, read-only review of a saved blueprint revision; no edits or execution
 - `tester` — prioritizes user-visible risks, writes contract tests, verifies RED/GREEN or an approved refactor baseline, and checks test confidence where needed
 - `code-reviewer` — architectural audit of the diff vs blueprint + business goal; routes fixes/escalations
 - `security-auditor` — read-only security audit (secrets, injection, unsafe data handling)
@@ -57,12 +61,13 @@ Quality bar for every agent: `<AGENTS_DIR>/_STANDARD.md`.
 - **Contract before action:** every delegated task names its goal, allowed read/write paths, forbidden paths and stop conditions. A worker stops and reports when it needs to leave that scope or a contract assumption is unproved; it never silently broadens a task.
 - **Interactive preflight:** the RED acceptance card (baseline acceptance for an approved behavior-preserving refactor) contains the delegated coder's plan and exact write list; no production coding starts until the user responds. In autonomous mode it may continue only when that list is inside the blueprint's write scope.
 - **Fresh review:** give `code-reviewer` only the task contract, diff and human decisions. Do not forward implementation/tester reports, reasoning or transcripts; call a missing contract a `Diff-Only Review`.
+- **Fresh plan review:** give `plan-reviewer` the approved goal, confirmed decisions, exact blueprint revision and relevant raw source pointers. Do not pass the architect transcript/self-review or analyst report as proof. If the target cannot provide an independent context, record `INSUFFICIENT_EVIDENCE`; never label self-review independent.
 - **Execution state:** each PR blueprint persists its `autonomous` or `interactive` policy, active roles, Interaction Card and task/PR status. `/ship` writes it immediately before and after every role handoff, so it can resume without guessing from a Todo list or chat history.
 - **Two interaction modes:** `autonomous` pauses only for blueprint/scope, real decisions and final human review. `interactive` additionally pauses after every RED test or approved refactor baseline and every verified task, using an Interaction Card that says what changed, what to inspect and one concrete question. The user can switch modes at any safe boundary; raw role/checkpoint selection is never exposed.
 - **Blueprint + routing + scope gate:** a new or materially revised blueprint always pauses for acceptance and execution scope, even in autonomous mode. The user chooses one task, one PR, or all unfinished PRs. A model/effort decision is added only when the selected adapter falls back to inherited configuration.
 - **Scope-aware routing:** each task keeps its own `Execution Profile`; the selected scope adds a coordinator-only Scope Profile. A whole feature increases coordination only when dependencies warrant it — it never makes every light task use a strong model.
 - **Bottleneck-aware effort:** `/ship` diagnoses whether the constraint is retrieval, design judgment, capability, context noise, verification or multiple approaches. Improve context first for retrieval/noise, raise deliberation by one step only for a reasoning problem, and raise capability when the task is genuinely outside the current tier. A good verifier can justify a cheaper worker plus another repair loop; repeated effort without a better result stops and escalates. Never invent or silently mutate a native model/effort setting.
-- **Per-role model routing:** where the adapter supports a native agent `model` field, bootstrap assigns a static model to each role before it is spawned: strong for architect/review/security, mid for coder/perf, light for tester/docs. Claude uses its documented tiers; Cursor requires the user's three exact target-native model IDs. OpenCode executes role contracts in the main thread, so it inherits the active session model. `/ship` never invents a provider ID or silently changes the main-session model. Unsupported fields, missing IDs and every role-level effort setting fall back to inherited tool configuration; `inherited` is a limitation, not a model choice. Native adapters preserve unmarked user model overrides; OpenCode has no role-level model record.
+- **Per-role model routing:** where the adapter supports a native agent `model` field, bootstrap assigns a static model to each role before it is spawned: strong for architect, plan-reviewer, code-reviewer and security-auditor; mid for coder, perf-auditor and planning-analyst; light for tester and docs-writer. Claude uses its documented tiers; Cursor requires the user's three exact target-native model IDs. OpenCode executes role contracts in the main thread, so it inherits the active session model. `/ship` never invents a provider ID or silently changes the main-session model. Unsupported fields, missing IDs and every role-level effort setting fall back to inherited tool configuration; `inherited` is a limitation, not a model choice. Native adapters preserve unmarked user model overrides; OpenCode has no role-level model record.
 - **Closure:** review and security run from independent evidence. Every confirmed security finding must be repaired and re-audited inside the contract; an expansion becomes `awaiting_approval`, never a silent scope change.
 
 ## Cost & context discipline

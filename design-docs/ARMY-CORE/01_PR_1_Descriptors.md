@@ -3,6 +3,8 @@
 > 2. **<auto_critic> EXECUTION LOCK:** after each task, run its Verification Command, fix errors, and DO NOT proceed until GREEN.
 
 ## PR #1: Per-tool descriptors (the data layer)
+> Status realizacji: **wykonane z adaptacją**. Schemat istniejących deskryptorów jest walidowany; aktywny profil v2 nie czyta tych YAML jako źródła generatora. Szczegóły: [rozliczenie](06_RECONCILIATION.md).
+
 **Objective:** Define an explicit, data-driven descriptor per tool so ALL cross-tool knowledge lives in one verifiable place — not in prose. Nothing consumes them yet (PR#2 does); this PR is the schema + the first descriptors.
 
 ---

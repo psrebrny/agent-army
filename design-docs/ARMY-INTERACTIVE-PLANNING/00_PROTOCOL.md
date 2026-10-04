@@ -63,6 +63,31 @@ Koordynator zapisuje wyniki w blueprintach; role pomocnicze nie są konkurencyjn
 
 ## 4. Jeden stan, w istniejących blueprintach
 
+Status i punkt wznowienia są obowiązkowym elementem każdego przyszłego planu architekta, od pierwszego
+zapisu oraz po każdej aktualizacji. Nie zależą od instalacji późniejszego army-status z PR 6.
+Architekt inicjalizuje stan planowania i niewykonanej pracy; podczas realizacji utrzymuje go koordynator ship.
+Każde zadanie planu ma osobny czytelny status. Etap/PR pokazuje podsumowanie wyliczone z zadań.
+Użyj etykiet `do zrobienia`, `w trakcie`, `do testów`, `do review`, `wykonane`, `czeka na decyzję`,
+`zablokowane`; część warunkowa może mieć `warunkowe`, dopóki warunek nie zostanie spełniony.
+Wskazuj też aktywne zadanie, ostatnią potwierdzoną czynność i następny krok. Checkbox może pokazywać
+wykonanie punktu, ale sam nie zastępuje statusu. Nie duplikuj kanonicznego Execution State.
+
+Znaczenie statusów:
+
+| Status | Znaczenie |
+|---|---|
+| `do zrobienia` | Nie rozpoczęto; warunki do startu są spełnione |
+| `w trakcie` | Zadanie rozpoczęte, trwa uzgodniona praca |
+| `do testów` | Zmiana jest gotowa do zaplanowanej weryfikacji; test nie jest jeszcze potwierdzony |
+| `do review` | Wymagana weryfikacja/review po wykonaniu testów; nie oznacza akceptacji |
+| `wykonane` | Kryteria zadania sprawdzone, dowód zapisany, brak oczekującego review |
+| `czeka na decyzję` | Wskazane konkretne pytanie do użytkownika/koordynatora |
+| `zablokowane` | Zewnętrzny lub techniczny warunek zatrzymuje zadanie; opisz przyczynę i sposób odblokowania |
+| `warunkowe` | Zadanie pozostaje poza aktywnym zakresem do jawnie wskazanego warunku; podaj ten warunek |
+
+Przy pauzie oznacz bieżące zadanie, ostatnią potwierdzoną czynność, następny krok i pytanie/blokadę.
+Przy awarii nie awansuj statusu na podstawie zamiaru lub niepotwierdzonego wywołania.
+
 Do wzorca `00_CORE_MANIFEST.md` dodajemy sekcję `Planning Session`:
 
 | Pole | Znaczenie |
@@ -76,6 +101,7 @@ Do wzorca `00_CORE_MANIFEST.md` dodajemy sekcję `Planning Session`:
 | `Evidence` | Istotne fakty, źródła i ograniczenia; dla dużego raportu odnośnik |
 | `Plan revision` | Liczba zwiększana po zmianie merytorycznej planu lub kryteriów |
 | `Review` | Rewizja, zakres, werdykt, niezależność, otwarte uwagi i link do raportu |
+| `Last confirmed action` | Ostatnia zapisana decyzja albo zweryfikowany krok; nie sama zapowiedź pracy |
 | `Next action` | Następny krok planowania; nie dubluje wykonawczych tasków PR |
 
 Gotowość planowania: brak blokujących decyzji i uwag, review aktualnej rewizji oraz jawna niezależność oceny.
@@ -94,6 +120,11 @@ planistycznej zamiast utrzymywać jej drugą niezależną wersję.
 - Jeśli użytkownik właśnie odpowiedział na zapisane pytanie, zastosuj odpowiedź zamiast pytać jeszcze raz.
 - Zmiana decyzji: przegląd zależnych niewykonanych części, klasyfikacja keep/rewrite/remove i aktualizacja w miejscu.
 - Zachowaj historyczne dowody ukończonych prac; usuń nieaktualne przyszłe instrukcje, nie dopisuj planu obok planu.
+- Po każdej aktualizacji zapisz aktualny krok, ostatnią potwierdzoną czynność, następny krok i ewentualną
+  oczekującą decyzję. Zmiana zakresu wskazuje, które wcześniejsze testy/review wymagają ponowienia;
+  nie resetuje niepowiązanych ukończonych części ani nie przedstawia starych dowodów jako aktualnych.
+- Status zadania aktualizuje jego właściciel pracy, a koordynator synchronizuje podsumowanie etapu/PR.
+  Status `wykonane` wymaga zapisanych kryteriów i dowodu; samo odhaczenie checkboxa lub wygenerowanie kodu nie wystarcza.
 - Przed zapisem ponownie odczytaj dokument, jeśli zmieniła go inna sesja. Nie obiecujemy równoległych zapisów.
 - Stary blueprint bez Planning Session jest czytelny i nie zostaje automatycznie otwarty do ponownego planowania.
   Dodaj sekcję przy świadomym rozpoczęciu nowego procesu lub istotnym przeplanowaniu.

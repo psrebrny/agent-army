@@ -22,7 +22,18 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 BASE = HERE / "baseline"
-ROLES = ("architect", "coder", "tester", "code-reviewer", "security-auditor", "perf-auditor", "docs-writer")
+ROLES = (
+    "architect",
+    "coder",
+    "tester",
+    "code-reviewer",
+    "security-auditor",
+    "perf-auditor",
+    "docs-writer",
+    "planning-analyst",
+    "plan-reviewer",
+)
+PLANNING_ROLES = ("planning-analyst", "plan-reviewer")
 SKILLS = ("bootstrap", "ship", "new-agent", "new-skill", "adapt-army")
 RUNTIME_TARGETS = {"claude", "codex", "cursor", "copilot", "gemini", "windsurf"}
 AGENT_TARGETS = {"claude", "codex", "cursor", "copilot", "opencode", "gemini"}
@@ -45,6 +56,8 @@ ROLE_CAPABILITY = {
     "security-auditor": "strong",
     "perf-auditor": "mid",
     "docs-writer": "light",
+    "planning-analyst": "mid",
+    "plan-reviewer": "strong",
 }
 MODEL_CAPABLE_TARGETS = {"claude", "cursor"}
 # Claude documents these portable tier names. Other adapters require their exact
@@ -379,6 +392,18 @@ def agent_sources_need_staging(root: Path, target: str) -> bool:
         and not (source_dir / staging.name[: -len(".md")]).is_file()
         for staging in staging_dir.glob(f"agent-army-*{APM_AGENT_SUFFIX}")
     )
+
+
+def planning_role_collisions(root: Path, previous: dict[str, Any]) -> list[str]:
+    """A newly introduced role path is a conflict unless this profile already owns that role."""
+    routing = previous.get("model_routing") if isinstance(previous.get("model_routing"), dict) else {}
+    roles = routing.get("roles") if isinstance(routing.get("roles"), dict) else {}
+    conflicts = []
+    for role in PLANNING_ROLES:
+        path = root / LOCAL_AGENT_SOURCE_DIR / f"agent-army-{role}{LOCAL_AGENT_SUFFIX}"
+        if role not in roles and path.exists():
+            conflicts.append(str(path.relative_to(root)))
+    return conflicts
 
 
 def cleanup_apm_agent_staging(root: Path) -> None:
@@ -796,10 +821,25 @@ def main() -> int:
         else:
             bootstrap_mode = "full"
             print("Agent Army package is current; applying explicitly requested profile configuration changes.")
+    if bootstrap_mode == "incremental" and not args.dry_run and args.upgrade_review_outcome is None:
+        print(
+            "ERROR: incremental bootstrap requires the resolved Incremental Upgrade Review choice; "
+            "rerun with --upgrade-review-outcome applied or skipped after presenting the review.",
+            file=sys.stderr,
+        )
+        return 2
+    if bootstrap_mode == "incremental" and args.upgrade_review_outcome == "applied":
+        collisions = planning_role_collisions(ROOT, previous)
+        if collisions:
+            print("ERROR: new planning role name collides with a local role; no upgrade changes applied:", file=sys.stderr)
+            for path in collisions:
+                print(f"  - {path}", file=sys.stderr)
+            return 2
     if bootstrap_mode == "incremental":
         print(f"\nAgent Army incremental migration plan: {from_version or 'legacy profile'} -> {PACKAGE_VERSION}")
         print("  apply: AGENTS.md managed feedback-router block; package metadata; inventory refresh")
         print("  preserve: .agent-army/agents, model routing, quality policy and external controls")
+        print("  local role contracts: add the new planning roles only when the upgrade review is applied")
         conflicts = apply_incremental_changes(ROOT, args.target, args.dry_run)
         if conflicts:
             print("ERROR: incremental migration needs a human decision:", file=sys.stderr)
@@ -837,7 +877,10 @@ def main() -> int:
     delta = inventory_delta(previous_package, inventory)
     if bootstrap_mode == "incremental":
         print_upgrade_review(ROOT, from_version, delta)
-    write_agents(ROOT, args.target, routing, args.dry_run)
+    if bootstrap_mode == "incremental" and args.upgrade_review_outcome == "skipped":
+        print("preserve: local role contracts and model routing (Incremental Upgrade Review skipped)")
+    else:
+        write_agents(ROOT, args.target, routing, args.dry_run)
     routing["effective_roles"] = effective_role_models(ROOT, args.target)
     if "army" in selections.values():
         write_runtime_sources(ROOT, args.target, selections["runtime_hooks"] == "army", args.dry_run)

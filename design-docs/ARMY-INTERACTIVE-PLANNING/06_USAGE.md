@@ -1,7 +1,8 @@
 # Jak będziemy używać rozszerzonego architekta
 
-To docelowy przebieg po implementacji. Nowe role i opisany proces nie zostały jeszcze wdrożone.
-Nadal korzystasz z Army i dotychczasowego wejścia do architekta; nie instalujesz osobnego toolkitu.
+Źródła ról, interaktywnego architekta i integracji `/ship` są w Army i renderują się w profilach.
+Zachowanie promptów w realnej sesji czeka na odbiór PR 4. Do planowania repo Army używaj tego procesu;
+globalny, prywatny toolkit jest osobnym zestawem skilli i nie zastępuje Army.
 
 ## 1. Zlecasz planowanie
 
@@ -50,10 +51,10 @@ Nie powstaje nowy Work, Review ani drugi system postępu.
 
 ## Opcjonalne wejścia spoza Army
 
-Jeśli powstaną opisane w [10](10_OPTIONAL_SKILLS.md) osobne skille, możesz najpierw zweryfikować potrzebę
-w product-discovery i przekazać jego brief architektowi. Przy istniejącym produkcie test-strategy może
+Możesz najpierw zweryfikować potrzebę w product-discovery i przekazać jego brief architektowi.
+Przy istniejącym produkcie test-strategy może
 wskazać pierwszy przyrost ochrony do zaplanowania. Żaden z tych skilli nie będzie obowiązkowym początkiem ship.
-Wybór hostingu i gotowość wdrożenia pozostaną odrębnymi workflow. Dziś są to propozycje, nie dostępne komendy.
+Wybór hostingu i gotowość wdrożenia pozostają odrębnymi workflow w prywatnym toolkicie.
 
 ## 6. Przerwa i wznowienie
 

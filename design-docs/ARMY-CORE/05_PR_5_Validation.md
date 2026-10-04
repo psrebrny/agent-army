@@ -3,6 +3,8 @@
 > 2. **<auto_critic> EXECUTION LOCK:** after each task, run its Verification Command, fix errors, and DO NOT proceed until GREEN.
 
 ## PR #5: Validation — prove per-tool output deterministically
+> Status realizacji: **wykonane**. `scripts/check.sh`: 151 zaliczeń; `scripts/smoke.sh`: 175 zaliczeń. Ograniczenia wynikające z v2 są w [rozliczeniu](06_RECONCILIATION.md).
+
 **Objective:** Make CI/dev catch any regression in the new pipeline without an LLM: assembler output is correct per tool, no placeholders leak, existing files survive re-runs. (Depends on PR#2–#4.)
 
 ---

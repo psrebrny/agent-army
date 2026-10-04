@@ -27,6 +27,18 @@ gate below. Do not auto-select a task or PR from a new or materially revised blu
 one candidate exists. Users may invoke `architect` directly for planning or replanning; it creates/updates
 `design-docs/` and never implements source code.
 
+For new planning, the main session coordinates the planning roles; do not ask an architect subagent to spawn
+its own workers. Invoke `planning-analyst` only when a material cause, behavior, source conflict, or repository
+constraint is still unknown. A small and clear task may skip it; record the evidence-based reason in
+`Planning Session`. Keep the architect as the single user-facing plan author: relay its one-at-a-time question
+to the user, save the answer in the blueprint, and return the affected excerpt rather than a full plan dump.
+After the architect composes a blueprint, invoke `plan-reviewer` with a fresh, independent context. Its packet
+contains the approved goal, confirmed decisions, exact manifest/PR revision, and relevant raw source paths;
+exclude the architect transcript/self-review and analyst report. Persist the verdict and revision in
+`Planning Session`. If no independent context can be created, record `INSUFFICIENT_EVIDENCE` and stop at the
+blueprint gate unless the user explicitly chooses to proceed with that limitation. A review verdict never
+authorizes implementation.
+
 ## 1 · EXECUTION POLICY
 Read the selected PR's `Execution State`. Interaction is selected **per PR**, never per role or command.
 If `Interaction policy` is `unset`, ask once and persist one of two user-visible modes:
@@ -96,6 +108,11 @@ Profile. Ask the user to make these decisions explicitly:
 2. Scope: `Task <PR.Task> only`, `PR <ID>`, or `all unfinished PRs for this feature`.
 3. Model only for `inherit` fallback: `switch and continue` or `stay current`.
 
+Before presenting the gate, verify that `Planning Session.Stage` is `ready`, the review applies to the current
+`Plan revision`, and there are no unresolved blocking review findings. If the review is missing, stale or
+`INSUFFICIENT_EVIDENCE`, disclose the exact limitation and ask for an explicit decision to pause for independent
+review or proceed with that limitation. Never change the review verdict to `APPROVED` on the user's behalf.
+
 Persist the selected execution scope and the selected `autonomous`/`interactive` policy before dispatching
 any tester, coder or main-session implementation.
 For `all unfinished PRs`, carry that scope forward to the next unfinished PR only after the current PR
@@ -112,6 +129,16 @@ Use these execution statuses exactly:
 - `needs_input` for a business/technical decision only the user can provide;
 - `blocked` only for an external obstacle that remains after a safe attempt to clarify;
 - `done` and `partial` for completed or intentionally incomplete work.
+
+The task's user-visible `Task status` in its PR file uses this single planning vocabulary:
+`do zrobienia`, `w trakcie`, `do testów`, `do review`, `wykonane`, `czeka na decyzję`, `zablokowane`,
+`warunkowe`. Map execution transitions as follows: `planned` → `do zrobienia`; tester authoring and
+implementation → `w trakcie`; implementation complete and verification pending → `do testów`; GREEN complete
+and review pending/in progress → `do review`; all task criteria, required reviews, documentation and checks
+verified → `wykonane`; `awaiting_approval` or `needs_input` → `czeka na decyzję`; `blocked` → `zablokowane`;
+out-of-scope until a stated condition → `warunkowe`. Record exact RED/GREEN command results and reviewer verdicts
+in `Last verified stage` or the task evidence, not as a second status. A role's Handoff `STATUS: done` alone
+never marks a blueprint task `wykonane`.
 
 ## 1.4 · SCOPE-AWARE ROUTING
 Keep two profiles separate:
@@ -194,8 +221,8 @@ The portable defaults intentionally distinguish roles:
 
 | Capability | Roles | Purpose |
 |---|---|---|
-| `strong` | architect, code-reviewer, security-auditor | high-judgment planning and risk decisions |
-| `mid` | coder, perf-auditor | implementation or measurement with bounded scope |
+| `strong` | architect, plan-reviewer, code-reviewer, security-auditor | high-judgment planning and risk decisions |
+| `mid` | coder, perf-auditor, planning-analyst | implementation, bounded research, or measurement |
 | `light` | tester, docs-writer | focused RED/GREEN work or factual documentation |
 
 The task's Execution Profile remains the planner's evidence for scope, coordination and escalation; it
@@ -229,34 +256,46 @@ claim it was selected unless that adapter exposes and records such a mode.
 ## 1.7 · PERSIST EVERY ROLE TRANSITION
 `Execution State` is the resumable source of truth, not the Todo list or a chat message. Immediately
 before and after every role dispatch, rewrite the selected PR file: set `PR status`, `Current task`,
-`Active roles`, `Last verified stage`, task status, `Awaiting decision`, and any Interaction Card. Never
-leave the previous worker listed as active after it returns.
+`Active roles`, `Last verified stage`, the mapped user-visible task status, `Awaiting decision`, and any
+Interaction Card. Never leave the previous worker listed as active after it returns. Keep detailed execution
+evidence in `Last verified stage` and test/review reports; do not replace the task's planning status with
+the English execution-step label.
 
 - **Architect:** before → `planned`, active `architect`; after → `awaiting_approval`, active `none`,
-  `Execution scope: unset`, `Scope Profile: unset`, blueprint path, and the mandatory blueprint Interaction
-  Card.
-- **Tester RED:** before → PR `implementing`, task `red`, active `tester`; after → active `none`,
+  `Execution scope: unset`, `Scope Profile: unset`, blueprint path, current Planning Session stage/revision,
+  review verdict/revision, and the mandatory blueprint Interaction Card. New plan tasks remain `do zrobienia`.
+- **Planning analyst:** before → active `planning-analyst`, task status unchanged; after → active `none`,
+  save evidence pointers and the Handoff result for the architect. Never persist an unverified analyst claim as a user decision.
+- **Plan reviewer:** before → active `plan-reviewer`, `Planning Session.Stage: review`; after → active `none`,
+  persist verdict and exact reviewed revision. If the plan changes materially, update the revision and mark this result stale.
+- **Tester RED:** before → PR `implementing`, task `w trakcie`, active `tester`; after → active `none`,
   persist the exact RED command and result. In Interactive mode, write `RED acceptance` Interaction Card
-  and wait before production implementation.
+  and wait before production implementation; the task remains `w trakcie`.
 - **Tester refactor baseline:** for an approved behavior-preserving task, before → PR `implementing`,
-  task `implementing`, active `tester`; after → active `none`, persist the actual passing baseline.
-  Do not set task `green` or `verified` before the change. In Interactive mode wait at `baseline acceptance`.
-- **Implementation:** before → task `implementing`, active `main session` or `coder`; after → retain
-  `implementing` until the independent GREEN result is persisted.
-- **Tester GREEN:** before → active `tester`; after → task `green` then `verified`, active `none`,
-  persist the exact GREEN command and result. In Interactive mode, write `task review` Interaction Card
-  and wait before the next task or PR-level audit.
+  task `w trakcie`, active `tester`; after → active `none`, persist the actual passing baseline.
+  Do not move to `do testów` until the refactor is implemented. In Interactive mode wait at `baseline acceptance`.
+- **Implementation:** before → task `w trakcie`, active `main session` or `coder`; after implementation →
+  task `do testów`, active `none`, and record the exact next verification.
+- **Tester GREEN:** before → active `tester`, task `do testów`; after a passing result → task `do review`,
+  active `none`, persist the exact command and result. On failure, return to `w trakcie` with the failure
+  evidence and next corrective action. In Interactive mode, write `task review` Interaction Card and wait.
 - **Review + security:** before → PR `review`, active `code-reviewer, security-auditor`; after →
-  active `none`, persist both verdicts. A confirmed finding writes `finding decision` Interaction Card;
-  an in-scope repair then moves the task back to `red`, never directly to coder implementation.
+  active `none`, persist both verdicts. Keep `do review` until both required reviews pass; a confirmed
+  finding writes `finding decision` Interaction Card, then moves to `w trakcie` for an in-scope repair and
+  back to `do testów` before renewed review. Never skip the test status.
 - **Docs + final:** before → PR `docs`, active `docs-writer`; after full verification →
-  `ready_for_human_review`, active `none`, task `done`, final evidence and a `final review` Interaction Card.
+  `ready_for_human_review`, active `none`, task `wykonane`, final evidence and a `final review` Interaction Card.
 
 ## 2 · BLUEPRINT OR RESUME  → `architect`
 Architect writes `design-docs/[Task-ID]/00_CORE_MANIFEST.md` plus `0X_PR_*.md` (one PR per file) and
 never writes production code. Each atomic task has an API contract, a Delegation Contract, an Execution
 Profile and an Execution State. On a review escalation, architect updates only affected plan blocks and
 the relevant state; it does not silently rewrite completed work.
+For a new blueprint, use the interactive Planning Session and planning-role orchestration from section 0.
+For a resumed blueprint, read its saved Planning Session first and continue at `Next action`; never restart
+resolved decisions. Every task starts as `do zrobienia`. If a user decision is pending, set the task to
+`czeka na decyzję` only when the decision blocks that task, preserve the exact question in the Interaction Card,
+and leave unrelated task statuses unchanged.
 If the architect finds that the goal is already met or recommends no implementation, return that finding
 and its evidence to the user without inventing a PR, selecting work, or activating a suggested service.
 A proposed configuration/adoption change still needs a concrete approved scope before execution.
@@ -270,9 +309,9 @@ only in the tester's permitted isolated subject; never pass a mutated failure of
 For an explicitly approved behavior-preserving refactor, substitute its passing before-change checks
 and `baseline acceptance` for RED in steps 1–2, preserving the same write-scope and interaction gates.
 This exception does not let a bugfix or new feature claim success without demonstrating the required behavior.
-1. Persist PR `implementing`, task `red`, `Active roles: tester`, then **`tester` writes the tests (RED)** independently from the contract/acceptance criteria and proves they fail for the right reason. On return, persist `Active roles: none` and the exact RED result.
-2. In Interactive mode, write the RED acceptance Interaction Card and wait for its response. In Autonomous mode, continue unless a decision condition applies. Then persist task `implementing` and `Active roles: main session` or `coder`. The main session implements the smallest change; a delegated `coder` receives only the Delegation Contract, RED tests and approved read paths. In Interactive mode the RED card already contains its plan and exact write list; after `continue`, it may proceed only within that list. In Autonomous mode it proceeds only when the list is wholly inside approved scope.
-3. Persist `Active roles: tester`; **`tester` verifies (GREEN)**. Set status to `green` only when the command passes, then `verified` after saving the exact GREEN result and `Active roles: none`; otherwise diagnose and fix without weakening assertions. A required path outside scope, ambiguous/disproved contract, unapproved dependency/migration or repeated failed approach becomes `awaiting_approval`, `needs_input` or `blocked`, never silent expansion.
+1. Persist PR `implementing`, task `w trakcie`, `Active roles: tester`, then **`tester` writes the tests (RED)** independently from the contract/acceptance criteria and proves they fail for the right reason. On return, persist `Active roles: none` and the exact RED result in `Last verified stage`; task status remains `w trakcie` while implementation is pending.
+2. In Interactive mode, write the RED acceptance Interaction Card and wait for its response. In Autonomous mode, continue unless a decision condition applies. Persist task `w trakcie` and `Active roles: main session` or `coder`. The main session implements the smallest change; a delegated `coder` receives only the Delegation Contract, RED tests and approved read paths. In Interactive mode the RED card already contains its plan and exact write list; after `continue`, it may proceed only within that list. In Autonomous mode it proceeds only when the list is wholly inside approved scope.
+3. After implementation, persist task `do testów`, `Active roles: tester` and the exact next command; **`tester` verifies (GREEN)**. A passing command moves the task to `do review` only after the GREEN result is saved. On failure, persist `w trakcie` with the failure evidence and correction. A required path outside scope, ambiguous/disproved contract, unapproved dependency/migration or repeated failed approach becomes `czeka na decyzję` or `zablokowane`, never silent expansion.
 No batching without verification. *Exception:* for trivial tasks the main session may do the whole Red→Green cycle inline, without a round-trip to the subagent (the cheaper default — see AGENTS.md "Cost & context discipline"). This does not remove an Interactive RED or task-review card: it changes only who performs the work. Run the configured verification command after every GREEN step; runtime hooks are feedback, while the user-selected pre-commit/CI controls provide repository enforcement.
 After every verified task in Interactive mode, write the task-review Interaction Card and wait. In Autonomous
 mode, continue to the next planned task without a routine pause.

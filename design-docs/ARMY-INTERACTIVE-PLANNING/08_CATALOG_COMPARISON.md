@@ -12,7 +12,7 @@ Rekomendowana lokalizacja i priorytet są naszym projektem, nie deklaracją auto
 
 - **Jest:** istnieje odpowiadający mechanizm Army, choć format i szczegóły mogą być inne.
 - **Częściowo:** istnieją elementy, lecz brakuje odrębnego rezultatu lub pełnego przebiegu z karty.
-- **Plan:** brak gotowego mechanizmu; ujęty w PR 1–4 tego projektu.
+- **Plan:** wcześniej brakujący mechanizm, obecnie zaimplementowany w źródłach PR 1–3; zachowanie i pilotaż są do odbioru w PR 4.
 - **Brak:** nie znaleziono odpowiednika w obecnych kontraktach i skillach Army.
 
 Stan obejmuje lokalne niezacommitowane instrukcje, w tym zachowane na życzenie użytkownika sześć zasad
@@ -41,13 +41,13 @@ Priorytety i kolejność opisuje [09](09_SCOPE_AND_PRIORITIES.md); projekty osob
 |---|---|---|
 | `/10x-roadmap` | Częściowo: architect dzieli zmianę na PR-y i zadania; to nie roadmapa produktu | Roadmapa opcjonalnym wynikiem `product-discovery`; do Army trafia wybrany wycinek |
 | `/10x-new` | Częściowo: architect tworzy folder Task-ID, manifest i pliki PR; brak oddzielnego `change.md` | Rozpoczynać zadanie obecnym wejściem, bez drugiej tożsamości i stanu |
-| `/10x-plan` | Częściowo: blueprint i wywiad są; cały plan uzgadniany temat po temacie oraz trwały stan dialogu są w PR 2 | Najbliższy priorytet w architect. Krótkie podsumowanie wyprowadzać z planu |
-| `/10x-plan-review` | Plan: osobny `plan-reviewer` w PR 1; code-reviewer sprawdza późniejszy kod | Zachować nową rolę i świeży kontekst; nie zaliczać samooceny autora |
+| `/10x-plan` | Częściowo: interaktywny blueprint, statusy i checkpointy są zaimplementowane w architekcie; próby zachowania są otwarte w PR 4 | Użyć istniejącego architekta; nie tworzyć konkurencyjnego planu w osobnym skillu |
+| `/10x-plan-review` | Źródła wdrożone: osobny `plan-reviewer` jest zintegrowany; prawdziwe wywołanie i świeży kontekst czekają na odbiór PR 4 | Zachować granicę review planu i code-review; nie zaliczać samooceny autora |
 | `/10x-implement` | Jest: `/ship`, tester, główna sesja lub coder, Execution State i weryfikacja | Nie dodawać executora. Army wymaga zgody człowieka na commit |
 | `/10x-archive` | Brak workflow archiwizacji; statusy zakończenia istnieją | Odłożyć do potrzeby porządkowania wielu planów; zachować odnośniki i historię, bez automatycznego commita |
 | `/10x-impl-review` | Jest: niezależny code-reviewer, kontrakt, werdykty i routing poprawek | Użyć obecnej roli; trwałe lekcje przez adapt-army, dokumentacja kontraktów przez docs-writer |
-| `/10x-frame` | Plan: oddzielanie objawu od diagnozy przez planning-analyst w PR 1 | Warunkowy krok przed projektowaniem; prawidłowa diagnoza też jest wynikiem |
-| `/10x-research` | Częściowo: recon architekta/bootstrap; dedykowany raport analityka jest w PR 1 | Jeden pakiet dowodów na potrzebę; bez ponownego pełnego researchu i obowiązkowej równoległości |
+| `/10x-frame` | Źródła wdrożone: `planning-analyst` rozdziela objaw, hipotezę i dowody; próby zachowania są otwarte w PR 4 | Warunkowy krok przed projektowaniem; prawidłowa diagnoza też jest wynikiem |
+| `/10x-research` | Częściowo: recon architekta/bootstrap plus dedykowany raport `planning-analyst`; zachowanie wymaga odbioru PR 4 | Jeden pakiet dowodów na potrzebę; bez ponownego pełnego researchu i obowiązkowej równoległości |
 
 ## Jakość
 

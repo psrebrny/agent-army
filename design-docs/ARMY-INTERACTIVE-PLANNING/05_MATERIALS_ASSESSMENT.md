@@ -8,9 +8,10 @@ oraz lokalne instrukcje źródłowej i firmowej Army. Nowa analiza obejmuje rów
 porównujemy opisy, bez audytu implementacji skilli 10x ani sprawdzania aktualności strony online w tej analizie.
 Wpis „Army już ma” oznacza obecność reguły lub mechanizmu w źródłach, nie dowód jego skuteczności w praktyce.
 
-Aktualizacja 2026-10-02: sześć zasad jest już w lokalnych instrukcjach istniejących ról. Po wyjaśnieniu,
-że prośba dotyczyła docsów, użytkownik zdecydował o zachowaniu tych zmian. [Zakres i właściciele](07_BASELINE_RULES.md).
-Nie wdrożono jeszcze dwóch nowych agentów. Bieżąca aktualizacja zmienia tylko dokumentację.
+Aktualizacja 2026-10-04: sześć zasad pozostaje w lokalnych instrukcjach ról zgodnie z życzeniem użytkownika
+([zakres i właściciele](07_BASELINE_RULES.md)). Dwie nowe role, workflow dialogu, statusy i integracja bootstrap/ship
+są już zapisane w źródłach Army. Struktura, generowanie profili i migracja są sprawdzone; zachowanie promptów
+i pilotaże nadal czekają na PR 4.
 
 Pełne rozróżnienie „mamy / częściowo / plan / brak” jest w [08](08_CATALOG_COMPARISON.md),
 wybór kolejności w [09](09_SCOPE_AND_PRIORITIES.md), a projekty osobnych skilli w [10](10_OPTIONAL_SKILLS.md).

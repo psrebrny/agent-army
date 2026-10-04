@@ -4,6 +4,8 @@
 
 
 ## PR #3: Shared agent core (single, tool-agnostic source)
+> Status realizacji: **wykonane** w `.apm/skills/bootstrap/baseline/core/agents/`; adaptacja adapterów i fallbacku jest opisana w [rozliczeniu](06_RECONCILIATION.md).
+
      **Objective:** Make the agent CONTENT live once, tool-agnostic, so the assembler is the only thing that shapes it per tool. (Depends on PR#2 so the assembler can retarget onto `core/`.)
 
 ---

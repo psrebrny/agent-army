@@ -3,6 +3,8 @@
 > 2. **<auto_critic> EXECUTION LOCK:** after each task, run its Verification Command, fix errors, and DO NOT proceed until GREEN.
 
 ## PR #2: Deterministic assembler (the heart of the refactor)
+> Status realizacji: **zastąpione i rozliczone** przez `bootstrap.py` i profile v2. Nie tworzymy drugiego aktywnego assemblera. Szczegóły: [rozliczenie](06_RECONCILIATION.md).
+
 **Objective:** A plain, testable script that materializes a tool-native team from `core/` + a descriptor. This is where ALL the packaging "soft ifs" currently in `SKILL.md` prose move to — becoming deterministic and unit-tested. (Depends on PR#1 descriptors; consumes PR#3's `core/`, but can be built against the current `baseline/agents/` and retargeted in PR#3.)
 
 ---

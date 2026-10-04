@@ -1,8 +1,9 @@
 # Projekty opcjonalnych skilli poza rdzeniem Army
 
-Te propozycje są niezależnymi wejściami użytkownika, a nie obowiązkowymi krokami ship.
-Na tym etapie nie wybieramy paczki dystrybucyjnej i nie tworzymy komend. Każdy skill ma działać także bez Army;
-gdy Army jest dostępna, przekazuje jej wybrany zakres i dowody do zaplanowania.
+Te skille są niezależnymi wejściami użytkownika, a nie obowiązkowymi krokami `/ship`.
+Status 2026-10-04: pięć opisanych tu workflow ma implementację jako globalne skille Codexa w `~/.codex/skills/`;
+nie wchodzą do pakietu APM Army. Każdy działa także bez Army; gdy Army jest dostępna, użytkownik może przekazać
+jej wybrany zakres i dowody do zaplanowania. Pliki, instalacja i checkpoint: [Personal AI Toolkit](../PERSONAL-AI-TOOLKIT/00_CORE_MANIFEST.md).
 
 ## Wspólne zasady
 

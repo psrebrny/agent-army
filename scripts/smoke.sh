@@ -28,6 +28,25 @@ bootstrap_apm(){
 legacy_profile(){
   python3 -c 'import json, pathlib, sys; p=pathlib.Path(sys.argv[1]); data=json.loads(p.read_text()); data.pop("package", None); p.write_text(json.dumps(data, indent=2) + "\n")' "$1"
 }
+prepare_planning_role_upgrade(){
+  local dir="$1" keep_files="${2:-no}"
+  python3 - "$dir" <<'PY'
+import json, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+path = root / '.agent-army/config.json'
+data = json.loads(path.read_text())
+for role in ('planning-analyst', 'plan-reviewer'):
+    data.get('model_routing', {}).get('roles', {}).pop(role, None)
+    data.get('package', {}).get('inventory', {}).get('templates', {}).pop(
+        f'bootstrap/baseline/core/agents/{role}.md', None
+    )
+path.write_text(json.dumps(data, indent=2) + '\n')
+PY
+  if [ "$keep_files" != yes ]; then
+    rm -f "$dir/.agent-army/agents/agent-army-planning-analyst.agent" \
+      "$dir/.agent-army/agents/agent-army-plan-reviewer.agent"
+  fi
+}
 
 printf '\n\033[1mGATE 0 · profile generation for every target\033[0m\n'
 for target in claude codex cursor copilot opencode gemini windsurf; do
@@ -37,7 +56,14 @@ for target in claude codex cursor copilot opencode gemini windsurf; do
     [ -f "$dir/.windsurf/skills/agent-army-architect/SKILL.md" ] && ok "$target: role-skills fallback" || bad "$target: fallback role missing"
   else
     count="$(find "$dir/.agent-army/agents" -name 'agent-army-*.agent' 2>/dev/null | wc -l | tr -d ' ')"
-    [ "$count" = 7 ] && ok "$target: seven canonical agent sources" || bad "$target: expected seven agent sources, got $count"
+    [ "$count" = 9 ] && ok "$target: nine canonical agent sources" || bad "$target: expected nine agent sources, got $count"
+    python3 - "$dir/.agent-army/config.json" <<'PY'
+import json, pathlib, sys
+roles = json.loads(pathlib.Path(sys.argv[1]).read_text())['model_routing']['roles']
+assert roles.get('planning-analyst') == 'mid'
+assert roles.get('plan-reviewer') == 'strong'
+PY
+    [ "$?" -eq 0 ] && ok "$target: planning roles have the selected capability tiers" || bad "$target: planning-role capability tiers are wrong"
     if [ "$target" = opencode ]; then
       [ ! -f "$dir/.apm/agents/agent-army-architect.agent.md" ] && ok "$target: no APM agent staging" || bad "$target: unexpected APM agent staging"
       [ ! -f "$dir/.opencode/agents/agent-army-architect.md" ] && ok "$target: no native Markdown agent output" || bad "$target: unexpected native Markdown agent output"
@@ -81,7 +107,7 @@ bootstrap "$LEGACY" opencode --runtime-hooks disabled --git-precommit disabled -
 sed -i.bak '3i\
 model: user-owned/custom-model' "$LEGACY/.agent-army/agents/agent-army-architect.agent"; rm -f "$LEGACY/.agent-army/agents/agent-army-architect.agent.bak"
 bootstrap "$LEGACY" opencode --runtime-hooks disabled --git-precommit disabled --ci disabled \
-  >/dev/null
+  --upgrade-review-outcome applied >/dev/null
 if grep -q '^model: user-owned/custom-model$' "$LEGACY/.agent-army/agents/agent-army-architect.agent"; then
   ok "user-owned role model preserved on re-bootstrap"
 else
@@ -95,15 +121,18 @@ bootstrap "$ROUTED" cursor --runtime-hooks disabled --git-precommit disabled --c
   --model-light test/light-v1 --model-mid test/mid-v1 --model-strong test/strong-v1 >/dev/null
 grep -q '^model: "test/strong-v1" # agent-army-role-profile: strong$' "$ROUTED/.agent-army/agents/agent-army-architect.agent" \
   && grep -q '^model: "test/light-v1" # agent-army-role-profile: light$' "$ROUTED/.agent-army/agents/agent-army-tester.agent" \
+  && grep -q '^model: "test/mid-v1" # agent-army-role-profile: mid$' "$ROUTED/.agent-army/agents/agent-army-planning-analyst.agent" \
+  && grep -q '^model: "test/strong-v1" # agent-army-role-profile: strong$' "$ROUTED/.agent-army/agents/agent-army-plan-reviewer.agent" \
   && ok "exact target model IDs route by role" || bad "role model routing missing or wrong"
 bootstrap "$ROUTED" cursor --runtime-hooks disabled --git-precommit disabled --ci disabled \
-  --model-light test/light-v2 --model-mid test/mid-v2 --model-strong test/strong-v2 >/dev/null
+  --model-light test/light-v2 --model-mid test/mid-v2 --model-strong test/strong-v2 \
+  --upgrade-review-outcome applied >/dev/null
 grep -q '^model: "test/strong-v2" # agent-army-role-profile: strong$' "$ROUTED/.agent-army/agents/agent-army-architect.agent" \
   && ok "generated role model updated on re-bootstrap" || bad "generated role model did not update"
 grep -q '"strategy": "per_role_static"' "$ROUTED/.agent-army/config.json" \
   && ok "role model routing recorded" || bad "role model routing not recorded"
 bootstrap "$ROUTED" cursor --runtime-hooks disabled --git-precommit disabled --ci disabled \
-  --role-model-routing inherit >/dev/null
+  --role-model-routing inherit --upgrade-review-outcome applied >/dev/null
 if grep -q '^model:' "$ROUTED/.agent-army/agents/agent-army-architect.agent"; then
   bad "managed role model was not removed for inherit fallback"
 else
@@ -119,7 +148,7 @@ grep -q 'env node' "$OWN/.git/hooks/pre-commit" && ok "external pre-commit prese
 [ ! -f "$OWN/.github/workflows/agent-army-quality.yml" ] && ok "external CI preserved" || bad "external CI unexpectedly installed"
 grep -q '"mode": "external"' "$OWN/.agent-army/config.json" && ok "external ownership recorded" || bad "external ownership not recorded"
 printf '\nSMOKE-SPECIALIZATION\n' >> "$OWN/.agent-army/agents/agent-army-architect.agent"
-bootstrap "$OWN" claude >/dev/null
+bootstrap "$OWN" claude --upgrade-review-outcome applied >/dev/null
 grep -q 'SMOKE-SPECIALIZATION' "$OWN/.agent-army/agents/agent-army-architect.agent" && ok "re-bootstrap preserves specialized agent source" || bad "re-bootstrap overwrote specialized agent source"
 grep -q '"mode": "external"' "$OWN/.agent-army/config.json" && ok "re-bootstrap preserves ownership choice" || bad "re-bootstrap changed ownership choice"
 
@@ -138,7 +167,7 @@ legacy_profile "$UPGRADE/.agent-army/config.json"
 grep -q 'legacy profile -> 0.3.1' "$WORK/upgrade-plan.txt" && ok "unversioned profile gets an incremental plan" || bad "incremental plan missing"
 grep -q 'Incremental Upgrade Review' "$WORK/upgrade-plan.txt" && grep -q 'new-skill' "$WORK/upgrade-plan.txt" && ok "unversioned profile previews package capabilities" || bad "upgrade review missing capabilities"
 grep -q 'agent-army:feedback-router:start' "$UPGRADE/AGENTS.md" && bad "incremental dry-run changed AGENTS.md" || ok "incremental dry-run preserves AGENTS.md"
-(cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --skip-apm >/dev/null)
+(cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --upgrade-review-outcome applied --skip-apm >/dev/null)
 grep -q 'agent-army:feedback-router:start' "$UPGRADE/AGENTS.md" && ok "incremental migration adds managed feedback router" || bad "feedback router missing after migration"
 grep -q '"version": "0.3.1"' "$UPGRADE/.agent-army/config.json" && ok "incremental migration records package version" || bad "package version not recorded"
 grep -q '"inventory"' "$UPGRADE/.agent-army/config.json" && grep -q '"upgrade_review"' "$UPGRADE/.agent-army/config.json" && ok "incremental migration records hash-only inventory and review" || bad "incremental inventory or review missing"
@@ -153,12 +182,50 @@ grep -q 'PROFILE-SPECIALIZATION' "$UPGRADE/.agent-army/agents/agent-army-archite
 (cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --upgrade-review-outcome skipped --skip-apm >/dev/null)
 grep -A2 '"upgrade_review"' "$UPGRADE/.agent-army/config.json" | grep -q '"status": "skipped"' && ok "upgrade review decision is recorded" || bad "upgrade review decision was not recorded"
 
+UPGRADE_SKIP="$WORK/upgrade-role-skip"; init_repo "$UPGRADE_SKIP"
+bootstrap "$UPGRADE_SKIP" opencode --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null
+prepare_planning_role_upgrade "$UPGRADE_SKIP"
+printf '\n# LOCAL-ARCHITECT-DECISION\n' >> "$UPGRADE_SKIP/.agent-army/agents/agent-army-architect.agent"
+(cd "$UPGRADE_SKIP" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --dry-run --skip-apm > "$WORK/role-skip-plan.txt")
+grep -q 'planning-analyst.md' "$WORK/role-skip-plan.txt" && grep -q 'plan-reviewer.md' "$WORK/role-skip-plan.txt" \
+  && ok "upgrade review exposes both new role contracts" || bad "new role contracts missing from upgrade review"
+(cd "$UPGRADE_SKIP" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --upgrade-review-outcome skipped --skip-apm >/dev/null)
+[ ! -e "$UPGRADE_SKIP/.agent-army/agents/agent-army-planning-analyst.agent" ] \
+  && [ ! -e "$UPGRADE_SKIP/.agent-army/agents/agent-army-plan-reviewer.agent" ] \
+  && grep -q 'LOCAL-ARCHITECT-DECISION' "$UPGRADE_SKIP/.agent-army/agents/agent-army-architect.agent" \
+  && ok "skipped role upgrade preserves local role sources" || bad "skipped role upgrade changed local role sources"
+
+UPGRADE_APPLY="$WORK/upgrade-role-apply"; init_repo "$UPGRADE_APPLY"
+bootstrap "$UPGRADE_APPLY" opencode --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null
+prepare_planning_role_upgrade "$UPGRADE_APPLY"
+printf '\n# LOCAL-ARCHITECT-DECISION\n' >> "$UPGRADE_APPLY/.agent-army/agents/agent-army-architect.agent"
+(cd "$UPGRADE_APPLY" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --dry-run --skip-apm > "$WORK/role-apply-plan.txt")
+(cd "$UPGRADE_APPLY" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --upgrade-review-outcome applied --skip-apm >/dev/null)
+[ -f "$UPGRADE_APPLY/.agent-army/agents/agent-army-planning-analyst.agent" ] \
+  && [ -f "$UPGRADE_APPLY/.agent-army/agents/agent-army-plan-reviewer.agent" ] \
+  && grep -q 'LOCAL-ARCHITECT-DECISION' "$UPGRADE_APPLY/.agent-army/agents/agent-army-architect.agent" \
+  && ok "approved role upgrade adds two roles and preserves specialization" || bad "approved role upgrade failed or overwrote specialization"
+
+ROLE_CONFLICT="$WORK/role-name-conflict"; init_repo "$ROLE_CONFLICT"
+bootstrap "$ROLE_CONFLICT" opencode --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null
+prepare_planning_role_upgrade "$ROLE_CONFLICT" yes
+cp "$ROLE_CONFLICT/.agent-army/config.json" "$WORK/role-conflict-config-before.json"
+cp "$ROLE_CONFLICT/.agent-army/agents/agent-army-planning-analyst.agent" "$WORK/role-conflict-source-before.agent"
+if (cd "$ROLE_CONFLICT" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --upgrade-review-outcome applied --skip-apm) >/dev/null 2>&1; then
+  bad "new planning role collision was silently accepted"
+else
+  ok "new planning role collision stops the upgrade"
+fi
+cmp -s "$WORK/role-conflict-config-before.json" "$ROLE_CONFLICT/.agent-army/config.json" \
+  && cmp -s "$WORK/role-conflict-source-before.agent" "$ROLE_CONFLICT/.agent-army/agents/agent-army-planning-analyst.agent" \
+  && ok "planning role collision leaves config and local role untouched" || bad "planning role collision changed local files"
+
 CONFLICT="$WORK/migration-conflict"; init_repo "$CONFLICT"
 bootstrap "$CONFLICT" opencode --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null
 printf '<!-- agent-army:feedback-router:start -->\nuser edit\n<!-- agent-army:feedback-router:end -->\n' > "$CONFLICT/AGENTS.md"
 legacy_profile "$CONFLICT/.agent-army/config.json"
 cp "$CONFLICT/.agent-army/config.json" "$WORK/conflict-config-before.json"
-if (cd "$CONFLICT" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode incremental --skip-apm) >/dev/null 2>&1; then
+if (cd "$CONFLICT" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode incremental --upgrade-review-outcome applied --skip-apm) >/dev/null 2>&1; then
   bad "modified managed block was overwritten"
 else
   ok "modified managed block blocks incremental migration"

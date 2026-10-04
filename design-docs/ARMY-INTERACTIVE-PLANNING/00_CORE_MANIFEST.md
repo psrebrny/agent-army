@@ -1,10 +1,35 @@
 # ARMY-INTERACTIVE-PLANNING — interaktywny architekt z analizą i review
 
 - Data: 2026-10-02.
-- Status: projekt do implementacji; zapis dokumentacji nie oznacza wdrożenia ani zgody na commit.
+- Status: PR 1–3 zaimplementowane i zweryfikowane strukturalnie; PR 4 ma do testów zachowania i pilotażu. Szczegóły niżej.
 - Cel implementacji: bieżące źródłowe repo Agent Army, materiały produktowe pod `.apm/`.
 - Środowisko pierwszego pilotażu: Claude Code; zachować obecne adaptery i jawne ograniczenia pozostałych narzędzi.
-- Zastępuje: wcześniejszy projekt osobnego `PERSONAL-AI-TOOLKIT`.
+- Relacja: ten plan zmienia planowanie w Army. Prywatny toolkit to odrębne globalne skille Codexa opisane i wdrożone w [PERSONAL-AI-TOOLKIT](../PERSONAL-AI-TOOLKIT/00_CORE_MANIFEST.md); nie wchodzi do pakietu APM Army.
+
+## Gdzie jesteśmy teraz
+
+- **Stan planu:** implementacja PR 1–3 jest w źródłach Army; PR 1–4 mają status **do testów** (PR 4 ma deterministyczną część wykonaną), PR 5–6 są **do zrobienia**, PR 7 pozostaje **warunkowy**.
+- **Bieżący punkt:** nowe role, interaktywny kontrakt architekta, migracja bootstrapu i handoff `/ship` są połączone. Automatyczne kontrole formatu, profili i migracji przeszły; rzeczywiste zachowanie ról i pilotaż pozostają do sprawdzenia w PR 4.
+- **Wymaganie zapisane:** architekt tworzy każdy przyszły plan ze statusem i punktem wznowienia;
+  aktualizuje je przy przeplanowaniu, a ship podczas realizacji. Zadania wdrożenia: 2.6 i 3.6, odbiór w PR 4.
+- **Decyzja zapisana:** każde zadanie ma własny status, a etap/PR ma podsumowanie.
+- **Aktywny format:** do zrobienia → w trakcie → do testów → do review → wykonane;
+  dodatkowo czeka na decyzję, zablokowane albo warunkowe. Definicje są w [protokole](00_PROTOCOL.md).
+- **Statusy obecnego planu:** PR 1–4 do testów; PR 5–6 do zrobienia; PR 7 warunkowe. Zadania 1.1–1.3
+  czekają na ślepe próby zachowania. Zadanie 4.5 pozostaje do testów, bo zachowanie sześciu zasad
+  istniejących ról nadal nie zostało zweryfikowane.
+- **Następny krok:** wykonać PR 4: uruchomić fixture’y PR 1–2 bez plików oracle, odnotować ograniczenia adaptera
+  i zachować wynik obecnego architekta jako baseline do porównania; następnie pilotaż.
+- **Integracja zaplanowanych PR 1–7:** PR 1–3 zaimplementowane w źródłach. Kontrole `scripts/check.sh` (151/0)
+  i `scripts/smoke.sh` (175/0) przechodzą; próby zachowania i wdrożenie próbne pozostają do PR 4.
+  Zmiany sześciu istniejących zasad ról są zapisane lokalnie
+  i osobno czekają na próby zachowania w 4.5.
+- **Wyjątek istniejących zmian:** instrukcje sześciu zasad są lokalnie zmienione i zachowane przez użytkownika;
+  ich próby zachowania pozostają do wykonania w 4.5. Szczegóły i dotychczasowe kontrole w [07](07_BASELINE_RULES.md).
+- **Review planu:** niezależne review nie zostało wykonane; dokument nie ma statusu zatwierdzonego blueprintu.
+
+Status planu jest osobny od stanu implementacji. Statusy PR 1 i jego zadań odzwierciedlają rzeczywisty
+checkpoint; pozostałe etapy nie awansują przez samą aktualizację manifestu.
 
 ## 1. Problem i zakres
 
@@ -28,10 +53,13 @@ Etapy mają zadania i kryteria odbioru; aktualizacja dokumentacji nie uruchamia 
 - Gotowy blueprint przechodzi review w świeżym kontekście przed przekazaniem do wykonania.
 - Brak niezależnego kontekstu jest jawny; samoocena nie jest przedstawiana jako niezależne review.
 - Plan i rozmowę można wznowić z `design-docs`, bez transkryptu i ponownego wywiadu.
+- Każdy nowy plan od pierwszego zapisu ma czytelny status oraz punkt wznowienia, aktualizowane po zmianach;
+  widać w szczególności oczekiwanie na testy lub review. Nie wymaga to późniejszego army-status.
 - Zmiana decyzji aktualizuje zależne przyszłe części w miejscu, zachowując zakończone dowody.
 - Planowanie nie uruchamia implementacji; tryb wykonania nadal należy do `/ship`.
 - Instalacja i migracja zachowują specjalizacje ról, modele użytkownika i istniejące kontrole.
 - Próby zachowania pokazują wartość ponad dotychczasowego architekta, nie tylko poprawny rendering.
+- Każde zadanie planu ma jawny status; etap/PR podsumowuje postęp i wskazuje punkt wznowienia.
 
 ## 3. Architektura i odpowiedzialności
 
@@ -72,24 +100,27 @@ Koordynator przekazuje odpowiedź; użytkownik nadal ma jedną rozmowę.
 
 ## 5. Plan realizacji
 
-| Etap | Rezultat |
-|---|---|
-| [PR 1 — Role](01_PR_1_Roles.md) | Kontrakty analityka i recenzenta, przykłady i próby |
-| [PR 2 — Dialog](02_PR_2_Dialog.md) | Interaktywny architekt, stan rozmowy i korekty planu |
-| [PR 3 — Integracja](03_PR_3_Integration.md) | Bootstrap, migracje, routing i przekazanie do `/ship` |
-| [PR 4 — Ocena](04_PR_4_Validation.md) | Testy adapterów, próby zachowania i realne pilotaże |
-| [PR 5 — Reguły i gotowość repo](09_SCOPE_AND_PRIORITIES.md#pr-5-reguły-i-gotowość-repo) | Audyt w adapt-army i raport readiness w bootstrap, po odbiorze PR 4 |
-| [PR 6 — Status prac](09_SCOPE_AND_PRIORITIES.md#pr-6-zbiorczy-status-prac) | Odczyt planowania i wykonania przez army-status, bez nowej bazy stanu |
-| [PR 7 — E2E](09_SCOPE_AND_PRIORITIES.md#pr-7-procedura-e2e) | Warunkowe rozszerzenie testera dla działającej aplikacji i danych testowych |
+| Etap | Status realizacji | Rezultat |
+|---|---|---|
+| [PR 1 — Role](01_PR_1_Roles.md) | Do testów | Kontrakty analityka i recenzenta, ślepe fixture’y; zachowanie i baseline do sprawdzenia |
+| [PR 2 — Dialog](02_PR_2_Dialog.md) | Do testów | Interaktywny architekt, Planning Session i korekty; zachowanie i wznowienie do sprawdzenia |
+| [PR 3 — Integracja](03_PR_3_Integration.md) | Do testów | Role, migracja bootstrapu, routing i handoff `/ship` są połączone; zachowanie do próby |
+| [PR 4 — Ocena](04_PR_4_Validation.md) | Do testów | Deterministyczna macierz profili zaliczona; próby zachowania i pilotaże nadal otwarte |
+| [PR 5 — Reguły i gotowość repo](09_SCOPE_AND_PRIORITIES.md#pr-5-reguły-i-gotowość-repo) | Do zrobienia | Audyt w adapt-army i raport readiness w bootstrap, po odbiorze PR 4 |
+| [PR 6 — Status prac](09_SCOPE_AND_PRIORITIES.md#pr-6-zbiorczy-status-prac) | Do zrobienia | Odczyt planowania i wykonania przez army-status, bez nowej bazy stanu |
+| [PR 7 — E2E](09_SCOPE_AND_PRIORITIES.md#pr-7-procedura-e2e) | Warunkowe | Rozszerzenie testera dla wskazanej działającej aplikacji i danych testowych |
 
-PR 1–6 mają status `planned`; PR 7 jest `conditional` i wymaga wskazanego przypadku przeglądarkowego.
+Każde zadanie w plikach PR ma własny status; powyższe statusy są podsumowaniem etapu.
+Zadanie 4.5 „Odebrać sześć zasad istniejących ról” jest już przygotowane do testów:
+zmienione instrukcje i przejście kontroli strukturalnych nie dowodzą jeszcze skuteczności zachowania.
+PR 4 ma status `do testów`; PR 5–6 mają status `do zrobienia`; PR 7 wymaga wskazanego przypadku przeglądarkowego.
 Każdy przyrost weryfikujemy na bieżąco. PR 1–4 stanowią pierwszy samodzielny rezultat; nie czekają na PR 5–7.
 Numery PR są jednostkami planu, nie istniejącymi pull requestami.
 Kontrakt wykonawczy procesu: [00_PROTOCOL.md](00_PROTOCOL.md).
 Przyszłe użycie: [06_USAGE.md](06_USAGE.md).
 Ocena pozostałych inspiracji: [05_MATERIALS_ASSESSMENT.md](05_MATERIALS_ASSESSMENT.md).
 Wprowadzone już reguły istniejących ról: [07_BASELINE_RULES.md](07_BASELINE_RULES.md).
-Nie oznacza to wykonania PR 1–4 ani wdrożenia nowych agentów i interaktywnego dialogu.
+Nie oznacza to odbioru zachowania PR 1–4 ani pilotażu w działającej sesji.
 
 Materiały pomocnicze do planu:
 - [08 — porównanie wszystkich 33 skilli](08_CATALOG_COMPARISON.md): co mamy, częściowe pokrycie i braki.
@@ -100,7 +131,7 @@ Materiały pomocnicze do planu:
 
 - [Architekt](../../.apm/skills/bootstrap/baseline/core/agents/architect.md): istniejący blueprint, wywiad i zasady korekt.
 - [Ship](../../.apm/skills/ship/SKILL.md): karty interakcji, zakres wykonania, wznowienie i obowiązkowa bramka blueprintu.
-- [Bootstrap](../../.apm/skills/bootstrap/bootstrap.py): siedem ról w `ROLES`, mapowanie możliwości i bezpieczna aktualizacja.
+- [Bootstrap](../../.apm/skills/bootstrap/bootstrap.py): dziewięć ról w `ROLES`, mapowanie możliwości i bezpieczna aktualizacja.
 - `_STANDARD.md`: role przenośne, minimalne uprawnienia, delegacja, niezależne review i konkretne przykłady.
 - Firmowy `allegro-coding-plugins/plugins/agent-army`: wzorce rolling blueprint, Impact Sweep i kart interakcji;
   przeczytane lokalnie, nie zależność ani źródło do automatycznego kopiowania.
@@ -127,4 +158,8 @@ z zachowaniem bramek zakresu, interakcji i wymaganych kontroli projektu.
   bez dalszych zmian instrukcji. Opcje z 09–10 wymagają wyboru, nie stają się obowiązkową kolejką wdrożenia.
 - 2026-10-02: na doprecyzowanie użytkownika włączono wybrane rekomendacje bezpośrednio do planu:
   zadania w PR 1–4 oraz dalsze PR 5–6 i warunkowy PR 7. Osobne skille pozostają opcjonalną ścieżką.
-  Wykonanie żadnego nowego etapu nie zostało rozpoczęte.
+- 2026-10-04: użytkownik zlecił implementację wszystkich trzech planów po kolei. Rozpoczęto PR 1:
+  dodano planning-analyst, plan-reviewer i niezależne fixture’y. Kontrola strukturalna jest zielona;
+  ślepe próby zachowania i baseline obecnego architekta pozostają do wykonania.
+- 2026-10-04: PR 1–3 zintegrowano w źródłach Army. PR 4 pozostaje do prób zachowania i pilotażu;
+  osobny toolkit wznowiono jako globalne skille Codexa zgodnie z doprecyzowaniem użytkownika.

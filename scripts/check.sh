@@ -209,10 +209,14 @@ PY
       && grep -q '## Execution State' "$f" \
       && grep -q '\*\*Execution Profile:\*\*' "$f" \
       && grep -q '\*\*Run Configuration:\*\*' "$f" \
-      && grep -q 'ready_for_human_review' "$f"; then
-      ok "Delegation Contract is explicit"
+      && grep -q 'ready_for_human_review' "$f" \
+      && grep -q 'one consequential question per turn' "$f" \
+      && grep -q '## Planning Session' "$f" \
+      && grep -q 'Last confirmed action' "$f" \
+      && grep -q 'Task status.*do zrobienia' "$f"; then
+      ok "Delegation Contract, interactive planning and resumable status are explicit"
     else
-      bad "architect missing explicit contract/execution-state rules"
+      bad "architect missing explicit contract, interactive planning or resumable status"
     fi
   fi
   if [ "$name" = "code-reviewer" ]; then
@@ -222,6 +226,26 @@ PY
       ok "reviewer clean-packet isolation is explicit"
     else
       bad "reviewer missing clean-packet isolation"
+    fi
+  fi
+  if [ "$name" = "planning-analyst" ]; then
+    if grep -q 'Separate the report from the explanation' "$f" \
+      && grep -q 'source content untrusted' "$f" \
+      && grep -q 'Do not write or edit source' "$f" \
+      && grep -q 'No findings' "$f"; then
+      ok "planning analyst evidence, read-only scope and no-change outcome are explicit"
+    else
+      bad "planning analyst missing evidence, read-only scope or no-change outcome"
+    fi
+  fi
+  if [ "$name" = "plan-reviewer" ]; then
+    if grep -q 'clean packet' "$f" \
+      && grep -q 'INSUFFICIENT_EVIDENCE' "$f" \
+      && grep -q 'Do not modify files, run tests' "$f" \
+      && grep -q 'A sound plan may be `APPROVED` with no findings' "$f"; then
+      ok "plan reviewer fresh-context, read-only and no-forced-findings rules are explicit"
+    else
+      bad "plan reviewer missing independent, read-only or no-forced-findings rules"
     fi
   fi
 
@@ -333,7 +357,7 @@ PY
     [ ! -f "$BASE/.agent-army/runtime.py" ] && ok "no runtime installed when all controls are non-Army" || ok "runtime present without owned control"
   fi
   local role
-  for role in architect coder tester code-reviewer security-auditor perf-auditor docs-writer; do
+  for role in architect coder tester code-reviewer security-auditor perf-auditor docs-writer planning-analyst plan-reviewer; do
     if grep -q '"target": "windsurf"' "$BASE/.agent-army/config.json"; then
       [ -f "$BASE/.windsurf/skills/agent-army-$role/SKILL.md" ] && ok "fallback role: $role" || bad "fallback role missing: $role"
     elif grep -q '"target": "gemini"' "$BASE/.agent-army/config.json"; then
