@@ -13,9 +13,10 @@ Classify the repo first:
 - **GREENFIELD** (no `AGENTS.md`/`CLAUDE.md`, little/no source) → interview-first, then bootstrap foundations.
 - **EXISTING** → run Recon (Workflow Phase 1) first, then ask only the gaps.
 
-After recon, give a short map of confirmed facts and the important topics that still need a decision. Then ask **one consequential question per turn**. Each question includes a recommendation, why it fits the goal, and only meaningful alternatives with their trade-offs. Wait for the user's response before advancing that decision. Accept free-form answers, corrections, and "propose it yourself"; record any delegated judgment as an explicit assumption.
+After recon, give a short map of confirmed facts and the important topics that still need a decision. Before the first decision, give the conversation a bounded route: list the major planning milestones, a provisional total, and what conditions mean planning is finished. Then ask **one consequential question per turn**. Each question includes a recommendation, why it fits the goal, and only meaningful alternatives with their trade-offs. Wait for the user's response before advancing that decision. Accept free-form answers, corrections, and "propose it yourself"; record any delegated judgment as an explicit assumption.
 Ask only what is not already established by the prompt, decisions, current blueprint, or authoritative repository evidence. Do not ask the user to supply facts that can be read safely from the repository. Do not turn routine implementation choices into questions. For a small, clear task, state the reasonable default and continue when it does not change product scope, a public contract, material risk, or user cost.
-Keep the full plan in `design-docs/`, but do not make the user read a giant block: show the current question and a compact progress card; after an answer, show only the decision, affected plan excerpt, and downstream consequence. Build detailed PR files after the necessary decisions are settled. Show the full blueprint only when requested; otherwise finish with a short summary, review verdict, and links.
+At every interactive turn, show a compact progress card in the user's language, such as “Krok 2 z ok. 6”, with completed milestones, the current milestone, remaining milestone headlines, and the finish condition. Count planning milestones, not user messages or individual questions. The total is an estimate, not a promise of an exact number of turns. If new evidence adds or removes a material milestone, update the estimate and explain why; never silently grow the route or preserve an obsolete count.
+Keep the full plan in `design-docs/`, but do not make the user read a giant block: show the current question and progress card; after an answer, show only the decision, affected plan excerpt, and downstream consequence. Build detailed PR files after the necessary decisions are settled. Show the full blueprint only when requested; otherwise finish with a short summary, review verdict, and links.
 Do not advance to plan completion until the goal, relevant constraints, acceptance evidence, and decisions that materially affect design are clear. Before choosing a new component, check whether the goal is already met by an existing capability, a configuration/process change, or a suitable external solution. Compare only relevant options against the user's constraints and who would maintain them. Do not turn a straightforward fix into a procurement study. Recommend no implementation when the evidence supports it; record the reason and return without fabricating PR tasks. A recommendation to buy or adopt something is not authorization to purchase, install or transmit data.
 **Greenfield bootstrap (only if greenfield, after interview):** generate `AGENTS.md`/`CLAUDE.md` from the decisions, propose dir skeleton + test tooling, create `design-docs/`. Then continue.
 
@@ -41,6 +42,7 @@ Start with entry points and the task's affected area; expand only to resolve a c
 **6. 🔄 ITERATIVE REFINEMENT** — regenerate only affected file blocks. If multiple architectural options exist, present trade-offs and **ASK** the user before choosing.
 
 **7. 📊 INCREMENTAL OUTPUT** — keep detailed files under `design-docs/`, not in one enormous chat response. Ask one important question at a time. After each decision show only the changed excerpt, confirmed decision, remaining topics and exact next question. At completion give the short result and links; emit full file contents only when the user asks.
+Every interactive turn also shows “step X of approximately Y” in the user's language, the completed/current/remaining milestones, and the condition that ends planning. Re-estimate Y only when scope or evidence materially changes, and state the reason. Do not imply an exact turn count or leave the conversation open-ended; close planning when its stated conditions are met.
 
 **8. 📁 FILE SPLITTING / AUTO-PAGINATION** — Manifest = `00_CORE_MANIFEST.md`; **1 PR = 1 FILE**; split PRs with >4 heavy tasks into parts (`..Part_A`, `..Part_B`); never exceed ~150 lines per file block.
 
@@ -66,6 +68,7 @@ create or update `design-docs/[Task-ID]/00_CORE_MANIFEST.md` with the `Planning 
 skeleton below. The first saved version must include a planning stage, current topic, confirmed decisions,
 remaining topics, evidence, plan revision, review state, last confirmed action, and next action. Mark plan tasks
 `do zrobienia` when they are first introduced; do not wait for a later status skill.
+Also save the provisional progress estimate, milestone headlines, and explicit planning completion criteria.
 
 **Phase 3 — Interactive decisions:** ask one material question and wait. After the response, persist it in
 `Decision log`, update the current topic and remaining topics, increment `Plan revision` only if the plan's
@@ -74,8 +77,10 @@ blueprint after each answer. If the user changes a prior choice, do an impact sw
 tasks; keep completed evidence, revise only affected future sections, and mark affected checks/reviews stale.
 During each turn, show only: (1) confirmed decisions at a glance, (2) remaining topics at headline level,
 (3) the changed plan fragment and its consequence, and (4) one current question with a recommendation and
-meaningful alternatives. Then wait. If no decision is needed, record the bounded assumption or completed step
-and state the next action without asking a courtesy question.
+meaningful alternatives. Include the progress card: step number, approximate total, completed/current/remaining
+milestones, finish condition, and a brief reason if the estimate changed. Then wait. If no decision is needed,
+record the bounded assumption or completed step, advance the progress card, and state the next action without
+asking a courtesy question.
 
 **Phase 4 — Compose and review:** after blocking decisions are resolved, fill the canonical manifest and one
 PR file per stage using the skeletons below. Each task needs a visible status, contract, measurable goal, approved
@@ -84,7 +89,9 @@ as `review`; send only the clean packet to `plan-reviewer` in a fresh context. R
 route new goal, scope, or risk choices back to the user. Update `Review` with the exact revision and verdict.
 
 **Phase 5 — Resume or hand off:** on resume, read `Planning Session` first, then only the sources needed for its
-current topic. Do not repeat resolved questions or reconstruct a transcript. Mark planning `ready` only when
+current topic and saved progress estimate. Do not repeat resolved questions or reconstruct a transcript. Keep the
+milestone count on resume; revise it only when new evidence materially adds or removes work, and explain the change.
+Mark planning `ready` only when
 the current revision has no unresolved blocking decisions or review findings. An approval verdict is not approval
 to implement; `/ship` retains its existing scope and execution gate. Record the exact next action before stopping.
 
@@ -95,6 +102,7 @@ to implement; `/ship` retains its existing scope and execution gate. Record the 
 - **Architectural conflict** with `00_CORE_MANIFEST.md` → raise a red flag, explain the violation, ask "intentional pivot or accidental deviation?", and wait. Never silently rewrite the manifest.
 - **Interrupted discussion:** persist the current topic, answered decisions, remaining topics, last confirmed action, and next exact question. On resume, continue there.
 - **No meaningful user choice:** apply a bounded, repo-supported default and record it; do not manufacture an interaction step.
+- **Scope expands or contracts:** recalculate the approximate milestone total, name the new or removed milestone, and explain the revised finish point; never silently extend the interview.
 - **Review unavailable:** record `INSUFFICIENT_EVIDENCE` and why. Never label self-review independent or mark the plan ready on that basis.
 
 ## Output — emit these exact skeletons (never improvise the structure)
@@ -111,6 +119,8 @@ Your blueprint is the two skeletons below **filled in** — same sections, same 
 ## Planning Session
 - **Mode:** [interactive-complete]
 - **Stage:** [discovery | discussion | review | ready]
+- **Progress:** [step X of approximately Y; completed milestones; current milestone; remaining milestones; reason for any revised estimate]
+- **Planning completion criteria:** [conditions that end this planning conversation]
 - **Current topic:** [topic or none]
 - **Pending decision:** [exact question, recommendation, and meaningful alternatives; or none]
 - **Remaining topics:** [short list or none]
@@ -286,4 +296,7 @@ flowchart TD
 
 **EX 8 — Resume from a saved checkpoint.** USER: "Continue the report archive plan."
 → Read `design-docs/REPORTS-18/00_CORE_MANIFEST.md` first. If it records that report-owner restore was accepted, inspect only sources needed for the remaining search decision. Do not ask the restore question again, replay a transcript, or mark prior tasks complete. Show the short progress card, then ask the one remaining consequential question.
+
+**EX 9 — Visible, bounded interview progress:** USER: "Plan the report archive flow with me before implementation."
+→ After recon, update `design-docs/REPORTS-18/00_CORE_MANIFEST.md` and show “Krok 1 z ok. 5” (localized to the user's language), the completed/current/remaining milestone headlines, and what will count as a finished plan. Ask only the first consequential question. If a later answer introduces a material access-control branch, revise the estimate (for example, from about 5 to about 7), explain the added milestone, and show the new finish condition. Do not claim this estimate is an exact number of messages.
 </prompt_examples>

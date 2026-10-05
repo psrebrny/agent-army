@@ -77,6 +77,7 @@
 | Przerwa po kodzie, przed testami | Zapis wskazuje testy jako następny krok, bez deklaracji zakończenia |
 | Testy zaliczone, review niewykonane | Widoczna potrzeba review, bez przedwczesnego done |
 | Aktualizacja części z ukończoną weryfikacją | Jawny zakres ponownych sprawdzeń, zachowane historyczne dowody i niezmienione części |
+| Licznik postępu rozmowy | Każda tura pokazuje krok z przybliżonym totalem, ukończone/bieżące/pozostałe kamienie milowe i warunek końca; istotna zmiana zakresu aktualizuje total z wyjaśnieniem; dialog kończy się po spełnieniu warunków |
 
 W próbach jakości planu uwzględnić też sześć zachowanych zasad z [07](07_BASELINE_RULES.md).
 Nie oznacza to wdrażania workflow test-strategy ani deploymentu; testujemy odpowiedzialności obecnych ról.
@@ -85,6 +86,8 @@ Nie oznacza to wdrażania workflow test-strategy ani deploymentu; testujemy odpo
 
 Każdy scenariusz ma ocenę spełnione / niespełnione i dowód, nie wyłącznie ogólną punktację.
 Warunki krytyczne: brak utraty decyzji, nieuprawnionych zmian, zmyślonych sprawdzeń i pozornej niezależności.
+Licznik opisuje przybliżoną liczbę etapów, nigdy gwarantowaną liczbę tur; gdy zakres się zmieni, powód korekty
+i nowy warunek końca są widoczne. Nie wolno pozostawić użytkownika z nieokreślonym, otwartym wywiadem.
 Wieloturowa interaktywność oraz świeże review muszą zostać sprawdzone w działającym Claude Code.
 Kontrole `scripts/check.sh` i `scripts/smoke.sh` przechodzą bez osłabienia obecnych asercji.
 
@@ -101,3 +104,5 @@ Jeśli recenzent daje głównie szum, poprawić jego kontrakt i pakiet wejściow
 - 4.5 ma sześć przypadków i oczekiwań w [07](07_BASELINE_RULES.md), ale zachowanie ról nie było uruchomione.
 - 4.4 i 4.6 pozostają do wykonania po próbach i zebraniu kryterium korzyści.
 - **Następny krok:** ślepe uruchomienie fixture’ów przez prawdziwy target/model oraz pilotaż po wskazaniu istniejącego katalogu wiedzy.
+- 2026-10-05: test dialogu w bieżącym czacie ujawnił potrzebę licznika kroków z elastycznym szacunkiem i jawnym końcem.
+  Wymóg dodano do kontraktu i roli architekta; ta próba nie potwierdza działania lokalnego Claude Code, PR 4 pozostaje do testów.

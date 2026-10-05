@@ -26,6 +26,19 @@ bezpośrednio albo przez `/ship`, gdy potrzebny jest blueprint. Nazwa wywołania
    decyzje zmieniające cel, zakres lub istotne ograniczenia wracają do użytkownika.
 8. **Odbiór:** pokaż skrót planu, wynik review i linki; wykonanie wymaga dotychczasowej bramki `/ship`.
 
+### Widoczny i ograniczony postęp rozmowy
+
+Przed pierwszą decyzją pokaż użytkownikowi przewidywane kamienie milowe planowania i warunki jego zakończenia.
+Na każdej turze dialogu wyświetl licznik w języku rozmowy, np. „Krok 2 z ok. 6”, oraz kamienie milowe
+zakończone, bieżące i pozostałe. Licznik dotyczy etapów planowania, nie liczby wiadomości ani pytań.
+Całkowita liczba jest szacunkiem, nie obietnicą dokładnej liczby tur.
+
+Jeśli nowa odpowiedź, dowód lub zmiana zakresu dodaje albo usuwa istotny kamień milowy, zaktualizuj licznik
+i krótko wyjaśnij zmianę. Nie rozszerzaj wywiadu po cichu i nie utrzymuj zawyżonego szacunku po skróceniu
+zakresu. Rozmowa kończy się, gdy decyzje blokujące są rozstrzygnięte, wymagany wynik (plan albo uzasadnione
+no-implementation) jest gotowy i wymagane review aktualnej rewizji się zakończyło; na końcu podaj osiągnięty
+stan oraz wszelkie warunki, które pozostały otwarte.
+
 Rozpoznanie można pogłębić po nowej decyzji. Nie powtarzamy pełnego researchu, jeśli dowody nadal są aktualne.
 Nie pytamy o każdą rutynową czynność, wywołanie agenta ani wybór możliwy do ustalenia z repo.
 Kompletny brief skraca rozmowę. Użytkownik może skorygować temat, poprosić o szczegóły lub przyjąć rekomendację.
@@ -94,6 +107,8 @@ Do wzorca `00_CORE_MANIFEST.md` dodajemy sekcję `Planning Session`:
 |---|---|
 | `Mode` | `interactive-complete` dla nowego procesu |
 | `Stage` | `discovery`, `discussion`, `review`, `ready` |
+| `Progress` | Bieżący krok z przybliżoną liczbą kamieni milowych, ukończone/bieżące/pozostałe etapy i powód zmiany szacunku |
+| `Planning completion criteria` | Jawne warunki zakończenia rozmowy planistycznej |
 | `Current topic` | Aktualny temat albo `none` |
 | `Pending decision` | Dokładne pytanie, rekomendacja i alternatywy albo `none` |
 | `Remaining topics` | Krótka lista niezakończonych tematów |
@@ -120,7 +135,7 @@ planistycznej zamiast utrzymywać jej drugą niezależną wersję.
 - Jeśli użytkownik właśnie odpowiedział na zapisane pytanie, zastosuj odpowiedź zamiast pytać jeszcze raz.
 - Zmiana decyzji: przegląd zależnych niewykonanych części, klasyfikacja keep/rewrite/remove i aktualizacja w miejscu.
 - Zachowaj historyczne dowody ukończonych prac; usuń nieaktualne przyszłe instrukcje, nie dopisuj planu obok planu.
-- Po każdej aktualizacji zapisz aktualny krok, ostatnią potwierdzoną czynność, następny krok i ewentualną
+- Po każdej aktualizacji zapisz aktualny krok planu, szacunek postępu, ostatnią potwierdzoną czynność, następny krok i ewentualną
   oczekującą decyzję. Zmiana zakresu wskazuje, które wcześniejsze testy/review wymagają ponowienia;
   nie resetuje niepowiązanych ukończonych części ani nie przedstawia starych dowodów jako aktualnych.
 - Status zadania aktualizuje jego właściciel pracy, a koordynator synchronizuje podsumowanie etapu/PR.

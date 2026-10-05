@@ -1,6 +1,7 @@
 # ARMY-INTERACTIVE-PLANNING — interaktywny architekt z analizą i review
 
 - Data: 2026-10-02.
+- Ostatnia aktualizacja: 2026-10-05.
 - Status: PR 1–3 zaimplementowane i zweryfikowane strukturalnie; PR 4 ma do testów zachowania i pilotażu. Szczegóły niżej.
 - Cel implementacji: bieżące źródłowe repo Agent Army, materiały produktowe pod `.apm/`.
 - Środowisko pierwszego pilotażu: Claude Code; zachować obecne adaptery i jawne ograniczenia pozostałych narzędzi.
@@ -10,6 +11,7 @@
 
 - **Stan planu:** implementacja PR 1–3 jest w źródłach Army; PR 1–4 mają status **do testów** (PR 4 ma deterministyczną część wykonaną), PR 5–6 są **do zrobienia**, PR 7 pozostaje **warunkowy**.
 - **Bieżący punkt:** nowe role, interaktywny kontrakt architekta, migracja bootstrapu i handoff `/ship` są połączone. Automatyczne kontrole formatu, profili i migracji przeszły; rzeczywiste zachowanie ról i pilotaż pozostają do sprawdzenia w PR 4.
+- **Nowy wymóg z testu dialogu (2026-10-05):** każda tura ma pokazywać numer etapu i przybliżony total, ukończone/bieżące/pozostałe etapy oraz jawny warunek końca; zmiana zakresu aktualizuje total z wyjaśnieniem. Źródło architekta i protokół uzupełniono, zachowanie pozostaje niezweryfikowane w lokalnym Claude Code.
 - **Wymaganie zapisane:** architekt tworzy każdy przyszły plan ze statusem i punktem wznowienia;
   aktualizuje je przy przeplanowaniu, a ship podczas realizacji. Zadania wdrożenia: 2.6 i 3.6, odbiór w PR 4.
 - **Decyzja zapisana:** każde zadanie ma własny status, a etap/PR ma podsumowanie.
@@ -47,6 +49,7 @@ Etapy mają zadania i kryteria odbioru; aktualizacja dokumentacji nie uruchamia 
 ## 2. Definition of Done
 
 - Użytkownik omawia jeden istotny temat naraz, z rekomendacją, alternatywami i krótkim przyrostem planu.
+- Każda tura pokazuje przybliżony postęp po kamieniach milowych i warunek zakończenia; po zmianie zakresu licznik jest jawnie aktualizowany, a rozmowa kończy się po spełnieniu tych warunków.
 - Agent nie pyta o fakty dostępne w repo i nie powtarza ustalonych decyzji.
 - Analityk sprawdza ramę problemu i zbiera dowody; architekt nie dubluje całego researchu.
 - Przy małym, jasnym zadaniu można pominąć osobnego analityka z krótkim uzasadnieniem.
@@ -163,3 +166,6 @@ z zachowaniem bramek zakresu, interakcji i wymaganych kontroli projektu.
   ślepe próby zachowania i baseline obecnego architekta pozostają do wykonania.
 - 2026-10-04: PR 1–3 zintegrowano w źródłach Army. PR 4 pozostaje do prób zachowania i pilotażu;
   osobny toolkit wznowiono jako globalne skille Codexa zgodnie z doprecyzowaniem użytkownika.
+- 2026-10-05: podczas interaktywnej próby użytkownik poprosił o widoczny licznik „krok X z Y”, z totalem,
+  który może się zmieniać i pozwala ocenić, czy dialog dobiega końca. Dodano wymóg do roli architekta,
+  protokołu, PR 2 i odbioru PR 4. Sama próba w tym czacie nie jest dowodem działania Army w Claude Code.

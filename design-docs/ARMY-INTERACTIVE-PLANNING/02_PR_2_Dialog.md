@@ -20,9 +20,13 @@
   Przyjmować istniejący brief, PRD, roadmapę i research bez powtórnego wywiadu o potwierdzone decyzje.
   Weryfikować istotne nieaktualne źródła. Nie tworzyć tych artefaktów obowiązkowo dla drobnego zadania;
   do planu trafia wybrany wycinek roadmapy, nie automatycznie cały produkt.
+  Każda tura pokazuje numer kroku z przybliżoną łączną liczbą etapów, ich zakończone/bieżące/pozostałe nagłówki
+  i warunek końca planowania. Licznik opisuje kamienie milowe, nie liczbę pytań; zmiana szacunku wymaga krótkiego
+  wyjaśnienia. Nie przedłużać rozmowy poza jawne kryteria zakończenia.
 
 - [ ] **2.2. Rozszerzyć kanoniczny wzorzec manifestu.** — **Status: do testów.**
   Dodać Planning Session zgodnie z protokołem: temat, pytanie, decyzje, dowody, rewizja i review.
+  Zapisać także szacunek postępu oraz warunek zakończenia, aby licznik można było rzetelnie wznowić.
   Aktualizować wzorzec w źródle architekta, a nie wprowadzać różne schematy w pojedynczych projektach.
   Zachować istniejące pliki PR, kontrakty zadań i Execution State.
   Na początku rozmowy wystarczy manifest roboczy; szczegółowe PR-y powstają wraz z uzgodnieniami.
@@ -72,6 +76,8 @@
   jakości zachowania modelu ani poprawności zapisu w rzeczywistym adapterze.
 - **Następny krok:** integracja bootstrap/ship jest zapisana w PR 3. W PR 4 wykonać blind runs
   dla PR 1–2 i dialogu/wznowienia oraz utrwalić raporty i baseline.
+- 2026-10-05: podczas testu rozmowy użytkownik wskazał potrzebę widocznego licznika kroków i jasnego końca.
+  Wymóg dopisano do źródłowej instrukcji architekta i protokołu; to nie jest jeszcze test zachowania w Claude Code.
 
 ## Weryfikacja i odbiór
 
@@ -79,6 +85,7 @@
 - Wieloturowa próba: pierwsza odpowiedź jest krótka, użytkownik rozstrzyga kolejne tematy i koryguje wcześniejszą decyzję.
 - Przerwanie przed odpowiedzią i wznowienie z samym blueprintem w świeżej sesji.
 - Gotowy dokument zawiera wszystkie potrzebne decyzje; rozmowa kończy się skrótem i odnośnikami.
+- Każda tura pokazuje przybliżony postęp i warunek końca; przy zmianie zakresu licznik jest aktualizowany z podanym powodem.
 - Plan pozostaje czytelny dla `/ship`, ale nie zostaje wykonany na skutek samego zakończenia dialogu.
 - Nieaktualne review i ograniczenia dowodów są widoczne.
 - Nowy plan od pierwszego zapisu pokazuje status i punkt wznowienia; aktualizacja zachowuje potwierdzony postęp.

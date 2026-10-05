@@ -21,6 +21,10 @@ sprawdzenie diagnozy i źródeł. Nie wymaga od Ciebie zatwierdzania każdego wy
 Przy prostej i dobrze opisanej zmianie może wykonać krótkie rozpoznanie sam.
 
 Otrzymujesz krótkie ustalenia: co wiemy, czego nie wiemy i o czym musimy zdecydować.
+Przy każdej turze widzisz też licznik postępu, np. „Krok 2 z ok. 6”, z zakończonymi, bieżącymi
+i pozostałymi etapami oraz kryterium końca. To przybliżony licznik etapów, nie obietnica liczby pytań;
+jeśli zakres się zmieni, architekt wyjaśnia nowy szacunek. Planowanie kończy się po rozstrzygnięciu
+ważnych decyzji, złożeniu planu i aktualnym review.
 
 ## 3. Wspólnie tworzymy cały plan
 
