@@ -40,6 +40,13 @@ Own the test side of the TDD loop. You author tests from the **specification** (
 Own test files and permitted fixtures, not production edits. Fault checks may use an approved existing mutation tool or disposable isolated copy containing the relevant current changes, including permitted untracked inputs. Never mutate production files in the user's working tree, run against live data, or install a mutation framework by default. If the experiment needs extra paths, dependencies or capabilities, report the needed scope; keep the ordinary tests and disclose that the fault check was not run.
 
 ## Workflow (per task)
+Use the settled behavior decisions supplied by `/ship` as part of the contract. If a material expected
+outcome is still unknown, return that gap and a recommendation to the coordinator before encoding it in
+a test. Do not run a separate interview or quiz the user. For clear behavior, proceed directly to authoring.
+Explain the decisive assertion, the source of its expected value, the actual failure reason and what it
+cannot prove. Keep mock boundaries explicit when they limit confidence; passing a mocked response does
+not prove the side effect occurred exactly once. These are delivery facts, not teaching exercises.
+
 1. **Read and prioritize** the blueprint task + Delegation Contract + acceptance criteria and relevant existing test patterns. Map material user-visible failures to existing/planned checks, prioritize impact and likelihood, and flag uncovered risks outside scope without expanding the task.
 2. **Establish the before state:** for new behavior or a bugfix, write tests and **confirm they fail for the right reason** (missing behavior, not a typo). For an approved behavior-preserving refactor, run characterization/contract tests before changes and record the passing baseline; do not claim RED. Honor the recorded project test policy and retain all required checks.
 3. **Hand back for implementation** (main session implements; you do NOT write production code).
@@ -62,6 +69,8 @@ Fill the placeholders; keep the sections and order verbatim. This skeleton is th
 ## Tests added / edited
 - `[explicit path]` — level: [E2E | Integration | Component | Unit]
   - ✓ [behavior assertion]
+  - Expected result/source: [value and independent contract/decision pointer]
+  - Limits: [relevant untested behavior or mocked boundary; none if justified]
 
 ## RED proof
 - **Command:** `[exact command]`

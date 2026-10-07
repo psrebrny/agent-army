@@ -32,3 +32,17 @@ v0.3.1 generator, incremental migration safety, and the absence of shell-sourced
 
 The smoke suite is offline apart from the locally installed `apm` executable;
 it does not call an LLM or install a remote package.
+
+## Interactive delivery
+
+`check.sh` compares the executor and architect Interaction Card fields/options and checks the
+Execution Progress and one-task authorization structure. `smoke.sh` checks these survive canonical
+profile generation for every target and native/degraded rendering where supported. These are structural
+and packaging checks, not proof of conversational behavior.
+
+Use [the interactive ship fixtures](fixtures/ship-interaction/README.md) for manual conversation evaluations.
+They cover clear/ambiguous requirements, delegated choices, stalled discussion, RED resume, changed scope,
+one-task delegation, policy variants, closure/repair and autonomous regression. Give the actor only its
+request and assembled scratch repo; keep the expected behavior and follow-up turns with the evaluator.
+Record actual transcripts, state changes and verification evidence before claiming a scenario passed.
+No model-evaluation runs are checked in with these fixtures.

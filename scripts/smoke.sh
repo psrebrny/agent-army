@@ -73,6 +73,13 @@ PY
         && ok "$target: APM Markdown staging is ignored" || bad "$target: APM Markdown staging is tracked"
     fi
   fi
+  if [ "$target" = windsurf ]; then
+    progress_agent="$dir/.windsurf/skills/agent-army-architect/SKILL.md"
+  else
+    progress_agent="$dir/.agent-army/agents/agent-army-architect.agent"
+  fi
+  grep -q '## Execution Progress' "$progress_agent" && grep -q 'Temporary delegation' "$progress_agent" \
+    && ok "$target: resumable interactive contract present" || bad "$target: interactive contract missing"
   "$ROOT/scripts/check.sh" --target-dir "$dir" >/dev/null 2>&1 && ok "$target: profile validates" || bad "$target: profile validation failed"
 done
 
@@ -326,6 +333,10 @@ for target in claude codex cursor copilot opencode gemini windsurf; do
     grep -q 'Scope Profile' "$agent" && ok "$target: scope-profile state rendered" || bad "$target: scope-profile state missing after render"
     grep -q 'autonomous | interactive' "$agent" && ok "$target: two interaction modes rendered" || bad "$target: two interaction modes missing after render"
     grep -q '## Interaction Card' "$agent" && ok "$target: interaction card rendered" || bad "$target: interaction card missing after render"
+    grep -q '## Execution Progress' "$agent" && grep -q 'Temporary delegation' "$agent" \
+      && grep -q 'behavior decision' "$agent" && grep -q 'Discussion:' "$agent" \
+      && ok "$target: progress, behavior decision and bounded delegation rendered" \
+      || bad "$target: interactive delivery state missing after render"
     grep -q 'Checkpoint:' "$agent" && grep -q 'Question:' "$agent" && grep -q 'Options:' "$agent" \
       && ok "$target: interaction card has a decision contract" || bad "$target: interaction card decision contract missing after render"
     if grep -Eq '^[- ]*\*\*(Checkpoints|Interactive checkpoint):' "$agent"; then

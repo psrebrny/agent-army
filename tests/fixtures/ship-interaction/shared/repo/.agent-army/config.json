@@ -1,0 +1,1 @@
+{"policy":{"test_policy":"strict"},"quality":{"test":{"cwd":".","argv":["python3","-m","unittest","discover","-s","tests"]}}}

@@ -27,6 +27,11 @@ Do not advance to plan completion until the goal, relevant constraints, acceptan
 - **BAD (micromanagement):** separate tasks for "Add Selector", "Import Module", "Write Test".
 - **GOOD (atomic):** ONE Task = Logic + UI/Endpoint + Test → a single functional, verifiable change.
 
+For `/ship`, these task IDs also identify delivery milestones: one observable outcome per task plus a
+closure milestone per PR for required audits, docs and final verification. RED and GREEN are phases within
+a task. Keep this execution map distinct from the planning interview milestones. `/ship` fills and updates
+the map only after scope selection, using the PR template below; it is not another completion ledger.
+
 **3. ⏳ RISK-BASED TESTING TROPHY** — *test behavior, not implementation.* Choose the cheapest reliable level for the material failure mode; use Integration/E2E when confidence requires crossing boundaries. **Scales with `.agent-army/config.json`:** follow the verified quality profile and any explicitly recorded test policy; never scale down security or contract rigor.
 - **E2E / Integration:** high-value journeys and relevant error handling (HTTP 500, timeouts, DB failures). Verify real integration across layers where that is the risk.
 - **Component / UI:** everything that does NOT need a real backend — state changes, validation.
@@ -190,20 +195,33 @@ flowchart TD
 - **Model routing:** [unset | per-role static — bootstrap source + light/mid/strong mapping + effective role overrides | inherit fallback — reason]
 - **Last manual configuration:** [not needed for per-role static | unknown | user-confirmed main-session model + effort; do not infer from `inherit`]
 - **Current task:** [Task ID | none]
+- **Temporary delegation:** [none | task ID; user authorization; approved write scope; return at task review]
 - **Active roles:** [architect | tester | main session | coder | code-reviewer | security-auditor | perf-auditor | docs-writer | none; comma-separate parallel roles]
 - **Last verified stage:** [planned | blueprint path + acceptance decision | RED command + result | GREEN command + result | review verdict + security result | docs result | full verification]
 - **Awaiting decision:** [exact approval/input needed, or "none"]
 
 ---
 
+## Execution Progress
+<!-- /ship initializes after scope selection; derive progress from task status and evidence, never add per-milestone status fields. -->
+- **Milestones:** [ordered selected task IDs + outcome titles in this PR, then closure: audits, docs and final verification; unset before scope selection]
+- **Current milestone:** [task ID and phase | closure | none]
+- **Finish condition:** [selected acceptance criteria + required checks/audits/docs verified; ready for human review]
+- **Last map change:** [reason for added/removed outcomes after scope decision; initial map | none]
+- **Deferred ideas:** [out-of-scope proposals; not approved tasks | none]
+
+---
+
 ## Interaction Card
 <!-- Required whenever /ship pauses or records a reviewer/security finding; otherwise write "none". Use the user's language and clear/replace only after the response is persisted. -->
-- **Checkpoint:** [blueprint approval | RED acceptance | baseline acceptance | task review | finding decision | final review | risk decision | none]
+- **Checkpoint:** [blueprint approval | behavior decision | RED acceptance | baseline acceptance | implementation acceptance | task review | finding decision | final review | risk decision | none]
+- **Progress:** [step X of approximately Y; current action; remaining outcomes; finish condition, or not yet scoped]
 - **Completed:** [what changed or was verified]
 - **Evidence:** [test command/result, diff summary, report path/verdict, or decision]
 - **Review focus:** [one to three facts for the user to check]
 - **Question:** [one concrete, answerable question, or "none"]
-- **Options:** [continue | direct a correction | show details | change scope | switch to autonomous/interactive | none]
+- **Options:** [continue | direct a correction | show details | decide this choice | delegate this task | change scope | switch to autonomous/interactive | none]
+- **Discussion:** [current unresolved topic; consecutive exchanges without new decision/evidence: 0/1/2; or none]
 
 ---
 

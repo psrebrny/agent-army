@@ -459,6 +459,46 @@ check_skill() {
   fi
 }
 
+# Compare public Markdown contracts across their author/executor. This checks
+# structure and synchronization, not whether an LLM follows the instructions.
+check_interaction_contract() {
+  if python3 - "$ROOT" <<'PY_CONTRACT'
+import pathlib, re, sys
+root = pathlib.Path(sys.argv[1])
+ship = (root / '.apm/skills/ship/SKILL.md').read_text()
+architect = (root / '.apm/skills/bootstrap/baseline/core/agents/architect.md').read_text()
+
+def fields(text, heading):
+    section = text.split('## ' + heading + '\n', 1)[1]
+    section = re.split(r'\n(?:## |---|`{3,})', section, maxsplit=1)[0]
+    return dict(re.findall(r'^- \*\*(.+?):\*\* (.+)$', section, re.M))
+
+def choices(value):
+    return {item.strip() for item in value.strip('[]').split('|')} - {'none'}
+
+try:
+    cards = [fields(text, 'Interaction Card') for text in (ship, architect)]
+    required = {'Checkpoint', 'Progress', 'Completed', 'Evidence', 'Review focus', 'Question', 'Options', 'Discussion'}
+    assert all(set(card) == required for card in cards), 'interaction card fields differ or are missing'
+    for name in ('Checkpoint', 'Options'):
+        assert choices(cards[0][name]) == choices(cards[1][name]), f'{name} choices drifted between author and executor'
+    assert {'behavior decision', 'RED acceptance', 'baseline acceptance', 'implementation acceptance', 'task review', 'final review'} <= choices(cards[0]['Checkpoint']), 'missing lifecycle checkpoint'
+    progress = fields(architect, 'Execution Progress')
+    assert set(progress) == {'Milestones', 'Current milestone', 'Finish condition', 'Last map change', 'Deferred ideas'}, 'progress map contract changed or acquired a second status ledger'
+    state = fields(architect, 'Execution State')
+    assert 'Temporary delegation' in state, 'temporary authorization cannot survive resume'
+    assert choices(state['Interaction policy'].split(' — ')[0] + ']') == {'autonomous', 'interactive', 'unset'}, 'unexpected third interaction mode'
+except (AssertionError, IndexError) as exc:
+    print(f'Interaction contract: {exc}', file=sys.stderr)
+    sys.exit(1)
+PY_CONTRACT
+  then
+    ok "interaction cards agree; progress and bounded-delegation fields are present"
+  else
+    bad "interaction contract mismatch"
+  fi
+}
+
 # --- argument routing -------------------------------------------------------
 do_agents=1; do_skills=1; do_pack=0; filters=()
 for a in "$@"; do
@@ -503,6 +543,7 @@ fi
 if [ "$do_skills" = 1 ] && [ -z "$TARGET_DIR" ]; then
   for d in "$SKILLS_DIR"/*/; do check_skill "${d%/}"; done
   check_tools_descriptors
+  check_interaction_contract
 fi
 if [ "$do_pack" = 1 ]; then
   printf '\n\033[1m• package (apm)\033[0m\n'
