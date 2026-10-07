@@ -2,7 +2,6 @@
 
 - **Data:** 2026-10-07
 - **Status:** analiza z decyzjami autora z 2026-10-07 (sekcja 13); wdrożenie nierozpoczęte
-- **Obowiązująca decyzja:** [ADR-0001](../docs/adr/0001-samowystarczalni-doradcy-produktowi.md). Ten dokument to analiza i uzasadnienie; przy sprzeczności rozstrzyga ADR.
 - **Dotyczy:** [Doradcy produktowi dla Agent Army — plan wdrożenia](ARMY-PRODUCT-ADVISORS/00_CORE_MANIFEST.md), rewizja 1, `saved_for_later`. Plan nie został zmieniony.
 - **Ramy:** decyzja autora „samowystarczalna paczka” obowiązuje. Wstępny wariant „zewnętrzne skille jako menu” autor po ocenie odrzucił (sekcja 13): zostaje tylko atrybucja pożyczonych pomysłów. Hybryda z zależnościami i menu są tu ocenione jako warianty porównawcze.
 
@@ -92,7 +91,7 @@ Pomijane w całości: `pm-product-strategy` (kolizja), `privacy-policy`, `/ship-
 
 ### Architektura: pełna własna (wariant A)
 
-**Decyzja autora (sekcja 13, ADR-0001):** własni doradcy ze wspólnym kontraktem (sekcja 5), zero zależności w `apm.yml`, brak listy polecanych skilli. `.apm/SOURCES.md` zawiera wyłącznie atrybucję pożyczonych pomysłów. Pierwotnie rekomendowałem A+menu; autor wybrał A, bo link w dokumentacji paczki działa jak rekomendacja, a skille nie zostały sprawdzone w praktyce. Kolumna A+menu zostaje w tabeli jako porównanie.
+**Decyzja autora (sekcja 13):** własni doradcy ze wspólnym kontraktem (sekcja 5), zero zależności w `apm.yml`, brak listy polecanych skilli. `.apm/SOURCES.md` zawiera wyłącznie atrybucję pożyczonych pomysłów. Pierwotnie rekomendowałem A+menu; autor wybrał A, bo link w dokumentacji paczki działa jak rekomendacja, a skille nie zostały sprawdzone w praktyce. Kolumna A+menu zostaje w tabeli jako porównanie.
 
 | Kryterium | A: pełna własna (decyzja) | A+menu (odrzucone) | B: hybryda z zależnościami | C: pełna zależność |
 |---|---|---|---|---|
@@ -106,7 +105,7 @@ Pomijane w całości: `pm-product-strategy` (kolizja), `privacy-policy`, `/ship-
 
 ### Źródło prawdy
 
-**Decyzja (sekcja 13, ADR-0001):** w repo produktu obowiązuje jeden podział, bez kopii:
+**Decyzja (sekcja 13):** w repo produktu obowiązuje jeden podział, bez kopii:
 
 - **decyzje** → `docs/adr/` (produktowe i techniczne, tym samym formatem; sekcja 13.2),
 - **fakty, założenia i bieżący opis produktu** → `docs/product/brief.md` (rejestr F/A; pozycje D to tylko odnośniki do ADR),
@@ -317,7 +316,7 @@ Testy A/B mają sens dopiero po przejściu bramki ruchu z punktu 2. Wcześniej z
 1. **Hybryda vs pełna własna vs pełna zależność.** Hybryda z zależnościami przegrywa. Rekomendowałem **własne + menu**; autor wybrał **pełną własną paczkę z atrybucją pomysłów** (sekcja 13). *Za:* spójny kontrakt, ok. 1,6–1,8 tys. tokenów opisów zamiast 17–20 tys., brak ryzyka zniknięcia lub przemianowania, brak rekomendowania niesprawdzonych narzędzi, zgodność z planem. *Przeciw:* słabsza wiedza marketingowa w rdzeniu i więcej pracy autorskiej. Kompensują to mechanizmy weryfikacji z sekcji 8 i `/product-metrics`. Hybryda z zależnościami dawałaby kolizje (`product-strategy`, `marketing-ideas`, „GTM”), dwa źródła prawdy i brak instalacji przez APM.
 2. **Co warto wziąć bez wątpliwości:** pomysły z `strategy-red-team`, klasyfikację `pre-mortem`, 8 kategorii ryzyka, hipotezę XYZ i zasady Savoi, reguły Mom Test, wszystkie z atrybucją. Żadnego cudzego skilla paczka nie poleca (decyzja autora). Najbardziej wartościowe merytorycznie były `analytics`, `copywriting` i `ab-testing`; ich tematy pokrywają `/product-metrics` i `/go-to-market`. **Czego nie brać nawet jako inspiracji:** `product-strategy` (pm), `privacy-policy`, `/ship-check`, `gtm-strategy`, `product-marketing`, `marketing-loops`, pełne pluginy, alirezarezvani, deanpeters (licencja), founder-skills, pratikshadake.
 3. **`marketing-loops` w v0.4.0: nie.** Proponowane kryteria włączenia [O], wszystkie łącznie: (a) tracking zweryfikowany i stabilny przez ≥ 2 tygodnie (odpowiednik `tracking-QA` ze skilla); (b) wolumen pozwalający na decyzję w kadencji pętli, np. ≥ 100 zdarzeń kluczowej konwersji tygodniowo (skill podaje 40 odwiedzin/tydzień jako przykład szumu); (c) aktywny budżet płatny z limitem i właścicielem; (d) dostęp do API platform reklamowych i analityki co najmniej do odczytu; (e) co najmniej 4 ręczne przeglądy tygodniowe, które prowadziły do działań; (f) dostępny harmonogram i checkpoint człowieka dla publikacji i budżetu. Do tego czasu `/go-to-market` stosuje tylko ręczny przegląd tygodniowy.
-4. **Spójna jakość przy cudzych metodach:** (a) kontrakt kopiowany do każdego skilla i sprawdzany deterministycznie w `check.sh` (identyczność bloku); (b) cudze metody wchodzą tylko jako pomysły przepisane do naszego kontraktu, z atrybucją; (c) fixture’y zachowania z sekcji 5 planu z rubryką z pilota (sekcja 7) zamiast wyszukiwania fraz; (d) atrybucje sprawdzone u źródła (przykład Torres/Cagan); (e) obowiązkowe „Czego nie oceniono”; (f) decyzje o metodach i zakresie zapisane jako ADR (sekcja 13.2), więc zmiana metody to nowy ADR, a nie cicha edycja.
+4. **Spójna jakość przy cudzych metodach:** (a) kontrakt kopiowany do każdego skilla i sprawdzany deterministycznie w `check.sh` (identyczność bloku); (b) cudze metody wchodzą tylko jako pomysły przepisane do naszego kontraktu, z atrybucją; (c) fixture’y zachowania z sekcji 5 planu z rubryką z pilota (sekcja 7) zamiast wyszukiwania fraz; (d) atrybucje sprawdzone u źródła (przykład Torres/Cagan); (e) obowiązkowe „Czego nie oceniono”; (f) zmiana metody doradcy przechodzi przez rewizję planu i fixture’y zachowania, a nie cichą edycję skilla.
 5. **Zmiany w planie:** sekcja 10.
 
 ## 10. Lista zmian w planie (sekcje 2–4)
@@ -346,7 +345,7 @@ Testy A/B mają sens dopiero po przejściu bramki ruchu z punktu 2. Wcześniej z
 | 20 | 4 | Dodać sekcję „Etapy automatyzacji” z kryteriami wejścia (sekcja 12.4); bez implementacji w v0.4.0 | tak |
 | 21 | 3 | „Lekkie ADR-y” (sekcja 3 planu) rozszerzyć na decyzje produktowe: jeden katalog `docs/adr/`, jeden format, pole `Typ: produkt | architektura | proces`, `Podstawa` (ID z rejestru F/A) i `Warunek rewizji` (sekcja 13.2) | **tak** |
 | 22 | 3, 4 zad. 2 | ADR jako jedyne źródło decyzji: brief i pliki doradców tylko odsyłają; zmiana decyzji = nowy ADR ze statusem „zastępuje”, stary dostaje „zastąpiony przez”; ADR powstaje także w trakcie kodowania (`/ship`), gdy zapada istotna decyzja | **tak** |
-| 23 | 4 zad. 2 | `docs-writer`: zapisuje ADR po potwierdzeniu decyzji przez człowieka, przed commitem, bez wymogu merge’a; status `Zaakceptowana` ≠ „wdrożona” (pole `Wdrożenie`) | tak |
+| 23 | 4 zad. 2 | `docs-writer` i etap dokumentacji `/ship`: zapisują ADR po potwierdzeniu decyzji przez człowieka, przed commitem, bez wymogu merge’a; przed zamknięciem zadania sprawdzają, czy każda istotna decyzja z planu w `design-docs/` ma ADR, bo plan zostanie usunięty; status `Zaakceptowana` ≠ „wdrożona” (pole `Wdrożenie`) | **tak** |
 | 24 | 4 zad. 3/5 | `check.sh` w repo docelowym nie dotyczy; w paczce: test, że szablon ADR w `docs-writer` i w kontrakcie doradców mają te same pola | tak |
 
 Bez nowej rewizji (doprecyzowania zgodne z rewizją 1): nazwy plików, przykłady w skillach, treść opisów `description` w granicach zakresu.
@@ -420,17 +419,15 @@ Każda pętla musi mieć wszystkie części z `marketing-loops` (kadencja, warun
 
 Dwa dodatkowe doradcy to łącznie 15 skilli. Szacunkowo +150–200 tokenów w liście opisów **[O]**, czyli wariant A to nadal ok. 1,8–2,0 tys. Zakres v0.4.0 rośnie, więc proponuję kolejność: v0.4.0 = rdzeń + `/product-metrics` (bez pomiaru reszta jest nieweryfikowalna), a `/market-research` dołącza, jeśli pilot pokaże, że tryb w `/product-strategy` nie wystarcza. Automatyzacje (etapy 1–3) to v0.5.0+.
 
-## 13. Decyzje autora po ocenie i ADR jako jedyne źródło decyzji
+## 13. Decyzje autora po ocenie i ADR-y tworzone przez skille
 
 ### 13.1 Decyzje z 2026-10-07
 
 1. **Brak menu cudzych skilli.** Paczka nie poleca, nie linkuje (README, katalog, skille) i nie wykrywa cudzych skilli. Powód: link w dokumentacji działa jak rekomendacja, a skille nie zostały sprawdzone w praktyce i mogą się zmienić bez naszej kontroli.
 2. **Atrybucja zostaje.** Pożyczone pomysły (red-team, pre-mortem, osiem kategorii ryzyka, hipoteza XYZ, zasady Savoi, Mom Test) mają źródło w skillu i w `.apm/SOURCES.md`. To podziękowanie, nie rekomendacja.
-3. **Decyzje jako ADR w repo.** Zarówno w tym repo, jak i w repo produktu każda istotna decyzja, także podjęta w trakcie kodowania, ma postać ADR w `docs/adr/`. ADR jest jedynym źródłem prawdy o decyzjach; dokumenty analityczne (jak ten) i plany w `design-docs/` są materiałem roboczym.
+3. **ADR-y tworzą skille, w repo docelowym.** Plany w `design-docs/` są tymczasowe: autor usuwa je po zakończeniu zadania. Dlatego doradcy i `/ship` (przez `docs-writer`) zapisują każdą istotną decyzję, także podjętą w trakcie kodowania, jako krótki ADR w `docs/adr/` repo, w którym pracują. ADR jest trwałym i jedynym źródłem prawdy o decyzjach. Ten dokument analizy sam w sobie nie dostaje ADR: to materiał roboczy dla planu paczki.
 
-Pierwszy taki zapis: [ADR-0001](../docs/adr/0001-samowystarczalni-doradcy-produktowi.md).
-
-### 13.2 Model ADR (repo paczki i repo produktu)
+### 13.2 Model ADR tworzonego przez skille
 
 **Gdzie:** `docs/adr/NNNN-slug.md`, numeracja ciągła, jeden katalog dla decyzji produktowych, technicznych i procesowych. Istniejący katalog ADR w repo produktu ma pierwszeństwo.
 
@@ -474,4 +471,5 @@ Pierwszy taki zapis: [ADR-0001](../docs/adr/0001-samowystarczalni-doradcy-produk
 3. Przy sprzeczności między ADR a innym dokumentem obowiązuje ADR, a drugi dokument trzeba poprawić (doradca lub `docs-writer` zgłasza rozjazd).
 4. `Zaakceptowana` znaczy „postanowione”, nie „wdrożone”. Stan wdrożenia jest w polu `Wdrożenie`, aktualizowanym po weryfikacji.
 5. Decyzja oparta na założeniu ma `Warunek rewizji`. Gdy `/validate-product` lub `/product-metrics` obali to założenie, ADR dostaje status `Do przeglądu`.
-6. Plany w `design-docs/` pozostają narzędziem wznawiania `/ship`; po zakończeniu pracy trwałe uzasadnienie musi już być w ADR.
+6. Plany w `design-docs/` służą tylko do wznawiania `/ship` i są usuwane po zakończeniu zadania. Zanim zadanie zostanie zamknięte, `docs-writer` przenosi istotne decyzje z planu do ADR; plan nie może być jedynym miejscem uzasadnienia.
+7. ADR ma być krótki: najwyżej ok. jednej strony. Liczy się decyzja, powód, odrzucone alternatywy i warunek rewizji, nie kopia planu.
