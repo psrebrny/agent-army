@@ -3,7 +3,7 @@
 > 2. **<auto_critic> EXECUTION LOCK:** after each task, run its Verification Command, fix errors, and DO NOT proceed until GREEN.
 
 ## PR #6: ADRs and the `/ship` boundary
-**Objective:** `docs-writer` and the `/ship` docs stage write ADRs with the shared template before commit, move plan decisions into ADRs before a task closes, and mark a delivered work item `delivered` in its bound store. `architect` accepts `docs/product/*` as input. No new mandatory gate.
+**Objective:** `docs-writer` and the `/ship` docs stage write ADRs with the shared template before commit, move plan decisions into ADRs before a task closes, and mark a delivered work item `delivered` in its bound store. `architect` accepts `docs/product/*` as input. `/ship` recommends an interaction mode from the tasks' Execution Profiles (D13). No new mandatory gate.
 
 ## Execution State
 - **PR status:** planned
@@ -144,7 +144,63 @@ Add `check_adr_parity` to `scripts/check.sh`. It extracts the ADR field names an
 
 **Aligns with:** Contract surfaces (ADR template)
 
+### Task 6.3: Mode recommendation in `/ship`
+
+**Task status:** do zrobienia
+
+**Execution Profile:**
+- **Capability:** mid
+- **Deliberation:** medium
+- **Bottleneck:** design_decision
+- **Routing rationale:** a small edit to an existing, checked contract; the risk is turning a recommendation into a new pause or a third mode
+- **Escalation trigger:** `check_interaction_contract` fails, or the wording makes the recommendation binding
+
+**Run Configuration:**
+- **Role:** main session
+- **Recommended:** set at dispatch
+- **Configuration source:** unknown
+- **Actual / adapter limitation:** set at dispatch
+- **User decision:** not needed
+
+**Action:**
+`ship/SKILL.md` §1 EXECUTION POLICY, where it asks for the mode when `Interaction policy` is `unset`: add one recommendation with a one-line reason. Recommend **Interactive** if any selected task has `Bottleneck` `design_decision | multiple_approaches | unknown`, or its Verification Command is not runnable (a manual evaluation such as scorecard rows does not count), and name those tasks. Otherwise recommend **Autonomous**. The user's choice wins without further argument. In Interactive mode, the task-review card's `Review focus` says "remaining tasks qualify for autonomous" when that becomes true; the existing `switch to autonomous` option does the rest. `architect.md` (PR template guidance): within a PR, order decision-heavy tasks first when dependencies allow. Extend `check_interaction_contract` so that every bottleneck value named in the `/ship` rule is in the `architect.md` `Bottleneck` enum. Add the manual fixture `tests/fixtures/ship-interaction/mode-recommendation/` (`request.md`, `expected.md`) and its row in that README's table.
+- **API/Component Contract:** unchanged mode enum (`autonomous | interactive | unset`), unchanged Interaction Card field set; new `check.sh` assertion "mode rule names only known bottlenecks"
+- **Compatibility:** PRs with a persisted policy are untouched; legacy `supervised` migration is unchanged
+- **Refactor checkpoint / recovery:** behavior-preserving except for the added recommendation text; `check_interaction_contract` stays green
+- No new pause, mode, card field or gate.
+
+**Delegation Contract:**
+- **Goal:** the mode question carries one justified recommendation, and drift between the rule and the bottleneck enum fails CI.
+- **Inputs / approved read paths:**
+  - `.apm/skills/ship/SKILL.md` §1
+  - `.apm/skills/bootstrap/baseline/core/agents/architect.md` (Execution Profile, PR template)
+  - `scripts/check.sh` `check_interaction_contract`
+  - `tests/fixtures/ship-interaction/README.md`, `autonomous/`, `policy-variants/`
+- **Approved write scope:**
+  - `tester`: `scripts/check.sh`, `tests/fixtures/ship-interaction/mode-recommendation/**`, `tests/fixtures/ship-interaction/README.md` (table row)
+  - `coder` / main session: `.apm/skills/ship/SKILL.md` §1, `architect.md` (one sentence), `README.md` interaction-modes paragraph (one sentence)
+- **Forbidden / never-touch zones:** Interaction Card fields; the two-mode enum; `_STANDARD.md` required sections
+- **Start gate:** Interactive: RED card with the write list | Autonomous: in-scope only
+- **STOP and return `awaiting_approval` when:** the rule would need a new pause, a card field or a third mode.
+
+**Verification Command:** `scripts/check.sh` (agents + skills)
+
+**Testing Strategy & Cases (Testing Trophy):**
+- **Risk / level choice:** risk = a recommendation that silently becomes a gate, or a rule that drifts from the enum
+- **E2E / INTEGRATION** (`scripts/check.sh`): ✓ known bottlenecks → PASS; ✓ an unknown value in the rule → FAIL; ✓ existing interaction assertions unchanged
+- **E2E / INTEGRATION** (manual fixture `mode-recommendation`): ✓ a PR with a `design_decision` task → Interactive, task named; ✓ all tasks `verification` with a runnable command → Autonomous; ✓ the user picks the other mode → honored, no argument; ✓ Autonomous run has no extra pause
+- **UNIT:** not applicable
+
+**TDD Execution & Auto-Critic:**
+1. Task type: new behavior (check) + approved edit to an existing contract.
+2. Add the check; in a scratch copy, name a non-existent bottleneck in the rule → **RED**.
+3. Write the rule and the architect sentence; remove the scratch copy.
+4. Run `scripts/check.sh` → GREEN; run the fixture manually; record the result.
+
+**Aligns with:** D13; constraint "No new mandatory gate in `/ship`"
+
 ---
 
 > **✅ PR Manual Acceptance:**
 > - [ ] **Functional:** read the new `docs-writer` ADR section; confirm that a typo fix in S8 produced no ADR
+> - [ ] **Functional:** the `/ship` mode question shows one recommendation with a reason; your choice wins

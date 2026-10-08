@@ -8,7 +8,7 @@
 - **Mode:** interactive-complete
 - **Stage:** review
 - **Progress:** planning step 7 of 7 (scope, evaluation, sourcing, consolidation, navigation + path completeness, solution planning + storage seam, compose); all milestones done; waiting for an independent plan review. The estimate rose 5 → 6 → 7 as the user added journey guidance, then high-level solution planning with tool-agnostic storage.
-- **Planning completion criteria:** every scope/sourcing/evaluation decision is recorded below; each PR file has contracts, write scope and verification; an independent review of revision 4 has no open blocking findings
+- **Planning completion criteria:** every scope/sourcing/evaluation decision is recorded below; each PR file has contracts, write scope and verification; an independent review of revision 5 has no open blocking findings
 - **Current topic:** none
 - **Pending decision:** none
 - **Remaining topics:** independent plan review (`plan-reviewer`, fresh context)
@@ -25,11 +25,12 @@
   - D6 Single plan: this blueprint replaces revision 1 and the sourcing analysis (deleted; in git history at `3e8e862`). Blueprint language: English.
   - D7 Integration: full package integration, including changes outside `.apm/` (manifest, root docs, checks, tests). No commit, publish or release without the user's approval.
   - D8 Versions: package and generator `0.4.0`; profile schema stays `2`.
+  - D13 Mode recommendation: `/ship` still asks for the interaction mode once per PR, and the user's choice wins, but the question carries one recommendation derived from the selected tasks' Execution Profiles. It recommends **Interactive** if any task has `Bottleneck` `design_decision | multiple_approaches | unknown` or has no runnable Verification Command (a manual evaluation such as scorecard rows does not count), naming those tasks; otherwise it recommends **Autonomous**. In Interactive mode the task-review card says in `Review focus` when every remaining task qualifies for autonomous (the existing `switch to autonomous` option then applies). This gives "decide together, then let it run". The `architect` orders decision-heavy tasks first within a PR when dependencies allow. No new mode, pause, card field or gate.
 - **Evidence:** see `## 1. Background`, "Sourcing evidence"
-- **Plan revision:** 4 (rev 3 → 4: `solution-architecture` + `delivery-plan`, record types + `stores.json` seam, 12-stage model, product-spec stories feed `delivery-plan`, 19 skills, PRs renumbered 1–8). Rev 2 → 3: `/product` navigator with a stage model, `product-spec`, pricing/formalities/post-launch extensions, handoff status loop, 17 skills, PRs renumbered 1–7. Rev 1 → 2: +3 advisors, shared contract, ADR model, evaluation skill, `/ship` boundary.
-- **Review:** pending (no independent review of revision 4 yet)
-- **Last confirmed action:** user chose two solution-planning skills and confirmed that the storage tool is chosen per target project, not by the package
-- **Next action:** run `plan-reviewer` on revision 4 in a fresh context; resolve findings; set Stage `ready`
+- **Plan revision:** 5 (rev 4 → 5: D13 mode recommendation in `/ship`, Task 6.3). Rev 3 → 4: `solution-architecture` + `delivery-plan`, record types + `stores.json` seam, 12-stage model, product-spec stories feed `delivery-plan`, 19 skills, PRs renumbered 1–8. Rev 2 → 3: `/product` navigator with a stage model, `product-spec`, pricing/formalities/post-launch extensions, handoff status loop, 17 skills, PRs renumbered 1–7. Rev 1 → 2: +3 advisors, shared contract, ADR model, evaluation skill, `/ship` boundary.
+- **Review:** pending (no independent review of revision 5 yet)
+- **Last confirmed action:** user chose to record the `/ship` mode recommendation (D13) in this blueprint rather than as a separate change
+- **Next action:** run `plan-reviewer` on revision 5 in a fresh context; resolve findings; set Stage `ready`
 
 ## 1. Background
 Agent Army 0.3.1 ships five skills (`bootstrap`, `ship`, `new-agent`, `new-skill`, `adapt-army`). Its roles cover engineering only. Product work (who buys, why, at what price, how it is marketed, legal exposure and launch readiness) has no support. `.apm/README.md` already contains a draft catalog of seven proposed advisors.
@@ -49,6 +50,7 @@ Agent Army 0.3.1 ships five skills (`bootstrap`, `ship`, `new-agent`, `new-skill
 - [ ] `/product` shows the stage map, flags missing prerequisites and stale decisions, respects recorded skips and recommends exactly one next step
 - [ ] Each product skill passes its `advisor-eval` gate (rule in section 4) before release
 - [ ] `docs-writer` and the `/ship` docs stage write ADRs with the shared template before commit; decisions from a `design-docs` plan reach an ADR before the task closes; a trivial fix produces no ADR; a delivered work item is marked `delivered` with evidence in whichever store it is bound to
+- [ ] `/ship` recommends an interaction mode from the selected tasks' Execution Profiles; the user's choice wins; no new pause, mode or card field
 - [ ] The generator registers 19 skills at `0.4.0`; a 0.3.1 → 0.4.0 upgrade preserves local specializations and controls, and an immediate re-run is a no-op
 - [ ] `check.sh` and `smoke.sh` enforce contract identity, ADR field parity, registry ↔ skill ↔ wrapper agreement, no third-party install guidance and all 19 skills in every target; `stores.json` survives bootstrap and upgrade untouched
 - [ ] The catalog and root docs describe actual behavior, including the `/ship` boundary table
