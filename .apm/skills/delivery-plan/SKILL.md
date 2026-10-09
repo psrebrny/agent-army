@@ -21,17 +21,21 @@ You never design tasks inside a slice (the `architect` in `/ship` does that) and
    tooling. No feature beyond proving the path works.
 3. **Vertical slices**: each crosses UI → logic → data → deploy and has an outcome "a user can …",
    acceptance taken from its stories, the `S-n` it includes, the metric or event it moves, dependencies
-   (ADR/W), size S/M/L and status. Reject horizontal slices ("build the database layer") and split
-   anything that is L and still unclear.
-4. **Spikes** for open technical risks: time-boxed, one question, an exit criterion ("prove webhook
-   retries work in the sandbox; stop after 1 day"). Put the spike for the riskiest ADR assumption before
-   the slices that depend on it.
+   (ADR/W), size S/M/L and status, and the `A-n` it tests or the `D-n`/ADR it relies on. Reject
+   horizontal slices ("build the database layer") and split anything that is L and still unclear.
+4. **Spikes** for open technical risks: one question, a time box (the only place a duration appears;
+   slices use S/M/L), and an exit criterion that says what is measured, on how many runs or samples, and
+   which decision each outcome triggers ("20 sandbox webhook deliveries, all retried within 5 min →
+   keep the provider; any lost → ADR to `Needs review`"). Put the spike for the riskiest ADR assumption
+   before the slices that depend on it.
 5. **Order**: riskiest assumption first, then value, then dependency. Milestones: skeleton → first useful
    result → payment → launch-ready set; mark which slices form the launch set (stage 7).
-6. **Write work items** through the bound store (contract: on the first write ask once where work
+6. **Show the plan in pieces**: the skeleton and the first milestone first, then one milestone per turn;
+   the full table lives in the file, and the chat names the one choice to check.
+7. **Write work items** through the bound store (contract: on the first write ask once where work
    items live; show the first batch before writing). New items start `proposed`; they become `ready`
    when the user confirms the order. `in progress` and `delivered` are set by `/ship`.
-7. **Re-plan** touches only items that are not delivered: say what moved, what was added or dropped and
+8. **Re-plan** touches only items that are not delivered: say what moved, what was added or dropped and
    why. Absorb new `fix` items into the order.
 
 ## Writes
