@@ -264,7 +264,7 @@ Add `check_adr_parity` to `scripts/check.sh`. It extracts the ADR field names an
 - **User decision:** not needed
 
 **Action:**
-Embed the `interaction-pace:v1` block (manifest §3, D16) verbatim in `ship/SKILL.md` (DELIVERY-FOCUSED INTERACTION), `architect.md` (interactive planning), `bootstrap`, `new-agent`, `new-skill`, `adapt-army` `SKILL.md`, and the baseline `AGENTS.md` (next to "Delivery-focused interaction"), so every agent in a target repo follows it. Where a skill already has a rule on question count or progress lines, keep it and let the block govern size and rhythm only. Add the manual fixture `tests/fixtures/ship-interaction/pace/` (`request.md`, `expected.md`) and its README row.
+Embed the `interaction-pace:v1` block (manifest §3, D16) verbatim in `ship/SKILL.md` (DELIVERY-FOCUSED INTERACTION), `architect.md` (interactive planning), `bootstrap`, `new-agent`, `new-skill`, `adapt-army` `SKILL.md`, and the baseline `AGENTS.md` (next to "Delivery-focused interaction"), so every agent in a target repo follows it. Where a skill already has a rule on question count or progress lines (`/ship` progress line, the architect's "step X of approximately Y"), keep it and let the block govern size, rhythm and the shared `step X of ~Y` marker format. Add the manual fixture `tests/fixtures/ship-interaction/pace/` (`request.md`, `expected.md`) and its README row.
 - **API/Component Contract:** the block text is identical everywhere (`check_interaction_pace` from Task 2.1); Interaction Card fields, modes and gates unchanged
 - **Compatibility:** local specializations of these skills in target repos receive the block through the upgrade review in PR 7, merged, not replaced
 - **Refactor checkpoint / recovery:** `scripts/check.sh` and `scripts/smoke.sh` green before and after
@@ -288,7 +288,7 @@ Embed the `interaction-pace:v1` block (manifest §3, D16) verbatim in `ship/SKIL
 **Testing Strategy & Cases (Testing Trophy):**
 - **Risk / level choice:** risk = a block that drifts between skills, or a rule nobody follows in a real session
 - **E2E / INTEGRATION** (`scripts/check.sh`): ✓ identical block in every carrier → PASS; ✓ one edited copy → FAIL
-- **E2E / INTEGRATION** (manual fixture `pace`): ✓ a planning turn stays about one screen with one question; ✓ a long test run is announced with an estimate before it starts; ✓ "give me everything" is honoured
+- **E2E / INTEGRATION** (manual fixture `pace`): ✓ a planning turn stays about one screen with one question; ✓ a long test run is announced with an estimate before it starts; ✓ every turn shows `step X of ~Y`, and a changed total is announced with its reason; ✓ "give me everything" is honoured
 - **UNIT:** not applicable
 
 **TDD Execution & Auto-Critic:**
