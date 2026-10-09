@@ -6,24 +6,24 @@
 **Objective:** `/product` shows where the user is, what they skipped or let go stale, and the one next step, reading through the stores. It also shows and changes the project's store bindings. It runs last among the product skills, because it reads every record schema from PR 2–4.
 
 ## Execution State
-- **PR status:** planned
-- **Interaction policy:** unset — /ship asks once per PR before first execution
-- **Execution scope:** unset
-- **Scope Profile:** unset
-- **Model routing:** unset
-- **Last manual configuration:** unknown
-- **Current task:** none
+- **PR status:** in progress
+- **Interaction policy:** autonomous for Task 5.1 (D18; user, 2026-10-09 "lecimy z PR 5"); Task 5.2 Interactive (outward-facing writes, per its Start gate)
+- **Execution scope:** PR 5
+- **Scope Profile:** one PR; coordinator = highest unfinished task profile (`design_decision`); coordination `medium`
+- **Model routing:** inherit (source repo has no `.agent-army/config.json`)
+- **Last manual configuration:** stay current
+- **Current task:** 5.1
 - **Temporary delegation:** none
 - **Active roles:** none
-- **Last verified stage:** planned
+- **Last verified stage:** 5.1 written; `scripts/check.sh` green (contract identical in 14 skills); spot check S12 running
 - **Awaiting decision:** none
 
 ---
 
 ## Execution Progress
-- **Milestones:** unset
-- **Current milestone:** none
-- **Finish condition:** unset
+- **Milestones:** 1) `/product` + wrapper (5.1) · 2) spot check S12 (N, K) · 3) external store evidence (5.2, Interactive) · 4) closure
+- **Current milestone:** 2 of 4
+- **Finish condition:** `check.sh` green, S12 passes the decision rule, S17 rows for `work_item` and `adr`, PR at `ready_for_human_review`
 - **Last map change:** none
 - **Deferred ideas:** none
 
@@ -36,7 +36,7 @@ none
 
 ### Task 5.1: `/product` navigator
 
-**Task status:** open
+**Task status:** in testing
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
@@ -87,7 +87,7 @@ The navigator reads only status-bearing parts through the bound stores: register
 
 ### Task 5.2: External store evidence (S17 across skills)
 
-**Task status:** open
+**Task status:** blocked (user, 2026-10-09: no writes to the user's real tools, which they use for real work; no scratch container available → `awaiting_approval` per this task's STOP rule)
 
 **Execution Profile:**
 - **Bottleneck:** verification
