@@ -106,7 +106,7 @@ In `bootstrap.py`, set `SKILLS` to the 19 names, `PACKAGE_VERSION = "0.4.0"` and
 
 **Action:**
 Add to `check.sh --skills`:
-- (a) `SKILLS` in `bootstrap.py` == dirs in `.apm/skills/` == files in `.apm/commands/`, each wrapper pointing at `.agents/skills/<name>/SKILL.md`; all 14 product skills carry the contract (completes PR 2's check); all 19 skills and the baseline `AGENTS.md` carry `interaction-pace:v1` (D16)
+- (a) `SKILLS` in `bootstrap.py` == dirs in `.apm/skills/` == files in `.apm/commands/`, each wrapper pointing at `.agents/skills/<name>/SKILL.md`; all 14 product skills carry the contract (completes PR 2's check)
 - (b) no third-party install guidance in `.apm/**` or `README.md` (`npx skills`, `/plugin install`, `apm install` of any package other than `psrebrny/agent-army`)
 - (c) `.apm/SOURCES.md` rows have repo, file, commit (7+ hex), license
 - (d) WARN when an advisor description is > 300 chars

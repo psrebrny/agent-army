@@ -3,7 +3,7 @@
 > 2. **<auto_critic> EXECUTION LOCK:** after each task, run its Verification Command, fix errors, and DO NOT proceed until GREEN.
 
 ## PR #6: ADRs and the `/ship` boundary
-**Objective:** `docs-writer` and the `/ship` docs stage write ADRs with the shared template before commit, move plan decisions into ADRs before a task closes, and mark a delivered work item `delivered` in its bound store. `architect` accepts `docs/product/*` as input. `/ship` recommends an interaction mode from the tasks' Execution Profiles (D13). Blueprint task statuses are English (D14) and the Execution Profile drops `Capability` and `Deliberation` (D15). Every existing skill carries the collaborative-pace block (D16). No new mandatory gate.
+**Objective:** `docs-writer` and the `/ship` docs stage write ADRs with the shared template before commit, move plan decisions into ADRs before a task closes, and mark a delivered work item `delivered` in its bound store. `architect` accepts `docs/product/*` as input. `/ship` recommends an interaction mode from the tasks' Execution Profiles (D13). Blueprint task statuses are English (D14) and the Execution Profile drops `Capability` and `Deliberation` (D15). `/ship` and the baseline `AGENTS.md` carry the collaborative-pace text (D16). No new mandatory gate.
 
 ## Execution State
 - **PR status:** planned
@@ -247,7 +247,7 @@ Add `check_adr_parity` to `scripts/check.sh`. It extracts the ADR field names an
 
 **Aligns with:** D14, D15; constraint "No new mandatory gate in `/ship`"
 
-### Task 6.5: Collaborative pace in the existing skills
+### Task 6.5: Collaborative pace in `/ship` and the baseline `AGENTS.md`
 
 **Task status:** open
 
@@ -264,37 +264,37 @@ Add `check_adr_parity` to `scripts/check.sh`. It extracts the ADR field names an
 - **User decision:** not needed
 
 **Action:**
-Embed the `interaction-pace:v1` block (manifest §3, D16) verbatim in `ship/SKILL.md` (DELIVERY-FOCUSED INTERACTION), `architect.md` (interactive planning), `bootstrap`, `new-agent`, `new-skill`, `adapt-army` `SKILL.md`, and the baseline `AGENTS.md` (next to "Delivery-focused interaction"), so every agent in a target repo follows it. Where a skill already has a rule on question count or progress lines (`/ship` progress line, the architect's "step X of approximately Y"), keep it and let the block govern size, rhythm and the shared `step X of ~Y` marker format. Add the manual fixture `tests/fixtures/ship-interaction/pace/` (`request.md`, `expected.md`) and its README row.
-- **API/Component Contract:** the block text is identical everywhere (`check_interaction_pace` from Task 2.1); Interaction Card fields, modes and gates unchanged
-- **Compatibility:** local specializations of these skills in target repos receive the block through the upgrade review in PR 7, merged, not replaced
+Copy the `interaction-pace:v1` paragraph (manifest §3, D16; authoritative copy in the advisor contract) verbatim into `ship/SKILL.md` (DELIVERY-FOCUSED INTERACTION; covers `architect` and every role `/ship` runs) and the baseline `AGENTS.md` (next to "Delivery-focused interaction"; read by every tool in a target repo, so the other skills follow it without their own copy). Do not copy it into individual skills. Where a file already has a rule on question count or progress lines (`/ship` progress line, the architect's "step X of approximately Y"), keep it and let the paragraph govern size, rhythm and the shared `step X of ~Y` marker format. Add the manual fixture `tests/fixtures/ship-interaction/pace/` (`request.md`, `expected.md`) and its README row.
+- **API/Component Contract:** the three copies are identical (`check_interaction_pace` from Task 2.1); Interaction Card fields, modes and gates unchanged
+- **Compatibility:** an existing target-repo `AGENTS.md` and local `/ship` specializations receive the paragraph through the upgrade review in PR 7, merged, not replaced
 - **Refactor checkpoint / recovery:** `scripts/check.sh` and `scripts/smoke.sh` green before and after
 - No new pause, mode, card field or gate.
 
 **Delegation Contract:**
-- **Goal:** every existing skill and the baseline `AGENTS.md` carry the identical pace block, and a manual run shows short turns with one question each.
+- **Goal:** `/ship` and the baseline `AGENTS.md` carry the pace paragraph identical to the contract's, and a manual run shows short turns with one question each.
 - **Inputs / approved read paths:**
   - manifest §3 (block text), D16
-  - `.apm/skills/*/SKILL.md`, `architect.md`, `.apm/skills/bootstrap/baseline/AGENTS.md`
+  - `.apm/skills/ship/SKILL.md`, `.apm/skills/bootstrap/baseline/AGENTS.md`, the advisor contract in `.apm/skills/product-strategy/SKILL.md`
   - `tests/fixtures/ship-interaction/README.md`
 - **Approved write scope:**
   - `tester`: `tests/fixtures/ship-interaction/pace/**`, `tests/fixtures/ship-interaction/README.md` (table row)
-  - `coder` / main session: the six files above plus the baseline `AGENTS.md` (block only)
+  - `coder` / main session: `.apm/skills/ship/SKILL.md`, `.apm/skills/bootstrap/baseline/AGENTS.md` (paragraph only)
 - **Forbidden / never-touch zones:** Interaction Card fields; the two-mode enum; `_STANDARD.md` required sections
 - **Start gate:** Interactive: RED card with the write list | Autonomous: in-scope only
-- **STOP and return `awaiting_approval` when:** the block would need different wording in one skill (it must stay identical).
+- **STOP and return `awaiting_approval` when:** the paragraph would need different wording in `/ship` or `AGENTS.md` (it must stay identical).
 
 **Verification Command:** `scripts/check.sh && scripts/smoke.sh`
 
 **Testing Strategy & Cases (Testing Trophy):**
-- **Risk / level choice:** risk = a block that drifts between skills, or a rule nobody follows in a real session
-- **E2E / INTEGRATION** (`scripts/check.sh`): ✓ identical block in every carrier → PASS; ✓ one edited copy → FAIL
+- **Risk / level choice:** risk = copies that drift, or a rule nobody follows in a real session
+- **E2E / INTEGRATION** (`scripts/check.sh`): ✓ three identical copies → PASS; ✓ one edited copy → FAIL
 - **E2E / INTEGRATION** (manual fixture `pace`): ✓ a planning turn stays about one screen with one question; ✓ a long test run is announced with an estimate before it starts; ✓ every turn shows `step X of ~Y`, and a changed total is announced with its reason; ✓ "give me everything" is honoured
 - **UNIT:** not applicable
 
 **TDD Execution & Auto-Critic:**
 1. Task type: approved edit to existing contracts.
-2. In a scratch copy, change one word in one block → `check_interaction_pace` **RED**.
-3. Embed the block; remove the scratch copy.
+2. In a scratch copy, change one word in one copy → `check_interaction_pace` **RED**.
+3. Copy the paragraph into both files; remove the scratch copy.
 4. Run the verification command → GREEN; run the fixture manually; record the result.
 
 **Aligns with:** D16
