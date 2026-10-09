@@ -6,23 +6,23 @@
 **Objective:** the `advisor-contract:v1` block, an identity check, attribution, and four advisors (`product-strategy`, `product-red-team`, `market-research`, `validate-product`) that pass gate G1.
 
 ## Execution State
-- **PR status:** implementing
+- **PR status:** ready_for_human_review
 - **Interaction policy:** autonomous (user switched from interactive after Task 2.1, 2026-10-09; D18)
 - **Execution scope:** PR 2
 - **Scope Profile:** one PR; coordinator = highest unfinished task profile (2.1 `design_decision`); coordination `medium`
 - **Model routing:** inherit (source repo has no `.agent-army/config.json`); eval actor and judge sessions use the `claude -p` default model, recorded per run
 - **Last manual configuration:** stay current (no material model recommendation)
-- **Current task:** 2.2 + 2.3 (one batch)
+- **Current task:** none (all tasks done; closure complete)
 - **Temporary delegation:** none
-- **Active roles:** main session
-- **Last verified stage:** 2.1 GREEN, awaiting task review (2026-10-09): contract block in `.apm/skills/product-strategy/SKILL.md` (135 lines, ~2.3k tokens, reported only per D17), 12 sections incl. `interaction-pace:v1` verbatim from manifest §3; `.apm/SOURCES.md` 9 rows, each file read at its commit (all MIT), Torres/Cagan four-risks origin left unattributed (svpg.com unreachable via proxy) with reason; `t21.sh` 9/9 PASS; `scripts/check.sh` 157/0; `scripts/smoke.sh` 119/9 both with and without this change (gate 3 needs `apm`, not installed here). Before that, 2.1 RED: `t21.sh` failed at case 0; orphan copy → `product-strategy (authoritative copy) has no advisor-contract:v1 block`
-- **Awaiting decision:** none
+- **Active roles:** none
+- **Last verified stage:** closure (2026-10-09): four advisors + wrappers written as one Autonomous batch (D18); `scripts/check.sh` 166/0; new frontmatter parses as strict YAML (pre-existing `.apm/commands/ship.md` does not: unquoted `: `, out of scope, reported); spot checks: `product-strategy` S1 pass (N Σ18 ff0 vs K Σ10 ff1), `validate-product` S1 pass (N Σ16 ff0 vs K Σ13 ff0; judge: resume re-asked one settled question, next step was a list → fixed in `validate-product` Writes after the run, not re-run, so the row's hash is the pre-fix version); self-review + secrets grep clean; no independent `code-reviewer` run (not requested); `smoke.sh` 119/9 unchanged by this PR (gate 3 needs `apm`, absent here). Before that, 2.1 GREEN: `t21.sh` 9/9; contract 135 lines (reported only, D17); `SOURCES.md` 9 rows read at their commits
+- **Awaiting decision:** final review: manual acceptance (run `/product-strategy` on your real idea, resume in a new session)
 
 ---
 
 ## Execution Progress
 - **Milestones:** 1) Task 2.1 contract block + identity check + `SOURCES.md` · 2) Task 2.2 `product-strategy` + `product-red-team` (+ G1 eval) · 3) Task 2.3 `market-research` + `validate-product` (+ G1 eval) · 4) closure: review, security, docs, final verification
-- **Current milestone:** 2 of 4
+- **Current milestone:** 4 of 4 (closure done)
 - **Finish condition:** all three tasks verified (check.sh GREEN, G1 scorecard rows with verdicts), review + security clean, PR at `ready_for_human_review`; commit only after approval
 - **Last map change:** 2026-10-09: Autonomous mode; 2.2 and 2.3 written as one batch; eval spot check on `product-strategy` + `validate-product` only (D18)
 - **Deferred ideas:** none
@@ -30,7 +30,14 @@
 ---
 
 ## Interaction Card
-none (Autonomous; next pause: batch review of the four discovery advisors)
+- **Checkpoint:** final review
+- **Progress:** krok 4 z 4; PR 2 gotowy do Twojego przeglądu
+- **Completed:** kontrakt + `SOURCES.md` (2.1); `product-strategy`, `product-red-team`, `market-research`, `validate-product` + wrappery (2.2–2.3)
+- **Evidence:** `check.sh` 166/0; spot checki: product-strategy N 18 vs K 10, validate-product N 16 vs K 13, 0 fałszywych faktów w N
+- **Review focus:** przetestuj `/product-strategy` na swoim pomyśle i wznów w nowej sesji
+- **Question:** czy po teście ręcznym PR 2 jest OK, czy coś poprawić?
+- **Options:** continue | direct a correction | show details
+- **Discussion:** none
 
 ---
 
@@ -90,7 +97,7 @@ Write the contract text from manifest §3 "Data Flow / Strategy" (shared contrac
 
 ### Task 2.2: `product-strategy` + `product-red-team`
 
-**Task status:** open
+**Task status:** done
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
@@ -138,7 +145,7 @@ Write the contract text from manifest §3 "Data Flow / Strategy" (shared contrac
 
 ### Task 2.3: `market-research` + `validate-product`
 
-**Task status:** open
+**Task status:** done
 
 **Execution Profile:**
 - **Bottleneck:** design_decision

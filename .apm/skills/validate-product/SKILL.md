@@ -40,7 +40,9 @@ the Ship/Iterate/Kill rule; see `SOURCES.md`.
 ## Writes
 `validation.md`: one section per experiment
 `hypothesis | method | participants | thresholds (success / kill) | status: prepared | running | done |
-result | decision`. Register changes go to the brief as Change proposals.
+result | decision`. Register changes go to the brief as Change proposals. Update `Conversation state`
+after every settled answer (participants you can reach, budget, channels, thresholds) so a resume asks
+nothing twice. The next step is one action, not a list.
 
 ## <prompt_examples>
 - Fresh start: "How do I check if anyone would pay for my meal-planning app?" → step 1 of ~7; picks
