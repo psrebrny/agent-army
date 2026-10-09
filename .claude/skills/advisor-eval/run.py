@@ -105,6 +105,7 @@ def converse(scratch, opening, persona, actor_args, persona_dir, label):
     """One multi-turn session: actor and simulated user alternate until the actor is done."""
     actor_sid, persona_sid = str(uuid.uuid4()), str(uuid.uuid4())
     turns, totals = [], {"num_turns": 0, "total_cost_usd": 0.0, "duration_ms": 0}
+    persona_cost = 0.0
     message, stopped = opening, False
     for i in range(SAFETY_STOP + 1):
         sid_args = ["--session-id", actor_sid] if i == 0 else ["--resume", actor_sid]
@@ -114,15 +115,17 @@ def converse(scratch, opening, persona, actor_args, persona_dir, label):
         reply = res.get("result", "")
         turns.append({"user": message, "advisor": reply, "seconds": round((res.get("duration_ms") or 0) / 1000)})
         p_sid = ["--session-id", persona_sid] if i == 0 else ["--resume", persona_sid]
-        answer = claude(["--system-prompt", persona, "--tools", "", *p_sid], persona_dir,
-                        f"The advisor says:\n\n{reply}").get("result", "").strip()
+        p_res = claude(["--system-prompt", persona, "--tools", "", *p_sid], persona_dir,
+                       f"The advisor says:\n\n{reply}")
+        persona_cost += p_res.get("total_cost_usd") or 0
+        answer = p_res.get("result", "").strip()
         if DONE_REPLY.match(answer):
             break
         message = answer
     else:
         stopped = True
     print(f"  {label}: {len(turns)} advisor turns{' (safety stop hit)' if stopped else ''}")
-    return turns, totals, stopped
+    return turns, totals, stopped, persona_cost
 
 
 def transcript(turns):
@@ -159,7 +162,7 @@ def judge(scenario, bundles, base, model_args):
     m = re.search(r"\{.*\}", text, re.S)
     if not m:
         die(f"judge returned no JSON; judge dir kept at {jdir}")
-    return json.loads(m.group(0)), jdir
+    return json.loads(m.group(0)), jdir, res.get("total_cost_usd") or 0
 
 
 def verdict(rows):
@@ -219,7 +222,7 @@ def main():
         web = (scenario / "web-on").exists() if a.web == "scenario" else a.web == "on"
         actor_args = [*model_args, "--tools", ACTOR_TOOLS + ("," + WEB_TOOLS if web else ""),
                       "--permission-mode", "acceptEdits"]
-        bundles, ids, costs, notes = {}, {}, {}, []
+        bundles, ids, costs, notes, overhead = {}, {}, {}, [], 0.0
         for arm in arms:
             scratch = assemble(scenario, arm, a.advisor, a.reference_dir, base)
             if a.plan_only:
@@ -228,9 +231,9 @@ def main():
             persona_dir = Path(tempfile.mkdtemp(prefix="persona-", dir=base))
             before = snapshot(scratch)
             invoke = f"/{a.advisor} " if arm == "N" else ""
-            t1, c1, s1 = converse(scratch, invoke + (scenario / "request.md").read_text(),
+            t1, c1, s1, pc1 = converse(scratch, invoke + (scenario / "request.md").read_text(),
                                   persona, actor_args, persona_dir, f"{sid} {arm} session 1")
-            t2, c2, s2 = converse(scratch, invoke + (scenario / "resume.md").read_text(),
+            t2, c2, s2, pc2 = converse(scratch, invoke + (scenario / "resume.md").read_text(),
                                   persona, actor_args, persona_dir, f"{sid} {arm} session 2")
             bid = "%06x" % random.getrandbits(24)
             bundle = base / "bundles" / bid
@@ -245,12 +248,14 @@ def main():
                     shutil.copy(scratch / rel, dst)
             bundles[bid], ids[arm] = bundle, bid
             costs[arm] = {k: c1[k] + c2[k] for k in c1}
+            overhead += pc1 + pc2
             if s1 or s2:
                 notes.append(f"{arm} hit safety stop")
         if a.plan_only:
             continue
 
-        result, jdir = judge(scenario, bundles, base, model_args)
+        result, jdir, judge_cost = judge(scenario, bundles, base, model_args)
+        overhead += judge_cost
         by_id = {b["id"]: b for b in result.get("bundles", [])}
         rows = {}
         for arm, bid in ids.items():
@@ -263,6 +268,7 @@ def main():
             c = costs[arm]
             notes.append(f"{arm}: {c['num_turns']} turns, ${c['total_cost_usd']:.2f}, "
                          f"{c['duration_ms'] / 60000:.1f} min; {rows[arm]['note']}")
+        notes.append(f"harness overhead ${overhead:.2f} (persona + judge; not scored)")
         v = verdict(rows)
         cells = "; ".join(f"{arm} {'/'.join(map(str, r['scores']))} Σ{r['sum']} ff{r['ff']}"
                           for arm, r in rows.items())

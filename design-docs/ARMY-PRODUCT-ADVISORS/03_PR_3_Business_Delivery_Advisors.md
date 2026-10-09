@@ -76,7 +76,7 @@ none
 
 **TDD Execution & Auto-Critic:**
 1. Task type: non-code with a behavioral gate.
-2. Baseline from PR 1.
+2. The bar is arm K from the same run.
 3. Write both skills.
 4. Run check + eval; record the rows.
 
@@ -124,7 +124,7 @@ The cycle from the manifest runs: decision questions → primary metric + 3–5 
 
 **TDD Execution & Auto-Critic:**
 1. Task type: non-code with a behavioral gate.
-2. Baseline from PR 1.
+2. The bar is arm K from the same run.
 3. Write the skill.
 4. Run check + eval; record the row.
 
@@ -172,7 +172,7 @@ The cycle from the manifest runs: decision questions → primary metric + 3–5 
 
 **TDD Execution & Auto-Critic:**
 1. Task type: non-code with a behavioral gate.
-2. Baseline from PR 1.
+2. The bar is arm K from the same run.
 3. Write the three skills.
 4. Run check + eval; record the rows.
 

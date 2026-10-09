@@ -76,7 +76,7 @@ The MVP goal must be tied to validated `F`/`A` IDs. If stage 3 is not done, the 
 
 **TDD Execution & Auto-Critic:**
 1. Task type: non-code with a behavioral gate.
-2. Baseline from PR 1.
+2. The bar is arm K from the same run.
 3. Write the skill.
 4. Run check + eval; record the row.
 
@@ -124,7 +124,7 @@ Inputs: stories, register constraints (team skills, time, budget), business case
 
 **TDD Execution & Auto-Critic:**
 1. Task type: non-code with a behavioral gate.
-2. Baseline from PR 1 (S15 K arm).
+2. The bar is arm K from the same run (S15).
 3. Write the skill.
 4. Run check + eval; record the row.
 
@@ -172,7 +172,7 @@ Inputs: stories, architecture ADRs and open risks, metrics events, and open `fix
 
 **TDD Execution & Auto-Critic:**
 1. Task type: non-code with a behavioral gate.
-2. Baseline from PR 1 (S16 K arm).
+2. The bar is arm K from the same run (S16).
 3. Write the skill.
 4. Run check + eval; record the rows.
 

@@ -3,27 +3,27 @@
 > 2. **<auto_critic> EXECUTION LOCK:** after each task, run its Verification Command, fix errors, and DO NOT proceed until GREEN.
 
 ## PR #1: Advisor evaluation harness (repo-local, not shipped)
-**Objective:** a repeatable pilot. The `advisor-eval` skill, scenario fixtures and a scorecard ledger exist, and the control baseline is recorded before any advisor is written. `advisor-eval` is not an advisor: it is the maintainers' test harness that measures the advisors. The advisors themselves ship to product repositories through `.apm/skills/` (PRs 2–5); only this harness stays in the source repo.
+**Objective:** a repeatable pilot. The `advisor-eval` skill, scenario fixtures and a scorecard ledger exist, and a dry run proves the harness; the plain-session control (arm K) runs together with each advisor later, not as a separate baseline. `advisor-eval` is not an advisor: it is the maintainers' test harness that measures the advisors. The advisors themselves ship to product repositories through `.apm/skills/` (PRs 2–5); only this harness stays in the source repo.
 
 ## Execution State
-- **PR status:** review
+- **PR status:** ready_for_human_review
 - **Interaction policy:** interactive (user, 2026-10-09)
 - **Execution scope:** PR 1
 - **Scope Profile:** one PR; coordinator = highest unfinished task profile (1.1 `design_decision`); coordination `medium`
 - **Model routing:** inherit (source repo has no `.agent-army/config.json`); actor and judge sessions use the `claude -p` default model, recorded per run
 - **Last manual configuration:** stay current (no material model recommendation)
 - **Plan review limitation:** user approved rev 6 without an independent `plan-reviewer` pass (2026-10-09); review verdict stays `pending`
-- **Current task:** 1.2 (review), next 1.3
+- **Current task:** none (all tasks done; closure complete)
 - **Temporary delegation:** none
 - **Active roles:** none
-- **Last verified stage:** 1.2 GREEN, awaiting review (2026-10-09): 17 scenario dirs, each with request/resume/user/expected (`ls tests/fixtures/advisors/S*/request.md | wc -l` = 17), README table has 17 rows; oracles read through for observable decisions; `run.py --plan-only` assembles all 17 with isolation checks passing; `--web on|off` added for S9; `pace` wording tightened after the S1 dry run. Before that, 1.1 GREEN, awaiting review (2026-10-09). Dry run `run.py product-strategy --scenario S1 --arms K --no-ledger`: row `K 1/1/1/1/2/2/1/2/2 Σ13 ff1 | baseline` with all 9 scores (17 actor turns, $0.39, 1.6 min; 3 advisor turns per session); actor scratch has no `expected.md`/`user.md` (asserted); judge input has no arm label (grep clean); persona saw only `user.md` and advisor replies; child processes run with parent-session variables removed. Dry-run row not written to the ledger (baseline belongs to 1.3). `scripts/check.sh` green. Earlier RED: no skill, no S1, 0 ledger rows.
+- **Last verified stage:** closure (2026-10-09): 1.1 and 1.2 accepted by the user (continued past both review cards); 1.3 replaced by the baseline policy (user decision, no model run; `run.py` default `--arms N,K` verified). `run.py` now reports persona + judge cost as unscored overhead. Self-review of the diff + security pass: no secrets; child processes drop parent-session variables; scratch outside the repo; limit recorded that actor file tools are not sandboxed to scratch. No independent `code-reviewer` run (not requested). `scripts/check.sh` 152/0. Before that, 1.2 GREEN, awaiting review (2026-10-09): 17 scenario dirs, each with request/resume/user/expected (`ls tests/fixtures/advisors/S*/request.md | wc -l` = 17), README table has 17 rows; oracles read through for observable decisions; `run.py --plan-only` assembles all 17 with isolation checks passing; `--web on|off` added for S9; `pace` wording tightened after the S1 dry run. Before that, 1.1 GREEN, awaiting review (2026-10-09). Dry run `run.py product-strategy --scenario S1 --arms K --no-ledger`: row `K 1/1/1/1/2/2/1/2/2 Σ13 ff1 | baseline` with all 9 scores (17 actor turns, $0.39, 1.6 min; 3 advisor turns per session); actor scratch has no `expected.md`/`user.md` (asserted); judge input has no arm label (grep clean); persona saw only `user.md` and advisor replies; child processes run with parent-session variables removed. Dry-run row not written to the ledger (baseline belongs to 1.3). `scripts/check.sh` green. Earlier RED: no skill, no S1, 0 ledger rows.
 - **Awaiting decision:** none (RED accepted 2026-10-09: persona-driven simulated user, `run.py` allowed, S1 pulled into 1.1)
 
 ---
 
 ## Execution Progress
-- **Milestones:** 1) Task 1.1 harness + rubric + ledger · 2) Task 1.2 seventeen scenarios · 3) Task 1.3 K baseline (+ P or recorded skip) · 4) closure: review, security, docs, final verification
-- **Current milestone:** 2 of 4
+- **Milestones:** 1) Task 1.1 harness + rubric + ledger · 2) Task 1.2 seventeen scenarios · 3) Task 1.3 baseline policy · 4) closure: review, security, docs, final verification
+- **Current milestone:** 4 of 4 (closure done)
 - **Finish condition:** all three tasks verified, review + security clean, PR at `ready_for_human_review`; commit only after approval
 - **Last map change:** none
 - **Deferred ideas:** none
@@ -31,20 +31,20 @@
 ---
 
 ## Interaction Card
-- **Checkpoint:** task review (1.2)
-- **Progress:** step 2 of ~4 done (17 scenarios); next: 1.3 baseline run, then closure
-- **Completed:** S2–S17 fixtures with personas and oracles; fixtures README; `--web` switch; stricter `pace` wording
-- **Evidence:** 17/17 scenarios complete; plan-only run passes isolation for all 17; `scripts/check.sh` 152/0
-- **Review focus:** whether each oracle (`expected.md`) rewards decisions, not phrasing
-- **Question:** run the 1.3 baseline now (15 scenarios × plain session, ~25 min, ~$6), synthetic S1, without arm P?
-- **Options:** continue | direct a correction | show details | change scope
+- **Checkpoint:** final review
+- **Progress:** step 4 of 4 done; PR 1 complete
+- **Completed:** `advisor-eval` skill + `run.py`; rubric and ledger; 17 scenarios; baseline policy (K runs with each advisor)
+- **Evidence:** S1/K dry run row with 9 scores; plan-only isolation passes for all 17; `scripts/check.sh` 152/0
+- **Review focus:** oracles in `tests/fixtures/advisors/S*/expected.md`; the not-sandboxed file-tool limit
+- **Question:** merge GitHub PR #4 into `main`?
+- **Options:** merge | direct a correction | show details
 - **Discussion:** none
 
 ---
 
 ### Task 1.1: `advisor-eval` skill and scorecard ledger
 
-**Task status:** in review
+**Task status:** done
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
@@ -105,7 +105,7 @@ The judge also scores `pace` from the turn-by-turn transcript and turn durations
 
 ### Task 1.2: Scenario fixtures
 
-**Task status:** in review
+**Task status:** done
 
 **Execution Profile:**
 - **Bottleneck:** verification
@@ -170,55 +170,55 @@ Create `tests/fixtures/advisors/` with `README.md`, `shared/`, and one directory
 
 **Aligns with:** rev 1 plan §5 scenarios; manifest §2
 
-### Task 1.3: Baseline run (manual gate G0)
+### Task 1.3: Baseline policy (no separate baseline run)
 
-**Task status:** open
+**Task status:** done
 
 **Execution Profile:**
 - **Bottleneck:** verification
-- **Bottleneck rationale:** this executes a fixed protocol; the user supplies the real product idea for S1
-- **Escalation trigger:** a scenario cannot be scored, so its fixture needs repair
+- **Bottleneck rationale:** a policy decision plus a check that the harness enforces it; no model run
+- **Escalation trigger:** an advisor evaluation is run without arm K
 
 **Run Configuration:**
 - **Role:** main session
 - **Recommended:** set at dispatch
 - **Configuration source:** unknown
-- **Actual / adapter limitation:** set at dispatch
-- **User decision:** not needed
+- **Actual / adapter limitation:** inherit
+- **User decision:** user chose no separate baseline run (2026-10-09)
 
 **Action:**
-Run `advisor-eval` with arm K on all scenarios except S8 (evaluated in PR 6) and S17 (binding behavior, no meaningful plain-session arm), and arm P once (`--with-reference`) on S1, S3, S4 and S5. The rows become the baseline that every later advisor run is compared with. For S1, the user may replace the synthetic idea with a real one (≤ 1 page, frozen before the run).
-- **API/Component Contract:** baseline rows in `SCORECARDS.md`, marked `baseline`
+No separate baseline run. Arm K runs together with arm N in every advisor evaluation (`run.py` default `--arms N,K`), so each verdict compares a candidate with a control from the same run and nothing is paid twice. A K-only row is optional calibration, never a prerequisite. The S1 K dry run of Task 1.1 served as the first calibration (it showed the `pace` wording was too lenient). Arm P stays optional; the user decides at the first N evaluation in PR 2 whether it runs on S1, S3, S4 and S5. For S1 the user may still swap the synthetic idea for a real one (≤ 1 page, frozen before the run).
+- **API/Component Contract:** unchanged scorecard row; `baseline` verdict only for optional K-only rows
 - **Compatibility:** none
 - **Refactor checkpoint / recovery:** not applicable
-- The user decides on running arm P. Skipping it is allowed and gets recorded.
+- Why: a K run on its own decides nothing until an advisor exists; the reruns with each advisor would repeat it at the same cost.
 
 **Delegation Contract:**
-- **Goal:** baseline K scores exist for all 16 advisor scenarios.
-- **Inputs / approved read paths:** `tests/fixtures/advisors/**`, `.claude/skills/advisor-eval/SKILL.md`
+- **Goal:** every advisor verdict carries a same-run K arm.
+- **Inputs / approved read paths:** `.claude/skills/advisor-eval/**`
 - **Approved write scope:**
-  - `tester`: `tests/fixtures/advisors/SCORECARDS.md`
-  - `coder` / main session: none
+  - `tester`: none
+  - `coder` / main session: `.claude/skills/advisor-eval/SKILL.md` (policy wording), this PR file
 - **Forbidden / never-touch zones:** `.apm/**`
-- **Start gate:** Interactive: confirm the S1 idea and whether arm P runs | Autonomous: K only
-- **STOP and return `awaiting_approval` when:** arm P requires installing anything outside a scratch dir.
+- **Start gate:** Interactive: user decision recorded | Autonomous: not applicable
+- **STOP and return `awaiting_approval` when:** a gate needs K-only rows after all.
 
-**Verification Command:** count of `baseline` rows in `SCORECARDS.md` ≥ 15
+**Verification Command:** `grep -n 'default="N,K"' .claude/skills/advisor-eval/run.py` and the policy line in `SKILL.md`
 
 **Testing Strategy & Cases (Testing Trophy):**
-- **Risk / level choice:** risk = no baseline, so later "N wins" claims cannot be checked
-- **E2E / INTEGRATION:** ✓ 15 K rows (S8 and S17 have no plain-session baseline); ✓ P rows or a recorded skip
+- **Risk / level choice:** risk = a verdict without a control; checked directly in the harness default and docs
+- **E2E / INTEGRATION:** ✓ `run.py` defaults to N,K; ✓ `SKILL.md` states K runs with N
 - **UNIT:** not applicable
 
 **TDD Execution & Auto-Critic:**
-1. Task type: evaluation run.
+1. Task type: policy change.
 2. Not applicable.
-3. Run the protocol.
-4. Verify the row count; record it.
+3. Update the task, the manifest and `SKILL.md`.
+4. Run the grep checks; record them.
 
-**Aligns with:** D4 (pilot first)
+**Aligns with:** D4 (evaluation with a same-run control)
 
 ---
 
 > **✅ PR Manual Acceptance:**
-> - [ ] **Functional:** run `advisor-eval` on S1 arm K yourself; the scorecard row matches what you saw
+> - [ ] **Functional:** run `advisor-eval` on S1 arm K yourself; the scorecard row matches what you saw (optional now: the dry run in Task 1.1 did this once)

@@ -130,7 +130,7 @@ Write the contract text from manifest §3 "Data Flow / Strategy" (shared contrac
 
 **TDD Execution & Auto-Critic:**
 1. Task type: non-code (skill prose) with a behavioral gate.
-2. Baseline K rows from PR 1 serve as the bar.
+2. The bar is arm K from the same run.
 3. Write both skills.
 4. Run check + eval; record the scorecard rows; apply the decision rule.
 
@@ -178,7 +178,7 @@ Write the contract text from manifest §3 "Data Flow / Strategy" (shared contrac
 
 **TDD Execution & Auto-Critic:**
 1. Task type: non-code with a behavioral gate.
-2. Baseline from PR 1.
+2. The bar is arm K from the same run.
 3. Write both skills.
 4. Run check + eval; record the rows.
 
