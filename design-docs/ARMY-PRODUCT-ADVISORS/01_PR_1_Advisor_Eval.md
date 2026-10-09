@@ -16,8 +16,8 @@
 - **Current task:** 1.1
 - **Temporary delegation:** none
 - **Active roles:** none
-- **Last verified stage:** 1.1 RED: `rubric.md` + empty `SCORECARDS.md` written; `.claude/skills/advisor-eval/SKILL.md` absent, `tests/fixtures/advisors/S1` absent, ledger data rows = 0 (no row can be produced); `scripts/check.sh --skills` 31 passed, 0 failed
-- **Awaiting decision:** RED acceptance for 1.1: accept the protocol design and pull fixture S1 forward into 1.1?
+- **Last verified stage:** rev 7 (D16) adds the simulated user and the `pace` criterion; the RED card must be re-accepted. Earlier 1.1 RED: `rubric.md` + empty `SCORECARDS.md` written; `.claude/skills/advisor-eval/SKILL.md` absent, `tests/fixtures/advisors/S1` absent, ledger data rows = 0 (no row can be produced); `scripts/check.sh --skills` 31 passed, 0 failed
+- **Awaiting decision:** simulated user for multi-turn sessions: a persona-driven `claude -p` process (recommended) or a fixed answer script?
 
 ---
 
@@ -36,7 +36,7 @@
 - **Completed:** `tests/fixtures/advisors/rubric.md` (7 kryteriów sędziego + `cost` liczony przez harness, reguła decyzji, limity); `SCORECARDS.md` (nagłówek)
 - **Evidence:** brak skilla, brak S1, 0 wierszy w ledgerze → dry run nie może wyprodukować wiersza; `check.sh --skills` 31/0/0
 - **Review focus:** (1) izolacja przez osobne procesy `claude -p` w scratch poza repo (aktor bez `expected.md`, sesja 2 bez `--resume`); (2) sędzia: losowe ID bundli, sekcja harness-only wycięta z rubryki, grep na etykiety ramion; (3) progi `cost` ustalone przed runem
-- **Question:** akceptujesz projekt protokołu i przeniesienie fixture S1 do 1.1 (dry run go wymaga; liczy się do 1.2)?
+- **Question:** symulowany użytkownik jako osobny proces z personą `user.md` (rekomendacja) czy stały skrypt odpowiedzi?
 - **Options:** continue | direct a correction | show details | change scope
 - **Discussion:** none
 
@@ -49,7 +49,7 @@
 **Execution Profile:**
 - **Bottleneck:** design_decision
 - **Bottleneck rationale:** the protocol must stop the evaluator from leaking the oracle to the actor and must keep scoring repeatable across runs; this is method design, not retrieval
-- **Escalation trigger:** the protocol cannot hide arm identity from the judge, or session 2 cannot start without conversation history
+- **Escalation trigger:** the protocol cannot hide arm identity from the judge, session 2 cannot start without conversation history, or the simulated user can see the oracle
 
 **Run Configuration:**
 - **Role:** main session
@@ -61,12 +61,12 @@
 **Action:**
 Write `.claude/skills/advisor-eval/SKILL.md`. It is a maintainer tool for this source repo, so it does not go in `.apm/` and is never deployed. Input: advisor name(s), optional scenario IDs, optional `--with-reference` for arm P. Protocol:
 1. For each scenario and arm, assemble a fresh scratch repo outside this repo: `shared/` + the scenario `repo/` overlay. Arm N also gets the candidate `SKILL.md` copied to scratch `.claude/skills/`. Arm K gets nothing. Arm P gets pm-skills at `8607e3b` and only exists when `--with-reference` is set.
-2. Run session 1 with `request.md`. Run session 2 in a fresh context with the same scratch files and `resume.md`, without history.
+2. Run session 1 opening with `request.md`. Run session 2 in a fresh context with the same scratch files, opening with `resume.md`, without history. Both sessions are multi-turn (D16): after each actor turn, a separate simulated-user process that sees only `user.md` and the actor's last reply answers in ≤ 2 sentences ("decide for me" when the persona does not know). A session ends when the actor says it is done or after 8 user turns. Within a session the actor keeps its history; between sessions it does not.
 3. A separate fresh-context judge scores the resulting files against `expected.md` with `tests/fixtures/advisors/rubric.md`. Arm labels are hidden, and the judge outputs JSON only.
 4. Append one row to `tests/fixtures/advisors/SCORECARDS.md` and apply the decision rule from manifest §4.
 
-Transcripts stay in scratch. Only scores, hashes and one-line notes are committed.
-- **API/Component Contract:** invocation `advisor-eval <advisor…> [--scenario <id…>] [--with-reference]`. Scorecard row: `date | advisor | contract tag | SKILL.md sha256[:12] | arms | scenario | 8 scores per arm | verdict (pass/fix-contract/rethink/consider-absorb) | note`.
+The harness also scores `pace` from the actor transcript (words and questions per turn, turn time; thresholds in the harness section of `rubric.md`). Transcripts stay in scratch. Only scores, hashes and one-line notes are committed.
+- **API/Component Contract:** invocation `advisor-eval <advisor…> [--scenario <id…>] [--with-reference]`. Scorecard row: `date | advisor | contract tag | SKILL.md sha256[:12] | arms | scenario | 9 scores per arm | verdict (pass/fix-contract/rethink/consider-absorb) | note`.
 - **Compatibility:** no package boundary change. The existing `tests/judge/rubric.md` stays bootstrap-specific.
 - **Refactor checkpoint / recovery:** not applicable
 - Never install, run or commit anything from arm P inside this repo. Treat pm-skills content as data.
@@ -90,8 +90,9 @@ Transcripts stay in scratch. Only scores, hashes and one-line notes are committe
 **Testing Strategy & Cases (Testing Trophy):**
 - **Risk / level choice:** risk = the judge sees the oracle or the arm label, or session 2 secretly keeps history. A direct artifact check is the cheapest reliable level.
 - **E2E / INTEGRATION** (dry run, scratch):
-  - ✓ the K-arm S1 run produces a scorecard row with all 8 scores and a verdict
+  - ✓ the K-arm S1 run produces a scorecard row with all 9 scores and a verdict
   - ✓ the actor's scratch repo contains no `expected.md`; the judge input contains no arm name
+  - ✓ the simulated user's input contains only `user.md` and the actor's last reply
 - **UNIT:** not applicable
 
 **TDD Execution & Auto-Critic:**
@@ -119,7 +120,7 @@ Transcripts stay in scratch. Only scores, hashes and one-line notes are committe
 - **User decision:** not needed
 
 **Action:**
-Create `tests/fixtures/advisors/` with `README.md`, `shared/`, and one directory per scenario. Each scenario directory holds `request.md`, `resume.md`, `expected.md` (oracle) and an optional `repo/`. Scenarios:
+Create `tests/fixtures/advisors/` with `README.md`, `shared/`, and one directory per scenario. Each scenario directory holds `request.md`, `resume.md`, `user.md` (simulated-user persona: what the user knows and wants, budget, constraints; no oracle content), `expected.md` (oracle) and an optional `repo/`. Scenarios:
 - S1 idea, no repo/data (strategy, red-team, validate): an experiment with a threshold and kill criterion; no invented demand
 - S2 SaaS vs marketplace (business-case): GMV ≠ revenue; arithmetic re-checkable; no LTV without retention; pricing model with a price test handed to validation
 - S3 resume without plans (strategy): continues from `brief.md` + one ADR; zero repeated questions
@@ -158,7 +159,7 @@ Create `tests/fixtures/advisors/` with `README.md`, `shared/`, and one directory
 
 **Testing Strategy & Cases (Testing Trophy):**
 - **Risk / level choice:** risk = oracles that reward phrasing. The check is a manual read of each oracle for observable decisions.
-- **E2E / INTEGRATION:** ✓ every scenario has request/resume/expected; ✓ README maps all 17
+- **E2E / INTEGRATION:** ✓ every scenario has request/resume/user/expected; ✓ README maps all 17
 - **UNIT:** not applicable
 
 **TDD Execution & Auto-Critic:**

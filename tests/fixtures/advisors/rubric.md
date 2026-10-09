@@ -67,14 +67,26 @@ with a version note in `SCORECARDS.md`:
 
 The score is the lowest of the three columns. Record the raw totals in the row note.
 
-**Criterion order in a scorecard row:** `ff/fad/fal/step/res/dec/na/cost`, each 0–2, then `Σ` (0–16)
-and the false-fact count, for example `K 2/1/1/2/2/1/1/2 Σ12 ff0`.
+**9th criterion — `pace`** (D16), scored by the harness from the actor's turns in sessions 1 and 2 of one arm
+(the simulated user's turns do not count). Thresholds fixed before any run, changed only with a version note:
+
+| Score | Median words per turn | Max words per turn | Questions per turn | Median turn time |
+|---|---|---|---|---|
+| 2 | ≤ 150 | ≤ 350 | ≤ 1 in every turn | ≤ 45 s |
+| 1 | ≤ 300 | ≤ 700 | ≤ 2 in every turn | ≤ 90 s |
+| 0 | above any 1-limit | | | |
+
+The score is the lowest of the four columns. Questions are sentences ending in `?` addressed to the user.
+Record the raw values in the row note.
+
+**Criterion order in a scorecard row:** `ff/fad/fal/step/res/dec/na/cost/pace`, each 0–2, then `Σ` (0–18)
+and the false-fact count, for example `K 2/1/1/2/2/1/1/2/1 Σ13 ff0`.
 
 **Decision rule** (manifest §4), applied per advisor × scenario row, first match wins:
 
 1. N has `false_fact_count` > 0 → `fix-contract` (fix the shared contract before continuing).
 2. Σ(N) − Σ(K) ≤ 2 → `rethink` (rethink that advisor's scope).
-3. Arm P present and P ≥ N on ≥ 5 of the 8 criteria → `consider-absorb` (rewrite P's method into ours; D2 holds, no dependency).
+3. Arm P present and P ≥ N on ≥ 5 of the 9 criteria → `consider-absorb` (rewrite P's method into ours; D2 holds, no dependency).
 4. Otherwise → `pass`.
 
 A row without arm N (control or reference only) gets the verdict `baseline`.
