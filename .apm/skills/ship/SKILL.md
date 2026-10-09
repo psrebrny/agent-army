@@ -332,6 +332,10 @@ before and after every role dispatch, rewrite the selected PR file: set `PR stat
 Interaction Card. Never leave the previous worker listed as active after it returns. Keep detailed execution
 evidence in `Last verified stage` and test/review reports; do not replace the task's planning status with
 the English execution-step label. Update the progress pointer from this evidence, without a second completion ledger.
+Whenever a PR's status changes (first dispatch, `awaiting_approval`, `blocked`, `ready_for_human_review`), also
+refresh the manifest's Planning Session `Progress` (each PR's status in one line) and `Next action` (the one next
+step) in the same write, so the blueprint entry point never shows an older state than its PR files; touch no
+other manifest field.
 
 - **Architect:** before → `planned`, active `architect`; after → `awaiting_approval`, active `none`,
   `Execution scope: unset`, `Scope Profile: unset`, blueprint path, current Planning Session stage/revision,
