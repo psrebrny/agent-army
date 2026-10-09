@@ -159,10 +159,16 @@ def judge(scenario, bundles, base, model_args):
     res = claude([*model_args, "--tools", "Read,Glob,Grep", "--append-system-prompt", rubric],
                  jdir, "Score every bundle in bundles/ now. Reply with the JSON object only.")
     text = res.get("result", "")
-    m = re.search(r"\{.*\}", text, re.S)
-    if not m:
-        die(f"judge returned no JSON; judge dir kept at {jdir}")
-    return json.loads(m.group(0)), jdir, res.get("total_cost_usd") or 0
+    (jdir / "judge-output.txt").write_text(text)
+    start = text.find("{")
+    try:
+        # first complete object only: the judge may add text (with braces) after it
+        result = json.JSONDecoder().raw_decode(text[start:])[0] if start >= 0 else None
+    except ValueError:
+        result = None
+    if not isinstance(result, dict):
+        die(f"judge returned no JSON object; raw reply in {jdir}/judge-output.txt")
+    return result, jdir, res.get("total_cost_usd") or 0
 
 
 def verdict(rows):
