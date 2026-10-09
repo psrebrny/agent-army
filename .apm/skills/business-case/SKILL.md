@@ -26,11 +26,12 @@ number: an input without a source is an `A` with a test.
    result. Show break-even (units or paying customers per month), cash needed until break-even, and
    sensitivity: the 2–3 inputs that move the result most at ±20%.
 5. **Guard the usual traps.** ROI only with a stated horizon and cost definition. No LTV without
-   observed retention; say "no LTV: no retention data". Before writing, recompute every total and
-   check that scenario rows add up.
+   observed retention; say "no LTV: no retention data". Recompute every total and check that scenario
+   rows add up before you state any conclusion, in chat or in the file; never headline a number first.
 6. **Pricing.** Compare models (flat, per seat, usage, freemium, one-off) and 1–3 packages. Anchors
    from `market-research` are third-party data. End with a willingness-to-pay hypothesis handed to
-   `/validate-product` as a price test: a pre-order at a price is behavior, a survey is stated intent.
+   `/validate-product` as a price test with a success threshold and a kill criterion fixed in advance: a
+   pre-order at a price is behavior, a survey is stated intent.
 7. **Conclude conditionally** ("B earns more only if at least N bookings per month go through us") and
    name the cheapest way to check the deciding assumption.
 
