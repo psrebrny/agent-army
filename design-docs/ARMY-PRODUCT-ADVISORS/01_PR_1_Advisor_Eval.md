@@ -13,17 +13,17 @@
 - **Model routing:** inherit (source repo has no `.agent-army/config.json`); actor and judge sessions use the `claude -p` default model, recorded per run
 - **Last manual configuration:** stay current (no material model recommendation)
 - **Plan review limitation:** user approved rev 6 without an independent `plan-reviewer` pass (2026-10-09); review verdict stays `pending`
-- **Current task:** 1.1 (review), next 1.2
+- **Current task:** 1.2 (review), next 1.3
 - **Temporary delegation:** none
 - **Active roles:** none
-- **Last verified stage:** 1.1 GREEN, awaiting review (2026-10-09). Dry run `run.py product-strategy --scenario S1 --arms K --no-ledger`: row `K 1/1/1/1/2/2/1/2/2 Σ13 ff1 | baseline` with all 9 scores (17 actor turns, $0.39, 1.6 min; 3 advisor turns per session); actor scratch has no `expected.md`/`user.md` (asserted); judge input has no arm label (grep clean); persona saw only `user.md` and advisor replies; child processes run with parent-session variables removed. Dry-run row not written to the ledger (baseline belongs to 1.3). `scripts/check.sh` green. Earlier RED: no skill, no S1, 0 ledger rows.
+- **Last verified stage:** 1.2 GREEN, awaiting review (2026-10-09): 17 scenario dirs, each with request/resume/user/expected (`ls tests/fixtures/advisors/S*/request.md | wc -l` = 17), README table has 17 rows; oracles read through for observable decisions; `run.py --plan-only` assembles all 17 with isolation checks passing; `--web on|off` added for S9; `pace` wording tightened after the S1 dry run. Before that, 1.1 GREEN, awaiting review (2026-10-09). Dry run `run.py product-strategy --scenario S1 --arms K --no-ledger`: row `K 1/1/1/1/2/2/1/2/2 Σ13 ff1 | baseline` with all 9 scores (17 actor turns, $0.39, 1.6 min; 3 advisor turns per session); actor scratch has no `expected.md`/`user.md` (asserted); judge input has no arm label (grep clean); persona saw only `user.md` and advisor replies; child processes run with parent-session variables removed. Dry-run row not written to the ledger (baseline belongs to 1.3). `scripts/check.sh` green. Earlier RED: no skill, no S1, 0 ledger rows.
 - **Awaiting decision:** none (RED accepted 2026-10-09: persona-driven simulated user, `run.py` allowed, S1 pulled into 1.1)
 
 ---
 
 ## Execution Progress
 - **Milestones:** 1) Task 1.1 harness + rubric + ledger · 2) Task 1.2 seventeen scenarios · 3) Task 1.3 K baseline (+ P or recorded skip) · 4) closure: review, security, docs, final verification
-- **Current milestone:** 1 of 4
+- **Current milestone:** 2 of 4
 - **Finish condition:** all three tasks verified, review + security clean, PR at `ready_for_human_review`; commit only after approval
 - **Last map change:** none
 - **Deferred ideas:** none
@@ -31,12 +31,12 @@
 ---
 
 ## Interaction Card
-- **Checkpoint:** task review (1.1)
-- **Progress:** step 1 of ~4 done (harness verified); next: 1.2 the other 16 scenarios, then 1.3 baseline, then closure
-- **Completed:** `.claude/skills/advisor-eval/SKILL.md` + `run.py`; S1 fixture; dry run S1/K produced a full row
-- **Evidence:** `K 1/1/1/1/2/2/1/2/2 Σ13 ff1 | baseline`; isolation checks clean
-- **Review focus:** the judge gave plain Claude `pace` 2 although its first turn was a multi-section plan; the `pace` wording may be too lenient. Recalibrate on more scenarios before relying on it.
-- **Question:** continue with 1.2?
+- **Checkpoint:** task review (1.2)
+- **Progress:** step 2 of ~4 done (17 scenarios); next: 1.3 baseline run, then closure
+- **Completed:** S2–S17 fixtures with personas and oracles; fixtures README; `--web` switch; stricter `pace` wording
+- **Evidence:** 17/17 scenarios complete; plan-only run passes isolation for all 17; `scripts/check.sh` 152/0
+- **Review focus:** whether each oracle (`expected.md`) rewards decisions, not phrasing
+- **Question:** run the 1.3 baseline now (15 scenarios × plain session, ~25 min, ~$6), synthetic S1, without arm P?
 - **Options:** continue | direct a correction | show details | change scope
 - **Discussion:** none
 
@@ -105,7 +105,7 @@ The judge also scores `pace` from the turn-by-turn transcript and turn durations
 
 ### Task 1.2: Scenario fixtures
 
-**Task status:** open
+**Task status:** in review
 
 **Execution Profile:**
 - **Bottleneck:** verification

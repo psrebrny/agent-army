@@ -26,7 +26,8 @@ python3 .claude/skills/advisor-eval/run.py <advisor> [--scenario S1 S3] [--arms 
    `/<advisor>`; K = a plain session with the same messages; P = the pm-skills reference (optional).
 2. **Scratch.** One fresh repo per scenario × arm in a temp dir outside this repo: `shared/` plus the
    scenario's `repo/` overlay. `expected.md` and `user.md` never enter it. A `web-on` file in the
-   scenario dir enables web tools for the actor; otherwise the actor has file tools only.
+   scenario dir enables web tools for the actor; otherwise the actor has file tools only. `--web on|off`
+   forces it (S9 runs once each way; the row's scenario reads `S9 web` or `S9`).
 3. **Sessions.** Session 1 opens with `request.md`; session 2 opens with `resume.md` in a new session
    over the same files, without history. Each session is multi-turn: a separate simulated-user process
    answers every advisor turn from the scenario's `user.md` persona and never sees the oracle. A session

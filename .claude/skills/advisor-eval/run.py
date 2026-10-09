@@ -7,7 +7,7 @@ never by this script; the script only scores `cost` and applies the decision rul
 
 Usage:
   run.py <advisor> [--scenario S1 ...] [--arms N,K] [--with-reference --reference-dir DIR]
-         [--model MODEL] [--plan-only] [--no-ledger]
+         [--model MODEL] [--web scenario|on|off] [--plan-only] [--no-ledger]
 """
 import argparse
 import datetime
@@ -183,6 +183,8 @@ def main():
     ap.add_argument("--with-reference", action="store_true")
     ap.add_argument("--reference-dir", type=Path)
     ap.add_argument("--model")
+    ap.add_argument("--web", choices=["scenario", "on", "off"], default="scenario",
+                    help="web tools for the actor: as the scenario's `web-on` file says, or forced")
     ap.add_argument("--plan-only", action="store_true", help="assemble and check isolation, run no model")
     ap.add_argument("--no-ledger", action="store_true")
     a = ap.parse_args()
@@ -214,7 +216,7 @@ def main():
     for scenario in find_scenarios(a.scenario):
         sid = scenario.name.split("-")[0]
         persona = (scenario / "user.md").read_text()
-        web = (scenario / "web-on").exists()
+        web = (scenario / "web-on").exists() if a.web == "scenario" else a.web == "on"
         actor_args = [*model_args, "--tools", ACTOR_TOOLS + ("," + WEB_TOOLS if web else ""),
                       "--permission-mode", "acceptEdits"]
         bundles, ids, costs, notes = {}, {}, {}, []
@@ -265,7 +267,8 @@ def main():
         cells = "; ".join(f"{arm} {'/'.join(map(str, r['scores']))} Σ{r['sum']} ff{r['ff']}"
                           for arm, r in rows.items())
         note = " | ".join(notes).replace("|", "/").replace("\n", " ")
-        row = (f"| {datetime.date.today()} | {a.advisor} | {tag} | {sha} | {','.join(rows)} | {sid} | "
+        sid_label = sid + (" web" if web else "") if (scenario / "web-on").exists() or a.web != "scenario" else sid
+        row = (f"| {datetime.date.today()} | {a.advisor} | {tag} | {sha} | {','.join(rows)} | {sid_label} | "
                f"{cells} | {v} | {note} |")
         print(row)
         if not a.no_ledger:

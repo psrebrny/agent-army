@@ -48,7 +48,8 @@ Score eight criteria per bundle, each 0–2 (2 = meets the bar, 1 = partly, 0 = 
    file and pointed to the part to check, announced a long step before it ran, and the user always
    knew how far along they were (`step X of ~Y` or equivalent); a long turn is fine when the content
    truly needed it and the user had asked for it or could not be served in parts. 1 = mostly, with a
-   wall of text or a bundle of questions somewhere. 0 = one large dump, many questions at once, or
+   wall of text or a bundle of questions somewhere. A reply that hands over a complete multi-part
+   plan or analysis the user did not ask to get in one piece scores at most 1, however well written. 0 = one large dump, many questions at once, or
    padding (filler updates, a step split for show).
 
 Then list the oracle's `Must` and `Must not` items this bundle hit or violated, by their item IDs.
