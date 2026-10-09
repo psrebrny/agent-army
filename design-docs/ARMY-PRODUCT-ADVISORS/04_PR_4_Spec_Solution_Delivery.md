@@ -36,13 +36,11 @@ none
 
 ### Task 4.1: `product-spec`
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** strong
-- **Deliberation:** medium
 - **Bottleneck:** design_decision
-- **Routing rationale:** stories must be concrete enough to slice, without drifting into technical design
+- **Bottleneck rationale:** stories must be concrete enough to slice, without drifting into technical design
 - **Escalation trigger:** S13 output contains a technology choice, or a story without acceptance criteria
 
 **Run Configuration:**
@@ -86,13 +84,11 @@ The MVP goal must be tied to validated `F`/`A` IDs. If stage 3 is not done, the 
 
 ### Task 4.2: `solution-architecture`
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** strong
-- **Deliberation:** high
 - **Bottleneck:** design_decision
-- **Routing rationale:** these are high-stakes, hard-to-reverse choices; the model must also resist stating vendor prices or limits from memory
+- **Bottleneck rationale:** these are high-stakes, hard-to-reverse choices; the model must also resist stating vendor prices or limits from memory
 - **Escalation trigger:** S15 recommends microservices for a solo founder without a stated reason, or states a price without a source
 
 **Run Configuration:**
@@ -136,13 +132,11 @@ Inputs: stories, register constraints (team skills, time, budget), business case
 
 ### Task 4.3: `delivery-plan`
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** strong
-- **Deliberation:** high
 - **Bottleneck:** design_decision
-- **Routing rationale:** slicing for value and risk is the craft that most often fails (horizontal layers, big-bang MVP)
+- **Bottleneck rationale:** slicing for value and risk is the craft that most often fails (horizontal layers, big-bang MVP)
 - **Escalation trigger:** S16 output contains a horizontal slice, hour estimates, or re-plans delivered items
 
 **Run Configuration:**

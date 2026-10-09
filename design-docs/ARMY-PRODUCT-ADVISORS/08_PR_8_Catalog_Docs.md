@@ -36,13 +36,11 @@ none
 
 ### Task 8.1: `.apm/README.md` catalog
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** mid
-- **Deliberation:** low
 - **Bottleneck:** retrieval
-- **Routing rationale:** describes skills that already exist; the risk is overclaiming
+- **Bottleneck rationale:** describes skills that already exist; the risk is overclaiming
 - **Escalation trigger:** a catalog claim has no matching skill text
 
 **Run Configuration:**
@@ -85,13 +83,11 @@ Replace the "proposals" framing with the delivered catalog. Open with "Not sure 
 
 ### Task 8.2: Root, baseline and test docs + final verification
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** light
-- **Deliberation:** low
 - **Bottleneck:** retrieval
-- **Routing rationale:** small factual edits in known places
+- **Bottleneck rationale:** small factual edits in known places
 - **Escalation trigger:** final verification fails
 
 **Run Configuration:**

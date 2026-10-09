@@ -36,13 +36,11 @@ none
 
 ### Task 2.1: Contract block, identity check, `SOURCES.md`
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** strong
-- **Deliberation:** high
 - **Bottleneck:** design_decision
-- **Routing rationale:** the block is the behavior every product skill shares; ≤ 120 lines must carry record types, store binding rules, register, output format, ADR template, stage model, work item format and safety rules
+- **Bottleneck rationale:** the block is the behavior every product skill shares; ≤ 120 lines must carry record types, store binding rules, register, output format, ADR template, stage model, work item format and safety rules
 - **Escalation trigger:** the block exceeds 120 lines, or a rule needs advisor-specific wording
 
 **Run Configuration:**
@@ -92,13 +90,11 @@ Write the contract text from manifest §3 "Data Flow / Strategy" (shared contrac
 
 ### Task 2.2: `product-strategy` + `product-red-team`
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** strong
-- **Deliberation:** high
 - **Bottleneck:** design_decision
-- **Routing rationale:** these are the two core methods; quality depends on how the questioning is structured, not on facts
+- **Bottleneck rationale:** these are the two core methods; quality depends on how the questioning is structured, not on facts
 - **Escalation trigger:** G1 shows false facts or N − K ≤ 2
 
 **Run Configuration:**
@@ -142,13 +138,11 @@ Write the contract text from manifest §3 "Data Flow / Strategy" (shared contrac
 
 ### Task 2.3: `market-research` + `validate-product`
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** strong
-- **Deliberation:** medium
 - **Bottleneck:** design_decision
-- **Routing rationale:** both need strict evidence labelling; validation also needs the difference between a prepared experiment and an executed one
+- **Bottleneck rationale:** both need strict evidence labelling; validation also needs the difference between a prepared experiment and an executed one
 - **Escalation trigger:** a run reports a planned experiment as a result
 
 **Run Configuration:**

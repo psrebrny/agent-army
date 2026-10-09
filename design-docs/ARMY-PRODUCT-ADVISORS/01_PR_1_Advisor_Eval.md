@@ -3,7 +3,7 @@
 > 2. **<auto_critic> EXECUTION LOCK:** after each task, run its Verification Command, fix errors, and DO NOT proceed until GREEN.
 
 ## PR #1: Advisor evaluation harness (repo-local, not shipped)
-**Objective:** a repeatable pilot. The `advisor-eval` skill, scenario fixtures and a scorecard ledger exist, and the control baseline is recorded before any advisor is written.
+**Objective:** a repeatable pilot. The `advisor-eval` skill, scenario fixtures and a scorecard ledger exist, and the control baseline is recorded before any advisor is written. `advisor-eval` is not an advisor: it is the maintainers' test harness that measures the advisors. The advisors themselves ship to product repositories through `.apm/skills/` (PRs 2–5); only this harness stays in the source repo.
 
 ## Execution State
 - **PR status:** planned
@@ -36,13 +36,11 @@ none
 
 ### Task 1.1: `advisor-eval` skill and scorecard ledger
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** strong
-- **Deliberation:** high
 - **Bottleneck:** design_decision
-- **Routing rationale:** the protocol must stop the evaluator from leaking the oracle to the actor and must keep scoring repeatable across runs; this is method design, not retrieval
+- **Bottleneck rationale:** the protocol must stop the evaluator from leaking the oracle to the actor and must keep scoring repeatable across runs; this is method design, not retrieval
 - **Escalation trigger:** the protocol cannot hide arm identity from the judge, or session 2 cannot start without conversation history
 
 **Run Configuration:**
@@ -98,13 +96,11 @@ Transcripts stay in scratch. Only scores, hashes and one-line notes are committe
 
 ### Task 1.2: Scenario fixtures
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** mid
-- **Deliberation:** medium
 - **Bottleneck:** verification
-- **Routing rationale:** scenarios are short; the hard part is making each oracle observable instead of tied to wording
+- **Bottleneck rationale:** scenarios are short; the hard part is making each oracle observable instead of tied to wording
 - **Escalation trigger:** an oracle cannot be judged from files alone
 
 **Run Configuration:**
@@ -167,13 +163,11 @@ Create `tests/fixtures/advisors/` with `README.md`, `shared/`, and one directory
 
 ### Task 1.3: Baseline run (manual gate G0)
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** mid
-- **Deliberation:** low
 - **Bottleneck:** verification
-- **Routing rationale:** this executes a fixed protocol; the user supplies the real product idea for S1
+- **Bottleneck rationale:** this executes a fixed protocol; the user supplies the real product idea for S1
 - **Escalation trigger:** a scenario cannot be scored, so its fixture needs repair
 
 **Run Configuration:**

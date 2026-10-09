@@ -36,13 +36,11 @@ none
 
 ### Task 7.1: Registry, versions, upgrade recommendation
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** strong
-- **Deliberation:** medium
 - **Bottleneck:** verification
-- **Routing rationale:** a small code change with migration risk; `is_agent_army_skills()` requiring all names changes how a 0.3.1 install (5 skills) is detected
+- **Bottleneck rationale:** a small code change with migration risk; `is_agent_army_skills()` requiring all names changes how a 0.3.1 install (5 skills) is detected
 - **Escalation trigger:** a 0.3.1 fixture loses a local file or `bootstrap` treats it as foreign
 
 **Run Configuration:**
@@ -92,13 +90,11 @@ In `bootstrap.py`, set `SKILLS` to the 19 names, `PACKAGE_VERSION = "0.4.0"` and
 
 ### Task 7.2: `check.sh` package rules
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** mid
-- **Deliberation:** low
 - **Bottleneck:** verification
-- **Routing rationale:** deterministic file checks modelled on existing ones
+- **Bottleneck rationale:** deterministic file checks modelled on existing ones
 - **Escalation trigger:** a rule produces a false positive on existing skills
 
 **Run Configuration:**
@@ -147,13 +143,11 @@ Add to `check.sh --skills`:
 
 ### Task 7.3: Pack and real local install
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** light
-- **Deliberation:** low
 - **Bottleneck:** verification
-- **Routing rationale:** runs existing commands; checks the `SOURCES.md` packaging assumption
+- **Bottleneck rationale:** runs existing commands; checks the `SOURCES.md` packaging assumption
 - **Escalation trigger:** APM drops root files in `.apm/`
 
 **Run Configuration:**

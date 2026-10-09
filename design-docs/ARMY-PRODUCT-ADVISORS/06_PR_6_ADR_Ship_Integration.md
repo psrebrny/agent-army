@@ -3,7 +3,7 @@
 > 2. **<auto_critic> EXECUTION LOCK:** after each task, run its Verification Command, fix errors, and DO NOT proceed until GREEN.
 
 ## PR #6: ADRs and the `/ship` boundary
-**Objective:** `docs-writer` and the `/ship` docs stage write ADRs with the shared template before commit, move plan decisions into ADRs before a task closes, and mark a delivered work item `delivered` in its bound store. `architect` accepts `docs/product/*` as input. `/ship` recommends an interaction mode from the tasks' Execution Profiles (D13). No new mandatory gate.
+**Objective:** `docs-writer` and the `/ship` docs stage write ADRs with the shared template before commit, move plan decisions into ADRs before a task closes, and mark a delivered work item `delivered` in its bound store. `architect` accepts `docs/product/*` as input. `/ship` recommends an interaction mode from the tasks' Execution Profiles (D13). Blueprint task statuses are English (D14) and the Execution Profile drops `Capability` and `Deliberation` (D15). No new mandatory gate.
 
 ## Execution State
 - **PR status:** planned
@@ -36,13 +36,11 @@ none
 
 ### Task 6.1: `docs-writer`, `/ship` §5 and `architect` inputs
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** mid
-- **Deliberation:** medium
 - **Bottleneck:** design_decision
-- **Routing rationale:** these are small, targeted edits to three contracts that already exist; the risk is adding a gate or a second ADR format
+- **Bottleneck rationale:** these are small, targeted edits to three contracts that already exist; the risk is adding a gate or a second ADR format
 - **Escalation trigger:** `check.sh` interaction contract fails, or the change creates a new `/ship` pause
 
 **Run Configuration:**
@@ -97,13 +95,11 @@ none
 
 ### Task 6.2: ADR parity check + S8 gate
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** light
-- **Deliberation:** low
 - **Bottleneck:** verification
-- **Routing rationale:** a mechanical comparison of two field lists plus one fixture run
+- **Bottleneck rationale:** a mechanical comparison of two field lists plus one fixture run
 - **Escalation trigger:** S8 produces an ADR for the trivial fix
 
 **Run Configuration:**
@@ -146,13 +142,11 @@ Add `check_adr_parity` to `scripts/check.sh`. It extracts the ADR field names an
 
 ### Task 6.3: Mode recommendation in `/ship`
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** mid
-- **Deliberation:** medium
 - **Bottleneck:** design_decision
-- **Routing rationale:** a small edit to an existing, checked contract; the risk is turning a recommendation into a new pause or a third mode
+- **Bottleneck rationale:** a small edit to an existing, checked contract; the risk is turning a recommendation into a new pause or a third mode
 - **Escalation trigger:** `check_interaction_contract` fails, or the wording makes the recommendation binding
 
 **Run Configuration:**
@@ -163,7 +157,7 @@ Add `check_adr_parity` to `scripts/check.sh`. It extracts the ADR field names an
 - **User decision:** not needed
 
 **Action:**
-`ship/SKILL.md` §1 EXECUTION POLICY, where it asks for the mode when `Interaction policy` is `unset`: add one recommendation with a one-line reason. Recommend **Interactive** if any selected task has `Bottleneck` `design_decision | multiple_approaches | unknown`, or its Verification Command is not runnable (a manual evaluation such as scorecard rows does not count), and name those tasks. Otherwise recommend **Autonomous**. The user's choice wins without further argument. In Interactive mode, the task-review card's `Review focus` says "remaining tasks qualify for autonomous" when that becomes true; the existing `switch to autonomous` option does the rest. `architect.md` (PR template guidance): within a PR, order decision-heavy tasks first when dependencies allow. Extend `check_interaction_contract` so that every bottleneck value named in the `/ship` rule is in the `architect.md` `Bottleneck` enum. Add the manual fixture `tests/fixtures/ship-interaction/mode-recommendation/` (`request.md`, `expected.md`) and its row in that README's table.
+`ship/SKILL.md` §1 EXECUTION POLICY, where it asks for the mode when `Interaction policy` is `unset`: add one recommendation with a one-line reason. Recommend **Interactive** if any selected task has `Bottleneck` `design_decision | multiple_approaches | unknown`, or its Verification Command is not runnable (a manual evaluation such as scorecard rows does not count), and name those tasks. Otherwise recommend **Autonomous**. The user decides; the recommendation never sets the mode and is not repeated after the choice. In Interactive mode, the task-review card's `Review focus` says "remaining tasks qualify for autonomous" when that becomes true; the existing `switch to autonomous` option does the rest. `architect.md` (PR template guidance): within a PR, order decision-heavy tasks first when dependencies allow; write each task to be as close to autonomous-ready as the work honestly allows (settle design decisions with the user during planning, give a runnable Verification Command where one exists), but never downgrade `Bottleneck` or add a cosmetic command to earn the Autonomous recommendation. Extend `check_interaction_contract` so that every bottleneck value named in the `/ship` rule is in the `architect.md` `Bottleneck` enum. Add the manual fixture `tests/fixtures/ship-interaction/mode-recommendation/` (`request.md`, `expected.md`) and its row in that README's table.
 - **API/Component Contract:** unchanged mode enum (`autonomous | interactive | unset`), unchanged Interaction Card field set; new `check.sh` assertion "mode rule names only known bottlenecks"
 - **Compatibility:** PRs with a persisted policy are untouched; legacy `supervised` migration is unchanged
 - **Refactor checkpoint / recovery:** behavior-preserving except for the added recommendation text; `check_interaction_contract` stays green
@@ -178,7 +172,7 @@ Add `check_adr_parity` to `scripts/check.sh`. It extracts the ADR field names an
   - `tests/fixtures/ship-interaction/README.md`, `autonomous/`, `policy-variants/`
 - **Approved write scope:**
   - `tester`: `scripts/check.sh`, `tests/fixtures/ship-interaction/mode-recommendation/**`, `tests/fixtures/ship-interaction/README.md` (table row)
-  - `coder` / main session: `.apm/skills/ship/SKILL.md` §1, `architect.md` (one sentence), `README.md` interaction-modes paragraph (one sentence)
+  - `coder` / main session: `.apm/skills/ship/SKILL.md` §1, `architect.md` (two sentences), `README.md` interaction-modes paragraph (one sentence)
 - **Forbidden / never-touch zones:** Interaction Card fields; the two-mode enum; `_STANDARD.md` required sections
 - **Start gate:** Interactive: RED card with the write list | Autonomous: in-scope only
 - **STOP and return `awaiting_approval` when:** the rule would need a new pause, a card field or a third mode.
@@ -199,8 +193,63 @@ Add `check_adr_parity` to `scripts/check.sh`. It extracts the ADR field names an
 
 **Aligns with:** D13; constraint "No new mandatory gate in `/ship`"
 
+### Task 6.4: English status vocabulary and a reduced Execution Profile
+
+**Task status:** open
+
+**Execution Profile:**
+- **Bottleneck:** design_decision
+- **Bottleneck rationale:** two vocabularies and the routing policy are shared by `architect.md`, `/ship` and `check.sh`; the risk is breaking resume of existing blueprints or leaving `/ship` §1.4–1.6 routing on fields that no longer exist
+- **Escalation trigger:** a legacy Polish status cannot be mapped one-to-one, or §1.4–1.6 cannot route a task without capability/deliberation
+
+**Run Configuration:**
+- **Role:** main session
+- **Recommended:** set at dispatch
+- **Configuration source:** unknown
+- **Actual / adapter limitation:** set at dispatch
+- **User decision:** not needed
+
+**Action:**
+- **D14:** in `architect.md` (PR skeleton) and `ship/SKILL.md` (§1 MANDATORY BLUEPRINT + ROUTING + SCOPE GATE status mapping, §1.7 "New plan tasks remain …"), replace the task status vocabulary with `open | in progress | in testing | in review | done | awaiting decision | blocked | conditional`, mapped one-to-one from `do zrobienia | w trakcie | do testów | do review | wykonane | czeka na decyzję | zablokowane | warunkowe`. `/ship` accepts the legacy value on read and writes the English one on its next update of that task. `check.sh` (the `Task status` assertion near line 216) accepts the English skeleton. Update the blueprint fixtures under `tests/fixtures/ship-interaction/**/design-docs/` and `tests/fixtures/planning-roles/**/blueprint/`, keeping one fixture with a legacy Polish status to prove the mapping.
+- **D15:** in the `architect.md` Execution Profile skeleton and Principle 5, drop `Capability` and `Deliberation` and rename `Routing rationale` to `Bottleneck rationale`. In `ship/SKILL.md`: §1.4 Scope Profile derives coordination from the selected scope and bottlenecks, not from task capability; §1.5 keeps the `Bottleneck` table, with "increase deliberation by one step" read as one effort step of the tool when it supports it; §1.6 routes each role from `model_routing` (bootstrap) or the tool default, with no per-task capability recommendation. The role capability tiers in bootstrap routing stay unchanged. `/ship` ignores `Capability`/`Deliberation` lines in legacy blueprints.
+- **API/Component Contract:** task status enum (English, plus legacy read mapping); Execution Profile fields `Bottleneck | Bottleneck rationale | Escalation trigger`; Interaction Card unchanged; mode enum unchanged
+- **Compatibility:** existing blueprints in target repos resume unchanged (legacy statuses mapped, extra profile lines ignored); role model routing in `.agent-army/config.json` unchanged; profile schema stays `2`
+- **Refactor checkpoint / recovery:** passing `scripts/check.sh` and `scripts/smoke.sh` before the edit; the same checks green after; revert the three files if the legacy fixture stops resuming
+- No new mode, pause, card field or gate.
+
+**Delegation Contract:**
+- **Goal:** new blueprints carry English statuses and no capability/deliberation, and a blueprint written by 0.3.1 still resumes.
+- **Inputs / approved read paths:**
+  - `.apm/skills/bootstrap/baseline/core/agents/architect.md` (Principle 5, PR skeleton)
+  - `.apm/skills/ship/SKILL.md` §1 (status mapping) and §1.4–1.7
+  - `scripts/check.sh`, `scripts/smoke.sh`
+  - `tests/fixtures/ship-interaction/**`, `tests/fixtures/planning-roles/**`
+- **Approved write scope:**
+  - `tester`: `scripts/check.sh`, `tests/fixtures/ship-interaction/**/design-docs/**`, `tests/fixtures/planning-roles/**/blueprint/**`
+  - `coder` / main session: `.apm/skills/ship/SKILL.md` §1 (status mapping) and §1.4–1.7, `.apm/skills/bootstrap/baseline/core/agents/architect.md` (Principle 5, PR skeleton)
+- **Forbidden / never-touch zones:** Interaction Card fields; the two-mode enum; bootstrap role routing and `.agent-army/config.json` schema; `_STANDARD.md` required sections
+- **Start gate:** Interactive: RED card with the write list | Autonomous: in-scope only
+- **STOP and return `awaiting_approval` when:** the change needs a profile schema bump, a bootstrap migration, or a new card field.
+
+**Verification Command:** `scripts/check.sh && scripts/smoke.sh`
+
+**Testing Strategy & Cases (Testing Trophy):**
+- **Risk / level choice:** risk = an old blueprint that no longer resumes, or routing text that still depends on removed fields; `check.sh` structure plus the existing fixtures is the cheapest reliable level
+- **E2E / INTEGRATION** (`scripts/check.sh`): ✓ English skeleton → PASS; ✓ a skeleton still containing `Capability:` → FAIL; ✓ a Polish status in the skeleton → FAIL
+- **E2E / INTEGRATION** (manual fixture): ✓ the legacy-status fixture resumes and its task is rewritten with the English status; ✓ no `Capability`/`Deliberation` appears in a newly planned task
+- **UNIT:** not applicable
+
+**TDD Execution & Auto-Critic:**
+1. Task type: approved change to existing contracts + new check assertions.
+2. Change the `check.sh` assertions first → **RED** against the current skeleton.
+3. Edit `architect.md`, `ship/SKILL.md` and the fixtures.
+4. Run `scripts/check.sh && scripts/smoke.sh` → GREEN; run the legacy fixture manually; record the result.
+
+**Aligns with:** D14, D15; constraint "No new mandatory gate in `/ship`"
+
 ---
 
 > **✅ PR Manual Acceptance:**
 > - [ ] **Functional:** read the new `docs-writer` ADR section; confirm that a typo fix in S8 produced no ADR
 > - [ ] **Functional:** the `/ship` mode question shows one recommendation with a reason; your choice wins
+> - [ ] **Functional:** a new blueprint shows English task statuses and no `Capability`/`Deliberation`; an old blueprint with `do zrobienia` still resumes

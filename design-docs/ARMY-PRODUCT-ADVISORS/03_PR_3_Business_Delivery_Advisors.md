@@ -36,13 +36,11 @@ none
 
 ### Task 3.1: `business-case` + `go-to-market`
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** strong
-- **Deliberation:** high
 - **Bottleneck:** capability_gap
-- **Routing rationale:** finance arithmetic and marketing claims are the two areas the author cannot verify by intuition, so the skills must force checkable output
+- **Bottleneck rationale:** finance arithmetic and marketing claims are the two areas the author cannot verify by intuition, so the skills must force checkable output
 - **Escalation trigger:** an S2 arithmetic error or an S4 recommendation without a prediction row
 
 **Run Configuration:**
@@ -86,13 +84,11 @@ none
 
 ### Task 3.2: `product-metrics`
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** strong
-- **Deliberation:** medium
 - **Bottleneck:** design_decision
-- **Routing rationale:** this is the only advisor whose output becomes code via `/ship`; its event schema must be testable by `tester`
+- **Bottleneck rationale:** this is the only advisor whose output becomes code via `/ship`; its event schema must be testable by `tester`
 - **Escalation trigger:** the schema cannot be expressed as an assertion
 
 **Run Configuration:**
@@ -136,13 +132,11 @@ The cycle from the manifest runs: decision questions → primary metric + 3–5 
 
 ### Task 3.3: `ux-review` + `legal-review` + `launch-readiness`
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** strong
-- **Deliberation:** medium
 - **Bottleneck:** verification
-- **Routing rationale:** all three must avoid false confirmations (study, compliance, restore)
+- **Bottleneck rationale:** all three must avoid false confirmations (study, compliance, restore)
 - **Escalation trigger:** any run claims compliance, a user study or a working backup without evidence
 
 **Run Configuration:**

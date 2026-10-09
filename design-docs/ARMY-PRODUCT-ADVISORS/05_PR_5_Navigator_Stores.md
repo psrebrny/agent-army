@@ -36,13 +36,11 @@ none
 
 ### Task 5.1: `/product` navigator
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** strong
-- **Deliberation:** high
 - **Bottleneck:** design_decision
-- **Routing rationale:** the value is in correct judgment over many records (done vs partial, stale, skipped) and in restraint (one step, no nagging)
+- **Bottleneck rationale:** the value is in correct judgment over many records (done vs partial, stale, skipped) and in restraint (one step, no nagging)
 - **Escalation trigger:** S12 output marks a stage done from file presence alone, ignores the recorded skip, or recommends more than one step
 
 **Run Configuration:**
@@ -89,13 +87,11 @@ The navigator reads only status-bearing parts through the bound stores: register
 
 ### Task 5.2: External store evidence (S17 across skills)
 
-**Task status:** do zrobienia
+**Task status:** open
 
 **Execution Profile:**
-- **Capability:** mid
-- **Deliberation:** medium
 - **Bottleneck:** verification
-- **Routing rationale:** this proves the seam with a real connector without shipping anything tool-specific
+- **Bottleneck rationale:** this proves the seam with a real connector without shipping anything tool-specific
 - **Escalation trigger:** a duplicate item, a delete attempt, or a silent repo fallback
 
 **Run Configuration:**
