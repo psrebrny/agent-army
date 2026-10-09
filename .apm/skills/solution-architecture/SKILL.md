@@ -31,8 +31,11 @@ slice that `/ship` builds.
 5. **ADRs.** Each choice becomes an `adr` of type `architecture`, `Proposed` until the user confirms,
    then `Accepted`. In a brownfield repo keep the existing stack; a change needs an ADR with an explicit
    reason and a migration slice for `/delivery-plan`.
-6. **Non-functional must-haves** (privacy, availability, data residency, cost ceiling) and **open
-   technical risks** (unproven integrations, limits) as a list `/delivery-plan` turns into spikes.
+6. **Cost check**: sum the monthly operating cost of the chosen layers (sourced figures or `A` rows) and
+   compare it with the business-case ceiling; say plainly if it does not fit.
+7. **Non-functional must-haves** (privacy, availability, data residency, cost ceiling) and **open
+   technical risks** (unproven integrations, limits), each with what would confirm or kill it, as a
+   list `/delivery-plan` turns into spikes.
 
 ## Writes
 ADRs in the bound `adr` store, and `solution.md` with Style, Layers (one line + ADR link each), Build vs
