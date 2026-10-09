@@ -6,7 +6,7 @@
 **Objective:** the `advisor-contract:v1` block, an identity check, attribution, and four advisors (`product-strategy`, `product-red-team`, `market-research`, `validate-product`) that pass gate G1.
 
 ## Execution State
-- **PR status:** red
+- **PR status:** green
 - **Interaction policy:** interactive (user, 2026-10-09; D13 recommendation: every task is `design_decision`)
 - **Execution scope:** PR 2
 - **Scope Profile:** one PR; coordinator = highest unfinished task profile (2.1 `design_decision`); coordination `medium`
@@ -15,8 +15,8 @@
 - **Current task:** 2.1
 - **Temporary delegation:** none
 - **Active roles:** main session
-- **Last verified stage:** 2.1 RED (2026-10-09): `check_advisor_contract` + `check_interaction_pace` added to `scripts/check.sh`; scratch harness `t21.sh` (9 cases) fails at case 0 "authoritative block exists in product-strategy"; an orphan scratch copy fails with `product-strategy (authoritative copy) has no advisor-contract:v1 block`; real `check.sh --skills` 33/0 (0 copies present)
-- **Awaiting decision:** RED acceptance 2.1: accept the contract layout and write list? (arm P for the 2.2/2.3 evals is asked at eval time; user wants it explained as a yardstick only, nothing from pm-skills enters our skills)
+- **Last verified stage:** 2.1 GREEN, awaiting task review (2026-10-09): contract block in `.apm/skills/product-strategy/SKILL.md` (135 lines, ~2.3k tokens, reported only per D17), 12 sections incl. `interaction-pace:v1` verbatim from manifest §3; `.apm/SOURCES.md` 9 rows, each file read at its commit (all MIT), Torres/Cagan four-risks origin left unattributed (svpg.com unreachable via proxy) with reason; `t21.sh` 9/9 PASS; `scripts/check.sh` 157/0; `scripts/smoke.sh` 119/9 both with and without this change (gate 3 needs `apm`, not installed here). Before that, 2.1 RED: `t21.sh` failed at case 0; orphan copy → `product-strategy (authoritative copy) has no advisor-contract:v1 block`
+- **Awaiting decision:** task review 2.1: accept the contract text and SOURCES.md? (arm P for the 2.2/2.3 evals is asked at eval time)
 
 ---
 
@@ -30,12 +30,12 @@
 ---
 
 ## Interaction Card
-- **Checkpoint:** RED acceptance
-- **Progress:** krok 1 z ~4 (Task 2.1, faza RED); dalej: tekst kontraktu → GREEN; potem 2.2, 2.3, zamknięcie
-- **Completed:** dwa nowe sprawdzenia w `scripts/check.sh`: `check_advisor_contract` (identyczność bloku, blok w każdym obecnym skillu produktowym, rozmiar tylko raportowany (D17), przykład `stores.json` parsuje się i nie ma `delete`) oraz `check_interaction_pace` (kopie `interaction-pace:v1` w kontrakcie, `/ship`, bazowym `AGENTS.md` — gdy istnieją)
-- **Evidence:** `t21.sh` (scratchpad) przypadek 0 FAIL: brak bloku w `product-strategy`; osierocona kopia → `✗ product-strategy (authoritative copy) has no advisor-contract:v1 block`; prawdziwe `check.sh --skills` 33/0
-- **Review focus:** układ kontraktu (12 sekcji, bez limitu linii — D17); `product-strategy/SKILL.md` w 2.1 ma tylko frontmatter + blok, resztę metody dopisuje 2.2; weryfikacja atrybucji = odczyt konkretnych plików z GitHuba przy podanych commitach (bez klonowania i instalacji)
-- **Question:** akceptujesz układ kontraktu i listę zapisu?
+- **Checkpoint:** task review
+- **Progress:** krok 1 z ~4 (Task 2.1 GREEN, czeka na Twój przegląd); dalej: 2.2 `product-strategy` (metoda) + `product-red-team` z ewaluacją G1
+- **Completed:** blok kontraktu (12 sekcji) w `product-strategy/SKILL.md`; `.apm/SOURCES.md` (9 wierszy atrybucji, 1 pomysł bez autora z powodem)
+- **Evidence:** `t21.sh` 9/9 PASS; `check.sh` 157/0; smoke 119/9 identycznie bez zmiany (brak `apm` w kontenerze)
+- **Review focus:** sekcja Stores (przykład JSON + reguły); szablon ADR; wiersz Torres/Cagan w SOURCES.md
+- **Question:** akceptujesz tekst kontraktu i SOURCES.md, czy coś poprawić?
 - **Options:** continue | direct a correction | show details
 - **Discussion:** none
 
@@ -43,7 +43,7 @@
 
 ### Task 2.1: Contract block, identity check, `SOURCES.md`
 
-**Task status:** in progress
+**Task status:** in review
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
