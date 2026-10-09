@@ -25,9 +25,10 @@ you remember but cannot source is an `A` with "verify at <where>", not a fact.
 4. **Formalities**: business entity, VAT (including EU OSS for digital B2C sales across borders),
    invoicing duties, payment provider vs merchant of record. These end as questions for an accountant.
 5. **Each finding** `L-n | area | requirement | applies because | source | checked | status (open /
-   handled with evidence / not assessed) | blocks launch?`.
-6. **Professional questions**: a short list for a lawyer and one for an accountant, specific enough to
-   get a quote.
+   handled with evidence / not assessed) | blocks launch? | done when`. "Done when" is a check the user
+   can pass or fail ("no analytics request before consent in the browser's network tab").
+6. **Professional questions**: one list for a lawyer and one for an accountant, specific enough to get a
+   quote, kept in the file and updated in place rather than scattered across turns.
 7. **Remediation** that is code (consent banner, data deletion, terms and withdrawal pages) becomes `fix`
    work items for `/ship`; privacy needs from `metrics.md` are checked here.
 
