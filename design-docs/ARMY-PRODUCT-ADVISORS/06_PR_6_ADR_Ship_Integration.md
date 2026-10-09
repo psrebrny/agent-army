@@ -3,7 +3,7 @@
 > 2. **<auto_critic> EXECUTION LOCK:** after each task, run its Verification Command, fix errors, and DO NOT proceed until GREEN.
 
 ## PR #6: ADRs and the `/ship` boundary
-**Objective:** `docs-writer` and the `/ship` docs stage write ADRs with the shared template before commit, move plan decisions into ADRs before a task closes, and mark a delivered work item `delivered` in its bound store. `architect` accepts `docs/product/*` as input. `/ship` recommends an interaction mode from the tasks' Execution Profiles (D13). Blueprint task statuses are English (D14) and the Execution Profile drops `Capability` and `Deliberation` (D15). `/ship` and the baseline `AGENTS.md` carry the collaborative-pace text (D16). No new mandatory gate.
+**Objective:** `docs-writer` and the `/ship` docs stage write ADRs with the shared template before commit, move plan decisions into ADRs before a task closes, and mark a delivered work item `delivered` in its bound store. `architect` accepts `docs/product/*` as input. `/ship` recommends an interaction mode from the tasks' Execution Profiles (D13). Blueprint task statuses are English (D14) and the Execution Profile drops `Capability` and `Deliberation` (D15). `/ship` and the baseline `AGENTS.md` carry the collaborative-pace text (D16), and Interactive mode pauses once before and once after each task (D19). No new mandatory gate.
 
 ## Execution State
 - **PR status:** planned
@@ -299,9 +299,63 @@ Copy the `interaction-pace:v1` paragraph (manifest §3, D16; authoritative copy 
 
 **Aligns with:** D16
 
+
+### Task 6.6: Lighter `/ship` Interactive mode
+
+**Task status:** open
+
+**Execution Profile:**
+- **Bottleneck:** design_decision
+- **Bottleneck rationale:** the user found today's Interactive flow (separate RED, GREEN and review cards, statuses in the chat) heavy while running PR 2; which pauses carry real decisions and which are ceremony is a judgment the user makes with us, not a fact to look up
+- **Escalation trigger:** removing a pause would also remove a decision the user must make (scope, risk, external action, commit), or the lighter flow conflicts with D13's mode recommendation
+
+**Run Configuration:**
+- **Role:** main session
+- **Recommended:** set at dispatch
+- **Configuration source:** unknown
+- **Actual / adapter limitation:** set at dispatch
+- **User decision:** the shape of the lighter flow (below) is settled with the user before the edit
+
+**Action:**
+Make Interactive mode feel like a conversation, building on the pace paragraph from Task 6.5 (run 6.5 first). Starting proposal, to be confirmed with the user: (1) **one pause before a task** (behavior, cases, verification, write list in one short card; replaces the separate RED / baseline / implementation acceptance pauses unless a real behavior decision is open) and **one pause after it** (result, evidence, next task; the task review); (2) RED/GREEN evidence, statuses and milestones stay in the PR file and the chat shows only `step X of ~Y` plus what changed; (3) "decide together, then let it run" (D13) as the default path: once the remaining tasks qualify for Autonomous, the card offers `switch to autonomous` in one line; (4) the always-on stops stay in both modes: external or irreversible actions, security/privacy/compliance decisions, breaking contracts, scope expansion, final review, commit approval. Update `ship/SKILL.md` (INTERACTION CARD, DELIVERY-FOCUSED INTERACTION, EXECUTION POLICY) and the matching `architect.md` card/checkpoint list, then `check_interaction_contract` so author and executor still agree.
+- **API/Component Contract:** still two modes (`autonomous | interactive`); the Interaction Card keeps its eight fields; the `Checkpoint` set may shrink (for example `RED acceptance`, `baseline acceptance`, `implementation acceptance` folded into one `task plan`), and `check_interaction_contract` asserts the new set in both files
+- **Compatibility:** a PR file paused at a removed checkpoint resumes as `task plan`, keeping its evidence; Autonomous mode is unchanged
+- **Refactor checkpoint / recovery:** `scripts/check.sh` and `scripts/smoke.sh` green before and after
+- No new mode, card field or gate; fewer routine pauses only.
+
+**Delegation Contract:**
+- **Goal:** an Interactive `/ship` run on a small PR pauses about twice per task, each pause one screen with one question, and still stops at every required decision.
+- **Inputs / approved read paths:**
+  - `.apm/skills/ship/SKILL.md`, `.apm/skills/bootstrap/baseline/core/agents/architect.md`
+  - `scripts/check.sh` `check_interaction_contract`
+  - the PR 2 execution log in `02_PR_2_Contract_Discovery_Advisors.md` (what felt heavy)
+- **Approved write scope:**
+  - `tester`: `scripts/check.sh` (`check_interaction_contract` checkpoint set), `tests/fixtures/ship-interaction/light-interactive/**`, `tests/fixtures/ship-interaction/README.md` (table row)
+  - `coder` / main session: `.apm/skills/ship/SKILL.md`, `.apm/skills/bootstrap/baseline/core/agents/architect.md` (card and checkpoint text only)
+- **Forbidden / never-touch zones:** the two-mode enum; the eight card fields; the always-on stops listed above; the `interaction-pace:v1` paragraph
+- **Start gate:** Interactive: card with the agreed flow and write list | Autonomous: in-scope only
+- **STOP and return `awaiting_approval` when:** a pause the user wants removed guards a decision listed under always-on stops.
+
+**Verification Command:** `scripts/check.sh && scripts/smoke.sh`
+
+**Testing Strategy & Cases (Testing Trophy):**
+- **Risk / level choice:** risk = a lighter flow that skips a decision the user needed, or author/executor drift
+- **E2E / INTEGRATION** (`scripts/check.sh`): ✓ `ship` and `architect` checkpoint sets agree → PASS; ✓ one file still lists `RED acceptance` → FAIL
+- **E2E / INTEGRATION** (manual fixture `light-interactive`): ✓ a two-task PR pauses before and after each task, no more; ✓ an external action still stops; ✓ a legacy PR paused at `RED acceptance` resumes as `task plan`
+- **UNIT:** not applicable
+
+**TDD Execution & Auto-Critic:**
+1. Task type: approved edit to existing contracts (behavior change of the Interactive flow).
+2. Agree the flow with the user; update `check_interaction_contract` to the new checkpoint set → **RED** against today's files.
+3. Edit `ship/SKILL.md` and `architect.md`.
+4. Run the verification command → GREEN; run the fixture manually; record the result.
+
+**Aligns with:** D13, D16, D19
+
 ---
 
 > **✅ PR Manual Acceptance:**
 > - [ ] **Functional:** read the new `docs-writer` ADR section; confirm that a typo fix in S8 produced no ADR
 > - [ ] **Functional:** the `/ship` mode question shows one recommendation with a reason; your choice wins
+> - [ ] **Functional:** an Interactive `/ship` run on a small PR pauses once before and once after each task, and still stops for external actions and commit (Task 6.6)
 > - [ ] **Functional:** a new blueprint shows English task statuses and no `Capability`/`Deliberation`; an old blueprint with `do zrobienia` still resumes
