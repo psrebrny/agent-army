@@ -507,7 +507,7 @@ launch-readiness product"
 
 # Every copy of the advisor contract is byte-identical to the authoritative one in
 # product-strategy; every present product skill carries it; its stores.json example parses
-# and never allows `delete`.
+# and never allows `delete`. Block size is printed for information only (D17).
 check_advisor_contract() {
   local out
   if out="$(python3 - "$SKILLS_DIR" $PRODUCT_SKILLS 2>&1 <<'PY_ADVISOR'
@@ -530,9 +530,8 @@ if blocks:
     if ref is None:
         errors.append('product-strategy (authoritative copy) has no advisor-contract:v1 block')
     else:
-        lines = ref.count('\n') - 1
-        if lines > 120:
-            errors.append(f'contract block is {lines} lines (limit 120)')
+        # Size is reported, never limited (D17): cost and attention are judged by advisor-eval.
+        print(f'SIZE {ref.count(chr(10)) - 1} lines, ~{len(ref) // 4} tokens')
         for name, block in blocks.items():
             if block != ref:
                 errors.append(f'{name}: advisor-contract:v1 block differs from product-strategy')
@@ -559,9 +558,10 @@ sys.exit(1 if errors else 0)
 PY_ADVISOR
 )"; then
     ok "advisor contract identical in ${out##*COUNT } present advisor skills"
+    case "$out" in *SIZE*) local size="${out#*SIZE }"; printf '    contract block: %s\n' "${size%%$'\n'*}" ;; esac
   else
     while IFS= read -r line; do
-      case "$line" in COUNT*) ;; *) bad "$line" ;; esac
+      case "$line" in COUNT*|SIZE*) ;; *) bad "$line" ;; esac
     done <<<"$out"
   fi
 }

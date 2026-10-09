@@ -32,9 +32,9 @@
 ## Interaction Card
 - **Checkpoint:** RED acceptance
 - **Progress:** krok 1 z ~4 (Task 2.1, faza RED); dalej: tekst kontraktu → GREEN; potem 2.2, 2.3, zamknięcie
-- **Completed:** dwa nowe sprawdzenia w `scripts/check.sh`: `check_advisor_contract` (identyczność bloku, blok w każdym obecnym skillu produktowym, ≤ 120 linii, przykład `stores.json` parsuje się i nie ma `delete`) oraz `check_interaction_pace` (kopie `interaction-pace:v1` w kontrakcie, `/ship`, bazowym `AGENTS.md` — gdy istnieją)
+- **Completed:** dwa nowe sprawdzenia w `scripts/check.sh`: `check_advisor_contract` (identyczność bloku, blok w każdym obecnym skillu produktowym, rozmiar tylko raportowany (D17), przykład `stores.json` parsuje się i nie ma `delete`) oraz `check_interaction_pace` (kopie `interaction-pace:v1` w kontrakcie, `/ship`, bazowym `AGENTS.md` — gdy istnieją)
 - **Evidence:** `t21.sh` (scratchpad) przypadek 0 FAIL: brak bloku w `product-strategy`; osierocona kopia → `✗ product-strategy (authoritative copy) has no advisor-contract:v1 block`; prawdziwe `check.sh --skills` 33/0
-- **Review focus:** układ kontraktu (12 sekcji, ≤ 120 linii); `product-strategy/SKILL.md` w 2.1 ma tylko frontmatter + blok, resztę metody dopisuje 2.2; weryfikacja atrybucji = odczyt konkretnych plików z GitHuba przy podanych commitach (bez klonowania i instalacji)
+- **Review focus:** układ kontraktu (12 sekcji, bez limitu linii — D17); `product-strategy/SKILL.md` w 2.1 ma tylko frontmatter + blok, resztę metody dopisuje 2.2; weryfikacja atrybucji = odczyt konkretnych plików z GitHuba przy podanych commitach (bez klonowania i instalacji)
 - **Question:** akceptujesz układ kontraktu i listę zapisu?
 - **Options:** continue | direct a correction | show details
 - **Discussion:** none
@@ -47,8 +47,8 @@
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
-- **Bottleneck rationale:** the block is the behavior every product skill shares; ≤ 120 lines must carry record types, store binding rules, register, output format, ADR template, stage model, work item format and safety rules
-- **Escalation trigger:** the block exceeds 120 lines, or a rule needs advisor-specific wording
+- **Bottleneck rationale:** the block is the behavior every product skill shares; it must carry record types, store binding rules, register, output format, ADR template, stage model, work item format and safety rules, and nothing advisor-specific (no line cap, D17)
+- **Escalation trigger:** a rule needs advisor-specific wording, or an advisor eval shows high `cost` or weak N − K that traces to the contract
 
 **Run Configuration:**
 - **Role:** main session
@@ -93,7 +93,7 @@ Write the contract text from manifest §3 "Data Flow / Strategy" (shared contrac
 3. Write the authoritative block; remove the scratch copy.
 4. Run `scripts/check.sh --skills` → GREEN; record the output.
 
-**Aligns with:** Contract surfaces; D2
+**Aligns with:** Contract surfaces; D2; D17
 
 ### Task 2.2: `product-strategy` + `product-red-team`
 
