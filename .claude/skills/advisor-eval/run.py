@@ -35,6 +35,11 @@ JUDGE_CRITERIA = ["false_facts", "fad_separability", "falsifiability", "smallest
                   "resume", "decision_change", "not_assessed", "pace"]
 ACTOR_TOOLS = "Read,Write,Edit,Glob,Grep"
 WEB_TOOLS = "WebSearch,WebFetch"
+# Variables that bind a child `claude -p` to the parent Claude session (its ID, transcript stream or
+# messaging socket). Each eval process must be an independent session, so they are removed.
+PARENT_SESSION_VARS = re.compile(r"SESSION|INGRESS|MESSAGING|^CLAUDECODE$|^CLAUDE_CODE_(REMOTE_SDK_URL|"
+                                 r"TEE_SDK_STDOUT|REMOTE_SEND_KEEPALIVES|INCLUDE_PARTIAL_MESSAGES)$")
+CHILD_ENV = {k: v for k, v in os.environ.items() if not PARENT_SESSION_VARS.search(k)}
 
 
 def die(msg):
@@ -45,7 +50,8 @@ def claude(args, cwd, prompt):
     """One `claude -p` call; returns the parsed JSON result."""
     cmd = ["claude", "-p", "--output-format", "json", "--strict-mcp-config",
            "--setting-sources", "project", *args, prompt]
-    out = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+    out = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, env=CHILD_ENV,
+                         stdin=subprocess.DEVNULL)
     try:
         res = json.loads(out.stdout)
     except json.JSONDecodeError:
