@@ -6,44 +6,37 @@
 **Objective:** the `advisor-contract:v1` block, an identity check, attribution, and four advisors (`product-strategy`, `product-red-team`, `market-research`, `validate-product`) that pass gate G1.
 
 ## Execution State
-- **PR status:** green
-- **Interaction policy:** interactive (user, 2026-10-09; D13 recommendation: every task is `design_decision`)
+- **PR status:** implementing
+- **Interaction policy:** autonomous (user switched from interactive after Task 2.1, 2026-10-09; D18)
 - **Execution scope:** PR 2
 - **Scope Profile:** one PR; coordinator = highest unfinished task profile (2.1 `design_decision`); coordination `medium`
 - **Model routing:** inherit (source repo has no `.agent-army/config.json`); eval actor and judge sessions use the `claude -p` default model, recorded per run
 - **Last manual configuration:** stay current (no material model recommendation)
-- **Current task:** 2.1
+- **Current task:** 2.2 + 2.3 (one batch)
 - **Temporary delegation:** none
 - **Active roles:** main session
 - **Last verified stage:** 2.1 GREEN, awaiting task review (2026-10-09): contract block in `.apm/skills/product-strategy/SKILL.md` (135 lines, ~2.3k tokens, reported only per D17), 12 sections incl. `interaction-pace:v1` verbatim from manifest §3; `.apm/SOURCES.md` 9 rows, each file read at its commit (all MIT), Torres/Cagan four-risks origin left unattributed (svpg.com unreachable via proxy) with reason; `t21.sh` 9/9 PASS; `scripts/check.sh` 157/0; `scripts/smoke.sh` 119/9 both with and without this change (gate 3 needs `apm`, not installed here). Before that, 2.1 RED: `t21.sh` failed at case 0; orphan copy → `product-strategy (authoritative copy) has no advisor-contract:v1 block`
-- **Awaiting decision:** task review 2.1: accept the contract text and SOURCES.md? (arm P for the 2.2/2.3 evals is asked at eval time)
+- **Awaiting decision:** none
 
 ---
 
 ## Execution Progress
 - **Milestones:** 1) Task 2.1 contract block + identity check + `SOURCES.md` · 2) Task 2.2 `product-strategy` + `product-red-team` (+ G1 eval) · 3) Task 2.3 `market-research` + `validate-product` (+ G1 eval) · 4) closure: review, security, docs, final verification
-- **Current milestone:** 1 of 4
+- **Current milestone:** 2 of 4
 - **Finish condition:** all three tasks verified (check.sh GREEN, G1 scorecard rows with verdicts), review + security clean, PR at `ready_for_human_review`; commit only after approval
-- **Last map change:** none
+- **Last map change:** 2026-10-09: Autonomous mode; 2.2 and 2.3 written as one batch; eval spot check on `product-strategy` + `validate-product` only (D18)
 - **Deferred ideas:** none
 
 ---
 
 ## Interaction Card
-- **Checkpoint:** task review
-- **Progress:** krok 1 z ~4 (Task 2.1 GREEN, czeka na Twój przegląd); dalej: 2.2 `product-strategy` (metoda) + `product-red-team` z ewaluacją G1
-- **Completed:** blok kontraktu (12 sekcji) w `product-strategy/SKILL.md`; `.apm/SOURCES.md` (9 wierszy atrybucji, 1 pomysł bez autora z powodem)
-- **Evidence:** `t21.sh` 9/9 PASS; `check.sh` 157/0; smoke 119/9 identycznie bez zmiany (brak `apm` w kontenerze)
-- **Review focus:** sekcja Stores (przykład JSON + reguły); szablon ADR; wiersz Torres/Cagan w SOURCES.md
-- **Question:** akceptujesz tekst kontraktu i SOURCES.md, czy coś poprawić?
-- **Options:** continue | direct a correction | show details
-- **Discussion:** none
+none (Autonomous; next pause: batch review of the four discovery advisors)
 
 ---
 
 ### Task 2.1: Contract block, identity check, `SOURCES.md`
 
-**Task status:** in review
+**Task status:** done
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
@@ -128,7 +121,7 @@ Write the contract text from manifest §3 "Data Flow / Strategy" (shared contrac
 - **Start gate:** Interactive: card with the write list | Autonomous: in-scope only
 - **STOP and return `awaiting_approval` when:** a method needs a third-party file copied verbatim (see D2 exception).
 
-**Verification Command:** `scripts/check.sh --skills` then `advisor-eval product-strategy product-red-team --scenario S1 S3 S11`
+**Verification Command:** `scripts/check.sh --skills`; spot check (D18): `advisor-eval product-strategy --scenario S1`
 
 **Testing Strategy & Cases (Testing Trophy):**
 - **Risk / level choice:** risk = confident advice built on invented demand. The behavioral gate is the only meaningful level.
@@ -176,7 +169,7 @@ Write the contract text from manifest §3 "Data Flow / Strategy" (shared contrac
 - **Start gate:** Interactive: card with the write list | Autonomous: in-scope only
 - **STOP and return `awaiting_approval` when:** research requires a paid tool or account.
 
-**Verification Command:** `scripts/check.sh --skills` then `advisor-eval market-research validate-product --scenario S1 S9 S14`
+**Verification Command:** `scripts/check.sh --skills`; spot check (D18): `advisor-eval validate-product --scenario S1`
 
 **Testing Strategy & Cases (Testing Trophy):**
 - **Risk / level choice:** risk = third-party data presented as proof of demand
