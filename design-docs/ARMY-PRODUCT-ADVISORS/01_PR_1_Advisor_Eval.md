@@ -6,17 +6,17 @@
 **Objective:** a repeatable pilot. The `advisor-eval` skill, scenario fixtures and a scorecard ledger exist, and the control baseline is recorded before any advisor is written. `advisor-eval` is not an advisor: it is the maintainers' test harness that measures the advisors. The advisors themselves ship to product repositories through `.apm/skills/` (PRs 2–5); only this harness stays in the source repo.
 
 ## Execution State
-- **PR status:** implementing
+- **PR status:** review
 - **Interaction policy:** interactive (user, 2026-10-09)
 - **Execution scope:** PR 1
 - **Scope Profile:** one PR; coordinator = highest unfinished task profile (1.1 `design_decision`); coordination `medium`
 - **Model routing:** inherit (source repo has no `.agent-army/config.json`); actor and judge sessions use the `claude -p` default model, recorded per run
 - **Last manual configuration:** stay current (no material model recommendation)
 - **Plan review limitation:** user approved rev 6 without an independent `plan-reviewer` pass (2026-10-09); review verdict stays `pending`
-- **Current task:** 1.1
+- **Current task:** 1.1 (review), next 1.2
 - **Temporary delegation:** none
 - **Active roles:** none
-- **Last verified stage:** rev 7 (D16) adds the simulated user and the judge-scored `pace` criterion (no fixed counts); the RED card must be re-accepted. Earlier 1.1 RED: `rubric.md` + empty `SCORECARDS.md` written; `.claude/skills/advisor-eval/SKILL.md` absent, `tests/fixtures/advisors/S1` absent, ledger data rows = 0 (no row can be produced); `scripts/check.sh --skills` 31 passed, 0 failed
+- **Last verified stage:** 1.1 GREEN, awaiting review (2026-10-09). Dry run `run.py product-strategy --scenario S1 --arms K --no-ledger`: row `K 1/1/1/1/2/2/1/2/2 Σ13 ff1 | baseline` with all 9 scores (17 actor turns, $0.39, 1.6 min; 3 advisor turns per session); actor scratch has no `expected.md`/`user.md` (asserted); judge input has no arm label (grep clean); persona saw only `user.md` and advisor replies; child processes run with parent-session variables removed. Dry-run row not written to the ledger (baseline belongs to 1.3). `scripts/check.sh` green. Earlier RED: no skill, no S1, 0 ledger rows.
 - **Awaiting decision:** none (RED accepted 2026-10-09: persona-driven simulated user, `run.py` allowed, S1 pulled into 1.1)
 
 ---
@@ -31,12 +31,12 @@
 ---
 
 ## Interaction Card
-- **Checkpoint:** RED acceptance
-- **Progress:** krok 1 z ok. 4 (1.1 harness); RED gotowy; dalej: implementacja skilla → dry run S1/K; potem 1.2, 1.3, zamknięcie
-- **Completed:** `tests/fixtures/advisors/rubric.md` (7 kryteriów sędziego + `cost` liczony przez harness, reguła decyzji, limity); `SCORECARDS.md` (nagłówek)
-- **Evidence:** brak skilla, brak S1, 0 wierszy w ledgerze → dry run nie może wyprodukować wiersza; `check.sh --skills` 31/0/0
-- **Review focus:** (1) izolacja przez osobne procesy `claude -p` w scratch poza repo (aktor bez `expected.md`, sesja 2 bez `--resume`); (2) sędzia: losowe ID bundli, sekcja harness-only wycięta z rubryki, grep na etykiety ramion; (3) progi `cost` ustalone przed runem
-- **Question:** symulowany użytkownik jako osobny proces z personą `user.md` (rekomendacja) czy stały skrypt odpowiedzi?
+- **Checkpoint:** task review (1.1)
+- **Progress:** step 1 of ~4 done (harness verified); next: 1.2 the other 16 scenarios, then 1.3 baseline, then closure
+- **Completed:** `.claude/skills/advisor-eval/SKILL.md` + `run.py`; S1 fixture; dry run S1/K produced a full row
+- **Evidence:** `K 1/1/1/1/2/2/1/2/2 Σ13 ff1 | baseline`; isolation checks clean
+- **Review focus:** the judge gave plain Claude `pace` 2 although its first turn was a multi-section plan; the `pace` wording may be too lenient. Recalibrate on more scenarios before relying on it.
+- **Question:** continue with 1.2?
 - **Options:** continue | direct a correction | show details | change scope
 - **Discussion:** none
 
@@ -44,7 +44,7 @@
 
 ### Task 1.1: `advisor-eval` skill and scorecard ledger
 
-**Task status:** in progress
+**Task status:** in review
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
