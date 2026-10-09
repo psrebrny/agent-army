@@ -17,7 +17,7 @@
 - **Temporary delegation:** none
 - **Active roles:** none
 - **Last verified stage:** rev 7 (D16) adds the simulated user and the judge-scored `pace` criterion (no fixed counts); the RED card must be re-accepted. Earlier 1.1 RED: `rubric.md` + empty `SCORECARDS.md` written; `.claude/skills/advisor-eval/SKILL.md` absent, `tests/fixtures/advisors/S1` absent, ledger data rows = 0 (no row can be produced); `scripts/check.sh --skills` 31 passed, 0 failed
-- **Awaiting decision:** simulated user for multi-turn sessions: a persona-driven `claude -p` process (recommended) or a fixed answer script?
+- **Awaiting decision:** none (RED accepted 2026-10-09: persona-driven simulated user, `run.py` allowed, S1 pulled into 1.1)
 
 ---
 
@@ -79,7 +79,7 @@ The judge also scores `pace` from the turn-by-turn transcript and turn durations
   - `00_CORE_MANIFEST.md` §4 — rubric and decision rule
 - **Approved write scope:**
   - `tester`: `tests/fixtures/advisors/rubric.md`, `tests/fixtures/advisors/SCORECARDS.md`
-  - `coder` / main session: `.claude/skills/advisor-eval/SKILL.md`
+  - `coder` / main session: `.claude/skills/advisor-eval/**` (`SKILL.md` + `run.py`; scope widened with user approval 2026-10-09: the turn relay is mechanical)
 - **Forbidden / never-touch zones:**
   - `.apm/**`, `apm.yml`
 - **Start gate:** Interactive: include plan + exact write list in the RED acceptance card and wait | Autonomous: proceed only when the write list stays in scope
