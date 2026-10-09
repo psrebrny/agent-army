@@ -6,37 +6,45 @@
 **Objective:** a repeatable pilot. The `advisor-eval` skill, scenario fixtures and a scorecard ledger exist, and the control baseline is recorded before any advisor is written. `advisor-eval` is not an advisor: it is the maintainers' test harness that measures the advisors. The advisors themselves ship to product repositories through `.apm/skills/` (PRs 2–5); only this harness stays in the source repo.
 
 ## Execution State
-- **PR status:** planned
-- **Interaction policy:** unset — /ship asks once per PR before first execution
-- **Execution scope:** unset
-- **Scope Profile:** unset
-- **Model routing:** unset
-- **Last manual configuration:** unknown
-- **Current task:** none
+- **PR status:** implementing
+- **Interaction policy:** interactive (user, 2026-10-09)
+- **Execution scope:** PR 1
+- **Scope Profile:** one PR; coordinator = highest unfinished task profile (1.1 `design_decision`); coordination `medium`
+- **Model routing:** inherit (source repo has no `.agent-army/config.json`); actor and judge sessions use the `claude -p` default model, recorded per run
+- **Last manual configuration:** stay current (no material model recommendation)
+- **Plan review limitation:** user approved rev 6 without an independent `plan-reviewer` pass (2026-10-09); review verdict stays `pending`
+- **Current task:** 1.1
 - **Temporary delegation:** none
 - **Active roles:** none
-- **Last verified stage:** planned
-- **Awaiting decision:** none
+- **Last verified stage:** 1.1 RED: `rubric.md` + empty `SCORECARDS.md` written; `.claude/skills/advisor-eval/SKILL.md` absent, `tests/fixtures/advisors/S1` absent, ledger data rows = 0 (no row can be produced); `scripts/check.sh --skills` 31 passed, 0 failed
+- **Awaiting decision:** RED acceptance for 1.1: accept the protocol design and pull fixture S1 forward into 1.1?
 
 ---
 
 ## Execution Progress
-- **Milestones:** unset
-- **Current milestone:** none
-- **Finish condition:** unset
+- **Milestones:** 1) Task 1.1 harness + rubric + ledger · 2) Task 1.2 seventeen scenarios · 3) Task 1.3 K baseline (+ P or recorded skip) · 4) closure: review, security, docs, final verification
+- **Current milestone:** 1 of 4
+- **Finish condition:** all three tasks verified, review + security clean, PR at `ready_for_human_review`; commit only after approval
 - **Last map change:** none
 - **Deferred ideas:** none
 
 ---
 
 ## Interaction Card
-none
+- **Checkpoint:** RED acceptance
+- **Progress:** krok 1 z ok. 4 (1.1 harness); RED gotowy; dalej: implementacja skilla → dry run S1/K; potem 1.2, 1.3, zamknięcie
+- **Completed:** `tests/fixtures/advisors/rubric.md` (7 kryteriów sędziego + `cost` liczony przez harness, reguła decyzji, limity); `SCORECARDS.md` (nagłówek)
+- **Evidence:** brak skilla, brak S1, 0 wierszy w ledgerze → dry run nie może wyprodukować wiersza; `check.sh --skills` 31/0/0
+- **Review focus:** (1) izolacja przez osobne procesy `claude -p` w scratch poza repo (aktor bez `expected.md`, sesja 2 bez `--resume`); (2) sędzia: losowe ID bundli, sekcja harness-only wycięta z rubryki, grep na etykiety ramion; (3) progi `cost` ustalone przed runem
+- **Question:** akceptujesz projekt protokołu i przeniesienie fixture S1 do 1.1 (dry run go wymaga; liczy się do 1.2)?
+- **Options:** continue | direct a correction | show details | change scope
+- **Discussion:** none
 
 ---
 
 ### Task 1.1: `advisor-eval` skill and scorecard ledger
 
-**Task status:** open
+**Task status:** in progress
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
