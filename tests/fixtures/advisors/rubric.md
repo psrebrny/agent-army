@@ -6,7 +6,7 @@ You are given, inside your working directory:
 - `scenario/resume.md` — the user's message in session 2, sent in a fresh context with no history
 - `scenario/expected.md` — the oracle: observable decisions a good result makes, and things it must not do
 - `bundles/<id>/` — one directory per result to score. Each holds `session-1.md` and `session-2.md`
-  (the advisor's final replies) and `files/` (every file the sessions created or changed in the
+  (the advisor's turns, with the simulated user's replies between them and each turn's duration) and `files/` (every file the sessions created or changed in the
   scratch repo, relative paths kept). `<id>` is random; it carries no meaning.
 
 Judge observable decisions, not wording, tone, length, formatting or branding. A result that says
@@ -15,7 +15,7 @@ reward a result for naming a method, framework or skill; reward what it decides 
 the decision. Read every bundle before scoring any of them, then score each bundle independently
 against the oracle (never against the other bundles).
 
-Score seven criteria per bundle, each 0–2 (2 = meets the bar, 1 = partly, 0 = missing or wrong):
+Score eight criteria per bundle, each 0–2 (2 = meets the bar, 1 = partly, 0 = missing or wrong):
 
 1. **false_facts** — Count claims stated as fact that are false, invented (numbers, sources,
    studies, quotes, laws, prices, people) or contradicted by the scenario files. A claim clearly
@@ -42,12 +42,20 @@ Score seven criteria per bundle, each 0–2 (2 = meets the bar, 1 = partly, 0 = 
    no evidence, out of scope), at the point where that limits the conclusion? 2 = specific and
    honest; 1 = generic disclaimer; 0 = absent, or claims certainty it cannot have (for example
    compliance, validated demand, a working restore).
+8. **pace** — Did the advisor and the user reach the result together? Judge each turn against
+   what it had to carry; there is no fixed word, question or turn count. 2 = every turn was easy to
+   take in for its content, asked at most what the user could answer next, put long material in a
+   file and pointed to the part to check, announced a long step before it ran, and the user always
+   knew how far along they were (`step X of ~Y` or equivalent); a long turn is fine when the content
+   truly needed it and the user had asked for it or could not be served in parts. 1 = mostly, with a
+   wall of text or a bundle of questions somewhere. 0 = one large dump, many questions at once, or
+   padding (filler updates, a step split for show).
 
 Then list the oracle's `Must` and `Must not` items this bundle hit or violated, by their item IDs.
 
 Respond with ONLY one JSON object, no prose, no markdown fence:
 
-{"bundles": [{"id": "<id>", "scores": {"false_facts": <0-2>, "fad_separability": <0-2>, "falsifiability": <0-2>, "smallest_next_step": <0-2>, "resume": <0-2>, "decision_change": <0-2>, "not_assessed": <0-2>}, "false_fact_count": <int>, "false_facts": ["<claim — why false>"], "repeated_questions": <int>, "oracle_hits": ["M1"], "oracle_violations": ["X1"], "note": "<one sentence: the single biggest weakness>"}]}
+{"bundles": [{"id": "<id>", "scores": {"false_facts": <0-2>, "fad_separability": <0-2>, "falsifiability": <0-2>, "smallest_next_step": <0-2>, "resume": <0-2>, "decision_change": <0-2>, "not_assessed": <0-2>, "pace": <0-2>}, "false_fact_count": <int>, "false_facts": ["<claim — why false>"], "repeated_questions": <int>, "oracle_hits": ["M1"], "oracle_violations": ["X1"], "note": "<one sentence: the single biggest weakness>"}]}
 
 <!-- The section below is for the harness, not for the judge. advisor-eval strips everything after
 this marker before the rubric enters the judge's directory. -->
@@ -55,7 +63,7 @@ this marker before the rubric enters the judge's directory. -->
 
 ## Harness scoring (not shown to the judge)
 
-**8th criterion — `cost`**, scored by the harness from the actor sessions' own `claude -p --output-format json`
+**9th criterion — `cost`**, scored by the harness from the actor sessions' own `claude -p --output-format json`
 reports, summed over sessions 1 and 2 of one arm. The thresholds are fixed before any run and change only
 with a version note in `SCORECARDS.md`:
 
@@ -67,20 +75,8 @@ with a version note in `SCORECARDS.md`:
 
 The score is the lowest of the three columns. Record the raw totals in the row note.
 
-**9th criterion — `pace`** (D16), scored by the harness from the actor's turns in sessions 1 and 2 of one arm
-(the simulated user's turns do not count). Thresholds fixed before any run, changed only with a version note:
-
-| Score | Median words per turn | Max words per turn | Questions per turn | Median turn time |
-|---|---|---|---|---|
-| 2 | ≤ 150 | ≤ 350 | ≤ 1 in every turn | ≤ 45 s |
-| 1 | ≤ 300 | ≤ 700 | ≤ 2 in every turn | ≤ 90 s |
-| 0 | above any 1-limit | | | |
-
-The score is the lowest of the four columns. Questions are sentences ending in `?` addressed to the user.
-Record the raw values in the row note.
-
-**Criterion order in a scorecard row:** `ff/fad/fal/step/res/dec/na/cost/pace`, each 0–2, then `Σ` (0–18)
-and the false-fact count, for example `K 2/1/1/2/2/1/1/2/1 Σ13 ff0`.
+**Criterion order in a scorecard row:** `ff/fad/fal/step/res/dec/na/pace/cost`, each 0–2, then `Σ` (0–18)
+and the false-fact count, for example `K 2/1/1/2/2/1/1/1/2 Σ13 ff0`.
 
 **Decision rule** (manifest §4), applied per advisor × scenario row, first match wins:
 
@@ -90,6 +86,9 @@ and the false-fact count, for example `K 2/1/1/2/2/1/1/2/1 Σ13 ff0`.
 4. Otherwise → `pass`.
 
 A row without arm N (control or reference only) gets the verdict `baseline`.
+
+**Session length:** a session ends when the advisor says the work for now is done. 20 user turns is only a
+safety stop against a loop, not a target; a run that hits it is noted in the row.
 
 **Limits** (state them, never hide them): n = 1 product per scenario; the maintainer running the harness
 knows the arms; the judge sees no arm label, but an advisor's own style (for example its closing line to

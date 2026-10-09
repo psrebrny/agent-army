@@ -16,7 +16,7 @@
 - **Current task:** 1.1
 - **Temporary delegation:** none
 - **Active roles:** none
-- **Last verified stage:** rev 7 (D16) adds the simulated user and the `pace` criterion; the RED card must be re-accepted. Earlier 1.1 RED: `rubric.md` + empty `SCORECARDS.md` written; `.claude/skills/advisor-eval/SKILL.md` absent, `tests/fixtures/advisors/S1` absent, ledger data rows = 0 (no row can be produced); `scripts/check.sh --skills` 31 passed, 0 failed
+- **Last verified stage:** rev 7 (D16) adds the simulated user and the judge-scored `pace` criterion (no fixed counts); the RED card must be re-accepted. Earlier 1.1 RED: `rubric.md` + empty `SCORECARDS.md` written; `.claude/skills/advisor-eval/SKILL.md` absent, `tests/fixtures/advisors/S1` absent, ledger data rows = 0 (no row can be produced); `scripts/check.sh --skills` 31 passed, 0 failed
 - **Awaiting decision:** simulated user for multi-turn sessions: a persona-driven `claude -p` process (recommended) or a fixed answer script?
 
 ---
@@ -61,11 +61,11 @@
 **Action:**
 Write `.claude/skills/advisor-eval/SKILL.md`. It is a maintainer tool for this source repo, so it does not go in `.apm/` and is never deployed. Input: advisor name(s), optional scenario IDs, optional `--with-reference` for arm P. Protocol:
 1. For each scenario and arm, assemble a fresh scratch repo outside this repo: `shared/` + the scenario `repo/` overlay. Arm N also gets the candidate `SKILL.md` copied to scratch `.claude/skills/`. Arm K gets nothing. Arm P gets pm-skills at `8607e3b` and only exists when `--with-reference` is set.
-2. Run session 1 opening with `request.md`. Run session 2 in a fresh context with the same scratch files, opening with `resume.md`, without history. Both sessions are multi-turn (D16): after each actor turn, a separate simulated-user process that sees only `user.md` and the actor's last reply answers in ≤ 2 sentences ("decide for me" when the persona does not know). A session ends when the actor says it is done or after 8 user turns. Within a session the actor keeps its history; between sessions it does not.
+2. Run session 1 opening with `request.md`. Run session 2 in a fresh context with the same scratch files, opening with `resume.md`, without history. Both sessions are multi-turn (D16): after each actor turn, a separate simulated-user process that sees only `user.md` and the actor's last reply answers in ≤ 2 sentences ("decide for me" when the persona does not know). A session ends when the actor says it is done; a high safety stop exists only against loops and is not a target. Within a session the actor keeps its history; between sessions it does not.
 3. A separate fresh-context judge scores the resulting files against `expected.md` with `tests/fixtures/advisors/rubric.md`. Arm labels are hidden, and the judge outputs JSON only.
 4. Append one row to `tests/fixtures/advisors/SCORECARDS.md` and apply the decision rule from manifest §4.
 
-The harness also scores `pace` from the actor transcript (words and questions per turn, turn time; thresholds in the harness section of `rubric.md`). Transcripts stay in scratch. Only scores, hashes and one-line notes are committed.
+The judge also scores `pace` from the turn-by-turn transcript and turn durations, against what each turn had to carry; there are no fixed word, question or turn counts. Transcripts stay in scratch. Only scores, hashes and one-line notes are committed.
 - **API/Component Contract:** invocation `advisor-eval <advisor…> [--scenario <id…>] [--with-reference]`. Scorecard row: `date | advisor | contract tag | SKILL.md sha256[:12] | arms | scenario | 9 scores per arm | verdict (pass/fix-contract/rethink/consider-absorb) | note`.
 - **Compatibility:** no package boundary change. The existing `tests/judge/rubric.md` stays bootstrap-specific.
 - **Refactor checkpoint / recovery:** not applicable
