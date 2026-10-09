@@ -39,15 +39,20 @@ run another skill or start `/ship`: you name the step, the user runs it.
    | 11 | `launch-readiness.md` Verdict, Blockers; UX findings `blocks` | verdict launch (or launch with risks the user accepted), no open blocker |
    | 12 | `metrics.md` Reads; post-launch sections | dated weekly reads and recorded post-launch findings |
 
-   `partial`: some of the criterion holds; name what is missing. `stale`: an ADR the stage relies on is
-   `Needs review`, or an `A` behind its decision is disproved; this overrides `done`. `skipped`: a `skip`
-   record exists; it overrides `missing` and `partial` until its "revisit when" condition shows up in the
-   records, then say so once.
+   Apply the criterion literally, one state per stage, no hedges ("done, but thin"): an untested key `A`
+   that has a test is stage 3's gap, not stage 2's. `partial`: some of the criterion holds; name what is
+   missing. `stale`: an ADR the stage relies on is `Needs review`, or an `A` behind its decision is
+   disproved; this overrides `done`. `skipped`: a `skip` record exists; it overrides `missing` and
+   `partial`. Raise its "revisit when" only when a record shows the condition is met, never from your own
+   guess; once the user keeps the skip, record that and do not raise it again until a new record does.
 3. **Find the current stage**: the highest stage being worked on, or the one the user says they are
    about to start ("build" = 7, "ads" = 10). Gaps are stages before it, per "Should precede", that are
    not `done` or `skipped`.
 4. **Show the map** (one screen, step 1 of ~2): one line per stage
-   `N. Stage — state — reason (record source)`, then the current stage. Then warnings, one line each,
+   `N. Stage — state — reason (record source)`; consecutive stages with the same state and reason share
+   one line (`10–12. — missing — no records yet`). Then the current stage. On a resume, compare with the
+   last map in the journey's `Conversation state`: a state changes only when a record changed, and you
+   name that record; if nothing changed, say so in one line and show only the current stage and gaps. Then warnings, one line each,
    with the consequence ("ads before measurement is verified: you will not know what worked"). Then
    stale items (ADR in `Needs review`, disproved `A`) with what they affect.
 5. **Recommend exactly one next step**: the cheapest action that unblocks the most, usually the earliest
@@ -61,6 +66,9 @@ run another skill or start `/ship`: you name the step, the user runs it.
    A "yes" with a reason writes a `skip` record (`stage | reason | date | revisit when`); a "no" is kept
    in the journey's `Conversation state` so the question is not asked again. Ask nothing that a record
    already answers.
+8. **Keep the state**: after showing the map, write one line to the journey's `Conversation state`
+   (date, the 12 states, the recommended step, questions settled) so the next run compares instead of
+   re-judging from scratch.
 
 ## Bindings mode (`/product stores`)
 1. List every record type with its store: repo (path) or external (connector, container, `id_in`,
@@ -78,7 +86,7 @@ run another skill or start `/ship`: you name the step, the user runs it.
 
 ## Writes
 `skip` records (repo default `docs/product/journey.md`: Skips table, Conversation state) after the user
-confirms; `.agent-army/stores.json` and migrated records in bindings mode after confirmation. Nothing
+confirms, and the one-line map snapshot in that `Conversation state`; `.agent-army/stores.json` and migrated records in bindings mode after confirmation. Nothing
 else: never advisor artifacts, the brief, ADRs or work items outside a confirmed migration.
 
 ## <prompt_examples>
