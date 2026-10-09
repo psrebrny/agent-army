@@ -499,6 +499,113 @@ PY_CONTRACT
   fi
 }
 
+# The product skills (13 advisors + the /product navigator) share one contract block.
+# One list; completeness (all present) is asserted by the registry check, not here.
+PRODUCT_SKILLS="product-strategy product-red-team market-research business-case validate-product \
+product-spec solution-architecture delivery-plan go-to-market product-metrics ux-review legal-review \
+launch-readiness product"
+
+# Every copy of the advisor contract is byte-identical to the authoritative one in
+# product-strategy; every present product skill carries it; its stores.json example parses
+# and never allows `delete`.
+check_advisor_contract() {
+  local out
+  if out="$(python3 - "$SKILLS_DIR" $PRODUCT_SKILLS 2>&1 <<'PY_ADVISOR'
+import json, pathlib, re, sys
+skills = pathlib.Path(sys.argv[1]); product = sys.argv[2:]
+OPEN, CLOSE = '<!-- advisor-contract:v1 -->', '<!-- /advisor-contract:v1 -->'
+errors, blocks = [], {}
+for f in sorted(skills.glob('*/SKILL.md')):
+    text, name = f.read_text(), f.parent.name
+    if OPEN not in text:
+        if name in product:
+            errors.append(f'{name}: product skill without the advisor-contract:v1 block')
+        continue
+    if text.count(OPEN) != 1 or text.count(CLOSE) != 1 or text.index(CLOSE) < text.index(OPEN):
+        errors.append(f'{name}: needs exactly one opening and one closing advisor-contract:v1 tag')
+        continue
+    blocks[name] = text[text.index(OPEN):text.index(CLOSE) + len(CLOSE)]
+if blocks:
+    ref = blocks.get('product-strategy')
+    if ref is None:
+        errors.append('product-strategy (authoritative copy) has no advisor-contract:v1 block')
+    else:
+        lines = ref.count('\n') - 1
+        if lines > 120:
+            errors.append(f'contract block is {lines} lines (limit 120)')
+        for name, block in blocks.items():
+            if block != ref:
+                errors.append(f'{name}: advisor-contract:v1 block differs from product-strategy')
+        fences = re.findall(r'```json\n(.*?)```', ref, re.S)
+        stores = [f for f in fences if '"types"' in f]
+        if not stores:
+            errors.append('contract has no ```json stores.json example')
+        for raw in stores:
+            try:
+                doc = json.loads(raw)
+            except ValueError as exc:
+                errors.append(f'stores.json example does not parse: {exc}')
+                continue
+            if doc.get('version') != 1 or not isinstance(doc.get('types'), dict):
+                errors.append('stores.json example needs "version": 1 and a "types" object')
+                continue
+            for t, b in doc['types'].items():
+                if 'delete' in b.get('allowed', []):
+                    errors.append(f'stores.json example allows delete for {t}')
+for e in errors:
+    print(e)
+print(f'COUNT {len(blocks)}')
+sys.exit(1 if errors else 0)
+PY_ADVISOR
+)"; then
+    ok "advisor contract identical in ${out##*COUNT } present advisor skills"
+  else
+    while IFS= read -r line; do
+      case "$line" in COUNT*) ;; *) bad "$line" ;; esac
+    done <<<"$out"
+  fi
+}
+
+# The interaction-pace:v1 paragraph is copied verbatim into the advisor contract, /ship and
+# the baseline AGENTS.md. Every copy that exists must match the contract's.
+check_interaction_pace() {
+  local out
+  if out="$(python3 - "$ROOT" 2>&1 <<'PY_PACE'
+import pathlib, sys
+root = pathlib.Path(sys.argv[1])
+OPEN, CLOSE = '<!-- interaction-pace:v1 -->', '<!-- /interaction-pace:v1 -->'
+files = ['.apm/skills/product-strategy/SKILL.md', '.apm/skills/ship/SKILL.md',
+         '.apm/skills/bootstrap/baseline/AGENTS.md']
+copies, errors = {}, []
+for rel in files:
+    p = root / rel
+    if not p.is_file() or OPEN not in p.read_text():
+        continue
+    t = p.read_text()
+    if t.count(OPEN) != 1 or t.count(CLOSE) != 1 or t.index(CLOSE) < t.index(OPEN):
+        errors.append(f'{rel}: needs exactly one opening and one closing interaction-pace:v1 tag')
+        continue
+    copies[rel] = t[t.index(OPEN):t.index(CLOSE)]
+ref = copies.get(files[0])
+if copies and ref is None:
+    errors.append('interaction-pace:v1 copies exist but the advisor contract has none')
+for rel, c in copies.items():
+    if ref is not None and c != ref:
+        errors.append(f'{rel}: interaction-pace:v1 differs from the advisor contract')
+for e in errors:
+    print(e)
+print(f'COUNT {len(copies)}')
+sys.exit(1 if errors else 0)
+PY_PACE
+)"; then
+    ok "interaction-pace:v1 identical in ${out##*COUNT } present copies"
+  else
+    while IFS= read -r line; do
+      case "$line" in COUNT*) ;; *) bad "$line" ;; esac
+    done <<<"$out"
+  fi
+}
+
 # --- argument routing -------------------------------------------------------
 do_agents=1; do_skills=1; do_pack=0; filters=()
 for a in "$@"; do
@@ -544,6 +651,9 @@ if [ "$do_skills" = 1 ] && [ -z "$TARGET_DIR" ]; then
   for d in "$SKILLS_DIR"/*/; do check_skill "${d%/}"; done
   check_tools_descriptors
   check_interaction_contract
+  printf '\n\033[1m• product skills\033[0m\n'
+  check_advisor_contract
+  check_interaction_pace
 fi
 if [ "$do_pack" = 1 ]; then
   printf '\n\033[1m• package (apm)\033[0m\n'

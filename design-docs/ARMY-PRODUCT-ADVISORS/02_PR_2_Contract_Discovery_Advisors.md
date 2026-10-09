@@ -6,37 +6,44 @@
 **Objective:** the `advisor-contract:v1` block, an identity check, attribution, and four advisors (`product-strategy`, `product-red-team`, `market-research`, `validate-product`) that pass gate G1.
 
 ## Execution State
-- **PR status:** planned
-- **Interaction policy:** unset — /ship asks once per PR before first execution
-- **Execution scope:** unset
-- **Scope Profile:** unset
-- **Model routing:** unset
-- **Last manual configuration:** unknown
-- **Current task:** none
+- **PR status:** red
+- **Interaction policy:** interactive (user, 2026-10-09; D13 recommendation: every task is `design_decision`)
+- **Execution scope:** PR 2
+- **Scope Profile:** one PR; coordinator = highest unfinished task profile (2.1 `design_decision`); coordination `medium`
+- **Model routing:** inherit (source repo has no `.agent-army/config.json`); eval actor and judge sessions use the `claude -p` default model, recorded per run
+- **Last manual configuration:** stay current (no material model recommendation)
+- **Current task:** 2.1
 - **Temporary delegation:** none
-- **Active roles:** none
-- **Last verified stage:** planned
-- **Awaiting decision:** none
+- **Active roles:** main session
+- **Last verified stage:** 2.1 RED (2026-10-09): `check_advisor_contract` + `check_interaction_pace` added to `scripts/check.sh`; scratch harness `t21.sh` (9 cases) fails at case 0 "authoritative block exists in product-strategy"; an orphan scratch copy fails with `product-strategy (authoritative copy) has no advisor-contract:v1 block`; real `check.sh --skills` 33/0 (0 copies present)
+- **Awaiting decision:** RED acceptance 2.1: accept the contract layout and write list? (arm P for the 2.2/2.3 evals is asked at eval time; user wants it explained as a yardstick only, nothing from pm-skills enters our skills)
 
 ---
 
 ## Execution Progress
-- **Milestones:** unset
-- **Current milestone:** none
-- **Finish condition:** unset
+- **Milestones:** 1) Task 2.1 contract block + identity check + `SOURCES.md` · 2) Task 2.2 `product-strategy` + `product-red-team` (+ G1 eval) · 3) Task 2.3 `market-research` + `validate-product` (+ G1 eval) · 4) closure: review, security, docs, final verification
+- **Current milestone:** 1 of 4
+- **Finish condition:** all three tasks verified (check.sh GREEN, G1 scorecard rows with verdicts), review + security clean, PR at `ready_for_human_review`; commit only after approval
 - **Last map change:** none
 - **Deferred ideas:** none
 
 ---
 
 ## Interaction Card
-none
+- **Checkpoint:** RED acceptance
+- **Progress:** krok 1 z ~4 (Task 2.1, faza RED); dalej: tekst kontraktu → GREEN; potem 2.2, 2.3, zamknięcie
+- **Completed:** dwa nowe sprawdzenia w `scripts/check.sh`: `check_advisor_contract` (identyczność bloku, blok w każdym obecnym skillu produktowym, ≤ 120 linii, przykład `stores.json` parsuje się i nie ma `delete`) oraz `check_interaction_pace` (kopie `interaction-pace:v1` w kontrakcie, `/ship`, bazowym `AGENTS.md` — gdy istnieją)
+- **Evidence:** `t21.sh` (scratchpad) przypadek 0 FAIL: brak bloku w `product-strategy`; osierocona kopia → `✗ product-strategy (authoritative copy) has no advisor-contract:v1 block`; prawdziwe `check.sh --skills` 33/0
+- **Review focus:** układ kontraktu (12 sekcji, ≤ 120 linii); `product-strategy/SKILL.md` w 2.1 ma tylko frontmatter + blok, resztę metody dopisuje 2.2; weryfikacja atrybucji = odczyt konkretnych plików z GitHuba przy podanych commitach (bez klonowania i instalacji)
+- **Question:** akceptujesz układ kontraktu i listę zapisu?
+- **Options:** continue | direct a correction | show details
+- **Discussion:** none
 
 ---
 
 ### Task 2.1: Contract block, identity check, `SOURCES.md`
 
-**Task status:** open
+**Task status:** in progress
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
