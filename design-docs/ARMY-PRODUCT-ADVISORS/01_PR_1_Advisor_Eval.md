@@ -36,8 +36,8 @@
 - **Completed:** `advisor-eval` skill + `run.py`; rubric and ledger; 17 scenarios; baseline policy (K runs with each advisor)
 - **Evidence:** S1/K dry run row with 9 scores; plan-only isolation passes for all 17; `scripts/check.sh` 152/0
 - **Review focus:** oracles in `tests/fixtures/advisors/S*/expected.md`; the not-sandboxed file-tool limit
-- **Question:** merge GitHub PR #4 into `main`?
-- **Options:** merge | direct a correction | show details
+- **Question:** none (user, 2026-10-09: no merge per blueprint PR; the whole feature merges once at the end)
+- **Options:** direct a correction | show details
 - **Discussion:** none
 
 ---
