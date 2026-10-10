@@ -33,6 +33,8 @@ python3 .claude/skills/advisor-eval/run.py <advisor> [--scenario S1 S3] [--arms 
    over the same files, without history. Each session is multi-turn: a separate simulated-user process
    answers every advisor turn from the scenario's `user.md` persona and never sees the oracle. A session
    ends when the persona replies `ok, thanks`; 20 user turns is only a safety stop against loops.
+   An advisor turn is every text block of that turn, including text written before a tool call,
+   as the user would see it (`run.py` streams the actor; before 2026-10-10 only the last block was kept).
 4. **Judge.** A separate fresh-context `claude -p` reads `scenario/` (request, resume, expected),
    `rubric.md` with the harness-only section removed, and `bundles/<random id>/` (turn-by-turn
    transcripts with durations, plus every file the sessions created or changed). No arm label reaches it.

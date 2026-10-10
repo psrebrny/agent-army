@@ -68,7 +68,8 @@ run another skill or start `/ship`: you name the step, the user runs it.
    already answers.
 8. **Keep the state**: after showing the map, write one line to the journey's `Conversation state`
    (date, the 12 states, the recommended step, questions settled) so the next run compares instead of
-   re-judging from scratch.
+   re-judging from scratch. The snapshot never replaces the reply: the map, warnings and the one next
+   step are in your answer to the user, never only in the file.
 
 ## Bindings mode (`/product stores`)
 1. List every record type with its store: repo (path) or external (connector, container, `id_in`,

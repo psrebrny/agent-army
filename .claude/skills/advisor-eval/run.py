@@ -46,16 +46,41 @@ def die(msg):
     sys.exit(f"advisor-eval: {msg}")
 
 
-def claude(args, cwd, prompt):
-    """One `claude -p` call; returns the parsed JSON result."""
-    cmd = ["claude", "-p", "--output-format", "json", "--strict-mcp-config",
-           "--setting-sources", "project", *args, prompt]
+def claude(args, cwd, prompt, whole_turn=False):
+    """One `claude -p` call; returns the parsed JSON result.
+
+    `result` holds only the text after the last tool call. With `whole_turn`, the call streams
+    and `turn_text` joins every text block of the turn, so text written before a tool call
+    (an answer, then a file write) reaches the persona and the judge as the user would see it.
+    """
+    fmt = ["--output-format", "stream-json", "--verbose"] if whole_turn else ["--output-format", "json"]
+    cmd = ["claude", "-p", *fmt, "--strict-mcp-config", "--setting-sources", "project", *args, prompt]
     out = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, env=CHILD_ENV,
                          stdin=subprocess.DEVNULL)
-    try:
-        res = json.loads(out.stdout)
-    except json.JSONDecodeError:
-        die(f"claude -p returned no JSON (exit {out.returncode}): {out.stderr.strip()[:400]}")
+    if whole_turn:
+        res, texts, seen = None, [], set()
+        for line in out.stdout.splitlines():
+            try:
+                ev = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if ev.get("type") == "assistant":
+                msg = ev.get("message") or {}
+                for i, block in enumerate(msg.get("content") or []):
+                    key = (msg.get("id"), i, block.get("text"))
+                    if block.get("type") == "text" and block.get("text", "").strip() and key not in seen:
+                        seen.add(key)
+                        texts.append(block["text"].strip())
+            elif ev.get("type") == "result":
+                res = ev
+        if res is None:
+            die(f"claude -p returned no result event (exit {out.returncode}): {out.stderr.strip()[:400]}")
+        res["turn_text"] = "\n\n".join(texts) or res.get("result", "")
+    else:
+        try:
+            res = json.loads(out.stdout)
+        except json.JSONDecodeError:
+            die(f"claude -p returned no JSON (exit {out.returncode}): {out.stderr.strip()[:400]}")
     if res.get("is_error"):
         die(f"claude -p error: {str(res.get('result'))[:400]}")
     return res
@@ -109,10 +134,10 @@ def converse(scratch, opening, persona, actor_args, persona_dir, label):
     message, stopped = opening, False
     for i in range(SAFETY_STOP + 1):
         sid_args = ["--session-id", actor_sid] if i == 0 else ["--resume", actor_sid]
-        res = claude([*actor_args, *sid_args], scratch, message)
+        res = claude([*actor_args, *sid_args], scratch, message, whole_turn=True)
         for k in totals:
             totals[k] += res.get(k) or 0
-        reply = res.get("result", "")
+        reply = res["turn_text"]
         turns.append({"user": message, "advisor": reply, "seconds": round((res.get("duration_ms") or 0) / 1000)})
         p_sid = ["--session-id", persona_sid] if i == 0 else ["--resume", persona_sid]
         p_res = claude(["--system-prompt", persona, "--tools", "", *p_sid], persona_dir,
