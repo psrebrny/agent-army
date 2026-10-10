@@ -6,25 +6,25 @@
 **Objective:** documentation matches delivered behavior. `.apm/README.md` becomes the real catalog with the `/ship` boundary table, and the root, baseline and test docs are correct.
 
 ## Execution State
-- **PR status:** planned
-- **Interaction policy:** unset — /ship asks once per PR before first execution
-- **Execution scope:** unset
-- **Scope Profile:** unset
-- **Model routing:** unset
-- **Last manual configuration:** unknown
-- **Current task:** none
+- **PR status:** in_progress
+- **Interaction policy:** autonomous (user, 2026-10-10)
+- **Execution scope:** PR 8
+- **Scope Profile:** one PR; coordinator = highest unfinished task profile (`retrieval`); coordination `low`
+- **Model routing:** inherit (source repo has no `.agent-army/config.json`)
+- **Last manual configuration:** stay current
+- **Current task:** 8.2 (waiting for the `advisor-eval` runs)
 - **Temporary delegation:** none
 - **Active roles:** none
-- **Last verified stage:** planned
+- **Last verified stage:** start gate (2026-10-10): `check.sh` 203/0/1 (staleness WARN: 5 changed, 7 never evaluated); user chose to run `advisor-eval` on all 12 (N,K, one scenario each) in this PR
 - **Awaiting decision:** none
 
 ---
 
 ## Execution Progress
-- **Milestones:** unset
-- **Current milestone:** none
-- **Finish condition:** unset
-- **Last map change:** none
+- **Milestones:** 1) catalog (8.1) · 2) root/baseline/test docs (8.2) · 3) `advisor-eval` for the 12 advisors without a current row · 4) final verification
+- **Current milestone:** 3 of 4 (`advisor-eval` runs)
+- **Finish condition:** 8.1 and 8.2 `done`, all three verification commands green, no staleness WARN, PR at `ready_for_human_review`
+- **Last map change:** scope expansion (user, 2026-10-10): APM does not install `.apm/SOURCES.md` (PR 7, Task 7.3), so the "see `SOURCES.md`" pointers in `product-strategy`, `product-red-team`, `validate-product` and `legal-review` dangled in an installed repo. The user chose to fix the skills now: each names its source repo and license inline, `go-to-market` gains its missing `marketing-loops` attribution, and `SOURCES.md` says it stays in the source repo. `product-strategy` joins the `advisor-eval` runs (13 advisors), and the `go-to-market` run on the old text was stopped and re-queued.
 - **Deferred ideas:** none
 
 ---
@@ -36,7 +36,7 @@ none
 
 ### Task 8.1: `.apm/README.md` catalog
 
-**Task status:** open
+**Task status:** done — `.apm/README.md` rewritten as the delivered catalog (19-row table, 14 detailed product skills, `/ship` boundary table, paths, ADRs, attribution); `scripts/check.sh --skills` 81/0/1 (staleness WARN only, runs in progress); each row cross-read against its SKILL.md
 
 **Execution Profile:**
 - **Bottleneck:** retrieval
@@ -83,7 +83,7 @@ Replace the "proposals" framing with the delivered catalog. Open with "Not sure 
 
 ### Task 8.2: Root, baseline and test docs + final verification
 
-**Task status:** open
+**Task status:** in progress — docs done: `README.md` (19-skill table + catalog link; "five skills" → 19; the stale capability/effort paragraph now describes the D15 Execution Profile), `AGENTS.md` (19 skills, catalog, `SOURCES.md` source-repo only, `advisor-eval` by path + re-run rule), baseline `AGENTS.md` ("Workflows available here", advisors included), `tests/GUIDE.md` (Advisor evaluation), and one line in root `GUIDE.md` ("five skills" → 19, same stale-count risk). With apm 0.33.0: `check.sh` 203/0/1, `smoke.sh` 249/0, `check.sh --pack` 204/0/1; the one WARN is staleness while the `advisor-eval` runs finish; stale-count grep empty
 
 **Execution Profile:**
 - **Bottleneck:** retrieval

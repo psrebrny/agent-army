@@ -45,6 +45,20 @@ exist, it asks; it never guesses from recency. Its closed loop is policy-aware T
 passing before/after baseline for an explicitly approved behavior-preserving refactor) → independent
 review + security → repairs → Green + re-audit → docs + full verification → `ready_for_human_review`.
 
+## Workflows available here
+Each is a skill in `<SKILLS_DIR>/<name>/SKILL.md`: in Claude Code type `/<name>`; elsewhere tell the
+agent "Follow `<SKILLS_DIR>/<name>/SKILL.md` for: <request>." All are optional and none runs another.
+
+- **Engineering:** `bootstrap` (tailor the team and controls) · `ship` (execute or resume work) ·
+  `new-agent` (add a local role) · `new-skill` (add a local workflow) · `adapt-army` (turn a recurring
+  problem into a targeted improvement).
+- **Product (conversation + docs in `docs/product/` and `docs/adr/`; anything that becomes code is a
+  work item `W-n` for `ship`):** `product` (where am I on the 12-stage journey, one next step; start
+  here when unsure) · `product-strategy` · `product-red-team` · `market-research` · `business-case` ·
+  `validate-product` · `product-spec` · `solution-architecture` · `delivery-plan` · `go-to-market` ·
+  `product-metrics` · `ux-review` · `legal-review` · `launch-readiness`. Where each record type lives
+  (repo by default, or a connected tool) is recorded in `.agent-army/stores.json`.
+
 ## The team (delegate by role)
 - `architect` — interview (greenfield/existing) + blueprint in `design-docs/` (never writes source)
 - `planning-analyst` — conditional, read-only diagnosis/research with evidence; no blueprint or edits

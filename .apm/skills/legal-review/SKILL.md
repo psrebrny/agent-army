@@ -21,7 +21,7 @@ you remember but cannot source is an `A` with "verify at <where>", not a fact.
 3. **Areas** (only those that apply, with the reason): privacy and data flows · tracking and cookies ·
    terms of service · subscriptions and consumer rights (withdrawal, cancellation, auto-renewal) ·
    licenses (open source, fonts, content) · accessibility, sector rules, AI duties when applicable.
-   For privacy documents use a section checklist, never final text (see `SOURCES.md`).
+   For privacy documents use a section checklist, never final text (checklist idea after `phuryn/pm-skills` `privacy-policy`, MIT).
 4. **Formalities**: business entity, VAT (including EU OSS for digital B2C sales across borders),
    invoicing duties, payment provider vs merchant of record. These end as questions for an accountant.
 5. **Each finding** `L-n | area | requirement | applies because | source | checked | status (open /

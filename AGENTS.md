@@ -16,7 +16,11 @@ No build step, no test suite, no installer script — apm is the install mechani
 ## Key files
 
 - `apm.yml` — apm manifest (name, version, `includes`, deps).
-- `.apm/skills/` — the five live skills apm deploys: `/bootstrap`, `/ship`, `/new-agent`, `/new-skill`, `/adapt-army`.
+- `.apm/skills/` — the 19 skills apm deploys (registry: `SKILLS` in `bootstrap.py`; `check.sh` keeps it equal to the skill dirs and wrappers):
+  - five engineering workflows: `/bootstrap`, `/ship`, `/new-agent`, `/new-skill`, `/adapt-army`;
+  - fourteen product skills: the `/product` navigator and thirteen advisors (`product-strategy`, `product-red-team`, `market-research`, `business-case`, `validate-product`, `product-spec`, `solution-architecture`, `delivery-plan`, `go-to-market`, `product-metrics`, `ux-review`, `legal-review`, `launch-readiness`). Each embeds the identical `advisor-contract:v1` block (authoritative copy in `product-strategy/SKILL.md`); a semantic change bumps the tag.
+- `.apm/README.md` — the user-facing catalog: stage model, record stores, every skill, the `/ship` boundary table, ADRs.
+- `.apm/SOURCES.md` — attribution for borrowed methods (repo · file · commit · license). Source repo only: APM installs just the skill folders, so each skill also names its source and license inline.
 - `.apm/commands/` — thin command wrappers for tools that surface a `command/` dir rather than `skills/`; each just points at the matching `.agents/skills/<skill>/SKILL.md`. (apm's own placement varies by tool/version; when a native command isn't registered, invoke the skill directly by its `.agents/skills/…/SKILL.md` path.)
 - `.apm/skills/bootstrap/bootstrap.py` — deterministic v0.3.1 generator/migrator: `python3 bootstrap.py <tool> [--mode auto|incremental|full] [--runtime-hooks …] [--git-precommit …] [--ci …]`. It creates canonical local `.agent-army/agents/*.agent` role contracts, optional `.apm/hooks`, `.agent-army/runtime.py`, versioned ownership/config state, then lets the selected adapter render only where native agents are enabled. OpenCode uses the main-thread fallback and creates no native agent tree. `assemble.sh` is a no-APM compatibility wrapper.
 - `.apm/skills/bootstrap/baseline/` — **the single source of truth** for everything `/bootstrap` installs:
@@ -56,6 +60,8 @@ scripts/check.sh --target-dir <dir>   # validate a MATERIALIZED tool dir (e.g. a
                                        # descriptor-driven: correct agents dir, exact hooks_live set,
                                        # settings.json iff claude-settings, per that tool's tools/<tool>.yml
 ```
+**Advisor evaluation — `.claude/skills/advisor-eval/SKILL.md`** (maintainer tool, never shipped). It runs one product skill (arm N) against a plain session (arm K) through the scenario fixtures in `tests/fixtures/advisors/`, with a simulated user and a blind judge, and appends one row to `tests/fixtures/advisors/SCORECARDS.md`. Claude Code calls it as `/advisor-eval <advisor> --scenario <id>`; any other tool follows that `SKILL.md` by path and runs `python3 .claude/skills/advisor-eval/run.py <advisor> --scenario <id>` (first with `--plan-only`; it needs the `claude` CLI). **Rule: any change to a product skill or to `advisor-contract:v1` → re-run `advisor-eval` for the affected advisors**; `check.sh` warns while a skill's hash or contract tag differs from its latest row. See `tests/GUIDE.md` for the protocol.
+
 **Releasing a new version:** before bumping `PACKAGE_VERSION`, run `scripts/package-manifest.py <previous-version> <its commit>` so the new generator recognises unmodified copies of the previous release in `.agents/skills`; without it they are kept and reported as conflicts.
 
 **Generator preview — `python3 .apm/skills/bootstrap/bootstrap.py <target> --mode auto --dry-run`** prints what the v0.3.1 profile would create or migrate.

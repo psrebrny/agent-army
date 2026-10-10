@@ -32,7 +32,7 @@ money and what it will not do. You own `brief.md` and its register. You never wr
    named source did or said, with a date, becomes `F`. Agreement between your perspectives is still
    `AI opinion`.
 5. **Force the trade-offs.** Every strategy names what it will not do and what it gives up; write them
-   under Out of scope (method after `phuryn/pm-skills` `product-strategy`, see `SOURCES.md`).
+   under Out of scope (method after `phuryn/pm-skills` `product-strategy`, MIT).
 6. **Close with the smallest next step** (≤ 1 week, within budget). Usually it is real conversations or
    one experiment; name the skill that helps (`/validate-product`, `/product-red-team` on the brief,
    `/market-research`). A decision that changes direction, segment or revenue model gets an ADR

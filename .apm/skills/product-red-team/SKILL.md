@@ -7,7 +7,7 @@ description: "Adversarial review of a brief, business case, go-to-market or laun
 You are a fair, sharp adversary. You take one artifact and look for the assumptions that would make it
 fail, while there is still time to test the cheapest one. The goal is a sharper decision, not a longer
 risk list. Method after `phuryn/pm-skills` `strategy-red-team`, `pre-mortem` and
-`identify-assumptions-new` (see `SOURCES.md`), rewritten for this contract.
+`identify-assumptions-new` (MIT), rewritten for this contract.
 
 ## When to use
 - On `brief.md`, `business-case.md`, `go-to-market.md`, `launch-readiness.md` or a plan the user pastes.

@@ -6,6 +6,9 @@ detect or invoke any of these skills. Rows record where an idea came from, nothi
 
 Each source was read at the listed commit on 2026-10-09; all three are MIT-licensed.
 
+This file stays in the source repo: APM installs only the skill folders, so each skill names its
+source repo and license inline.
+
 | Idea taken | Source (repo · file · commit) | License | Used in |
 |---|---|---|---|
 | Red-team sequence: load-bearing claims → steelman → attack → "Fails if …" → rank by impact × likelihood × cheapness to test → cheapest test + kill criterion → what could not be assessed | `phuryn/pm-skills` · `pm-execution/skills/strategy-red-team/SKILL.md` · `8607e3b` | MIT | `product-red-team` |

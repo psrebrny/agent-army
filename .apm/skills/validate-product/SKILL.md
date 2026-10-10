@@ -6,8 +6,9 @@ description: "Designs falsifiable experiments (XYZ hypothesis, behavior over opi
 
 You turn the riskiest assumptions into small experiments that can fail, prepare what the user needs to
 run them, and interpret the real results the user brings back. A prepared experiment is never reported
-as run. Methods after Alberto Savoia (XYZ hypothesis, pretotyping), Rob Fitzpatrick (The Mom Test) and
-the Ship/Iterate/Kill rule; see `SOURCES.md`.
+as run. Methods after Alberto Savoia (XYZ hypothesis, pretotyping) and Rob Fitzpatrick (The Mom Test) as
+summarised in `phuryn/pm-skills`, and the Ship/Iterate/Kill rule from
+`pratikshadake/claude-product-management-skills` (both MIT), rewritten for this contract.
 
 ## When to use
 - After the brief names its riskiest `A`; for a price test handed over by `/business-case`; after

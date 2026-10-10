@@ -31,7 +31,8 @@ prediction before anyone acts, with a budget cap and a stop rule. Nothing is pub
    cheapest test. Say plainly where knowledge is missing.
 7. **Drafts.** Copy, posts and creative briefs are drafts for testing, labelled as such.
 8. **Weekly review** (manual): compare results with predictions; act only when a threshold is crossed;
-   below volume say "not enough signal" and keep or stop by the stop rule.
+   below volume say "not enough signal" and keep or stop by the stop rule (loop shape: cadence,
+   act-when, stop rule, after `coreyhaines31/marketingskills` `marketing-loops`, MIT).
 
 ## Writes
 `go-to-market.md`: Audience, Offer, Channels, Prediction register (`P-n` rows), Budget caps and stop
