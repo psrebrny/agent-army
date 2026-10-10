@@ -6,16 +6,16 @@
 **Objective:** the generator registers 19 skills at 0.4.0. Checks enforce registry/skill/wrapper agreement and the sourcing rules. Smoke proves every target and a non-destructive, idempotent 0.3.1 → 0.4.0 upgrade. A real local APM install works.
 
 ## Execution State
-- **PR status:** review
+- **PR status:** implementing
 - **Interaction policy:** autonomous (user, 2026-10-10)
 - **Execution scope:** PR 7
 - **Scope Profile:** one PR; coordinator = highest unfinished task profile (`verification`); coordination `low`
 - **Model routing:** inherit (source repo has no `.agent-army/config.json`)
 - **Last manual configuration:** stay current
-- **Current task:** none (tasks 7.1–7.3 verified; independent review running)
+- **Current task:** none (R1–R5 repaired; independent re-review next)
 - **Temporary delegation:** none
-- **Active roles:** code-reviewer, security-auditor (one independent read-only subagent)
-- **Last verified stage:** 7.1–7.3 verified (2026-10-10): `scripts/check.sh` 203 passed, 0 failed, 1 warning (5 advisors changed since their last eval); `scripts/check.sh --pack` 204/0/1, `apm pack` ok; `scripts/smoke.sh` 220/0 with `apm` 0.33.0 on PATH (scratch venv; gate 3 renders for real for the first time), 151/9 without `apm` (the 9 = gate 3, unchanged baseline). PR 6 accepted by the user ("lecimy dalej")
+- **Active roles:** none
+- **Last verified stage:** R1–R5 repaired (2026-10-10). RED: new smoke gates 1.7 (real 0.3.1 Claude core from `git archive 1e751e6`) and 1.8 (Claude skip through APM) against the pre-fix `bootstrap.py` → 225/8, the exact R1/R2 symptoms (stale copies, no docs-writer recommendation, downgrade refusal, 0 native agents after skip, roles added later). GREEN with apm 0.33.0: `scripts/check.sh --pack` 204/0/1, `scripts/smoke.sh` 233/0; without apm: `check.sh` 203/0/1, `smoke.sh` 160/10 (gate 3 + gate 1.8 report the missing apm). R4 negatives in a scratch copy: URL, `git@`, `claude plugin install`, `/plugin marketplace add` flagged, own URL and `./local` not; a 399-char `description: >-` warns. R5: opencode legacy dry run and real run list the same new templates. Also found while fixing R2: on native targets, staging left by a run without apm counted as "legacy" and every later run demanded an upgrade review; legacy is now staging without a canonical source
 - **Awaiting decision:** none
 
 ---
@@ -24,8 +24,15 @@
 - **Milestones:** 1) registry, versions, upgrade (7.1) · 2) `check.sh` package rules (7.2) · 3) pack + real local install (7.3) · 4) closure
 - **Current milestone:** 4 of 4 (closure: independent review)
 - **Finish condition:** every task `done` with its Verification Command green, PR at `ready_for_human_review`
-- **Last map change:** none
+- **Last map change:** review repairs R1–R5 added to closure (independent review `CHANGES_REQUESTED`, 2026-10-10; user: fix all in PR 7)
 - **Deferred ideas:** none
+- **Review (independent, 2026-10-10): `CHANGES_REQUESTED`.** User decisions (2026-10-10): R1 refresh unchanged package copies; R1–R5 all in PR 7.
+  - R1 HIGH: a Claude-target 0.3.1 user never runs the 0.4.0 migration (`.agents/skills` is a stale generator copy; apm updates `.claude/skills`). Fix: SKILL.md runs the `bootstrap.py` next to the loaded SKILL.md; `materialize_skills` refreshes a skill dir in `.agents/skills` only when it matches the recorded inventory (unmodified package copy), a locally changed one stays and is a conflict on the upgrade card; smoke fixture with the real 0.3.1 core (`git archive 1e751e6`).
+  - R2 MEDIUM (pre-existing): on native targets with apm, `--upgrade-review-outcome skipped` lets `apm --frozen` prune rendered agents, and the next run adds new roles despite the skip. Fix: on skip, stage the existing contracts without adding new ones; Claude variant of Gate 1.6 through `bootstrap_apm`.
+  - R3 LOW: smoke `\bproduct\b` matches inside `product-strategy`; Gate 3 `all_skills_present` proves only that apm did not prune.
+  - R4 LOW: `check.sh` rule (b) misses URL/`git@` installs and plugin install forms; rule (d) misreads YAML block scalars.
+  - R5 LOW: the dry-run overlay misses `bootstrap/baseline` templates when `bootstrap` itself is a planned copy.
+  - **Repairs:** R1 `materialize_skills` refreshes a `.agents/skills` dir from the running package only when its tracked digests (SKILL.md, plus baseline templates for `bootstrap`) equal the recorded inventory; otherwise it is kept and printed as `conflict:` on the review card; `bootstrap/SKILL.md` runs `$BOOTSTRAP_DIR` (next to the loaded SKILL.md) and the `/bootstrap` command prefers its own tool's skill copy. R2 the config records `package.agent_sources` (digests of the staged contracts); a re-render runs only when they change, never adds a role, and a skipped review still stages the existing contracts for APM. R3 exact-name match for new skills; Gate 3 check relabelled ("APM kept all 19"). R4 URL/`git@`/plugin forms; YAML-parsed descriptions. R5 the dry-run overlay adds the planned skill's tracked digests, templates included.
 
 ---
 

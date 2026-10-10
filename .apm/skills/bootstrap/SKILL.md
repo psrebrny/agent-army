@@ -19,7 +19,7 @@ with generic prompts is not a successful bootstrap.
 After `apm update psrebrny/agent-army --target <target>`, run `/bootstrap` normally. It first runs:
 
 ```bash
-python3 "$SKILLS_DIR/bootstrap/bootstrap.py" <target> --mode auto --dry-run
+python3 "$BOOTSTRAP_DIR/bootstrap.py" <target> --mode auto --dry-run   # BOOTSTRAP_DIR: Step 0
 ```
 
 `auto` detects the profile state: no profile means first bootstrap; an older Agent Army package means an
@@ -69,7 +69,13 @@ Every normal skill invocation uses the shared installed directory:
 
 ```bash
 SKILLS_DIR=".agents/skills"
+BOOTSTRAP_DIR="<directory of the SKILL.md you are following, e.g. .claude/skills/bootstrap>"
 ```
+
+Run the program next to the SKILL.md the tool loaded (`$BOOTSTRAP_DIR`), not a copy elsewhere. A tool-native
+install (for Claude, `.claude/skills`) can be newer than the shared `.agents/skills` copy the previous
+bootstrap made; the program refreshes unmodified older copies there itself and reports locally changed ones
+as conflicts on the upgrade card.
 
 If this directory is missing, stop and ask the user to repair the installation with `apm install` or
 `apm update`. Do not read `.opencode/skills` or `apm_modules` as instructions. The deterministic bootstrap
@@ -79,7 +85,7 @@ they are never a source of workflow guidance or of the upgrade review.
 Run the detector; do not infer the active tool from a directory listing:
 
 ```bash
-bash "$SKILLS_DIR/bootstrap/assemble.sh" --detect
+bash "$BOOTSTRAP_DIR/assemble.sh" --detect
 ```
 
 `DETECTED=<tool>` is unambiguous. With `AMBIGUOUS` or `NONE`, ask the user
@@ -102,7 +108,7 @@ Ask separately for runtime hooks, git pre-commit and CI. Each is `army`,
 Generate the profile:
 
 ```bash
-python3 "$SKILLS_DIR/bootstrap/bootstrap.py" <target> \
+python3 "$BOOTSTRAP_DIR/bootstrap.py" <target> \
   --runtime-hooks <army|external|disabled> \
   --git-precommit <army|external|disabled> \
   --ci <army|external|disabled>
@@ -113,7 +119,7 @@ Claude uses its documented `haiku`/`sonnet`/`opus` role defaults. Cursor can use
 static per-role routing when the user provides exact native model IDs:
 
 ```bash
-python3 "$SKILLS_DIR/bootstrap/bootstrap.py" cursor \
+python3 "$BOOTSTRAP_DIR/bootstrap.py" cursor \
   --model-light '<exact available model ID>' \
   --model-mid '<exact available model ID>' \
   --model-strong '<exact available model ID>'

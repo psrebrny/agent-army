@@ -305,7 +305,7 @@ cp -R "$UP031/.agent-army/agents" "$WORK/agents-031-before"
 (cd "$UP031" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --dry-run --skip-apm > "$WORK/upgrade-031-plan.txt")
 grep -q '0.3.1 -> 0.4.0' "$WORK/upgrade-031-plan.txt" && ok "0.3.1 profile gets an incremental 0.4.0 plan" || bad "0.3.1 -> 0.4.0 plan missing"
 missing_new=""
-for skill in $PRODUCT_SKILLS; do grep -q "new skills:.*\b$skill\b" "$WORK/upgrade-031-plan.txt" || missing_new="$missing_new $skill"; done
+for skill in $PRODUCT_SKILLS; do grep -Eq "new skills: (.*, )?$skill(,|$)" "$WORK/upgrade-031-plan.txt" || missing_new="$missing_new $skill"; done
 [ -z "$missing_new" ] && ok "upgrade review lists the 14 product skills as new capabilities" || bad "upgrade review misses new skills:$missing_new"
 grep -q 'recommended local diff: .*docs-writer.md -> .agent-army/agents/agent-army-docs-writer.agent' "$WORK/upgrade-031-plan.txt" \
   && ok "upgrade review recommends merging the docs-writer change into the local contract" || bad "docs-writer recommendation missing"
@@ -328,6 +328,58 @@ UP031_APPLY="$WORK/upgrade-031-apply"
 grep -A2 '"upgrade_review"' "$UP031_APPLY/.agent-army/config.json" | grep -q '"status": "applied"' \
   && grep -q 'LOCAL-DOCS-WRITER-SPECIALIZATION' "$UP031_APPLY/.agent-army/agents/agent-army-docs-writer.agent" \
   && ok "applied upgrade records the outcome and keeps the docs-writer specialization" || bad "applied upgrade outcome or specialization missing"
+
+printf '\n\033[1mGATE 1.7 · real 0.3.1 Claude install (core in .agents/skills, 0.4.0 in .claude/skills)\033[0m\n'
+PKG031="$WORK/pkg031"; mkdir -p "$PKG031"
+if git -C "$ROOT" archive 1e751e6 .apm/skills 2>/dev/null | tar -x -C "$PKG031" 2>/dev/null; then
+  C031="$WORK/claude-031"; init_repo "$C031"; mkdir -p "$C031/.agents" "$C031/.claude"
+  cp -R "$PKG031/.apm/skills" "$C031/.agents/skills"; cp -R "$ROOT/.apm/skills" "$C031/.claude/skills"
+  (cd "$C031" && python3 .agents/skills/bootstrap/bootstrap.py claude --skip-apm --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null 2>&1)
+  grep -q '"version": "0.3.1"' "$C031/.agent-army/config.json" && ok "the real 0.3.1 generator wrote a 0.3.1 profile" || bad "0.3.1 profile not created"
+  printf '\n# LOCAL-NEW-AGENT-NOTE\n' >> "$C031/.agents/skills/new-agent/SKILL.md"
+  (cd "$C031" && python3 .claude/skills/bootstrap/bootstrap.py claude --mode auto --dry-run --skip-apm > "$WORK/claude-031-plan.txt" 2>&1)
+  grep -q '0.3.1 -> 0.4.0' "$WORK/claude-031-plan.txt" && ok "the loaded 0.4.0 generator plans 0.3.1 -> 0.4.0" || bad "no 0.3.1 -> 0.4.0 plan from .claude/skills"
+  grep -Eq 'changed skills: (.*, )?bootstrap(,|$)' "$WORK/claude-031-plan.txt" && grep -Eq 'changed skills: (.*, )?ship(,|$)' "$WORK/claude-031-plan.txt" \
+    && ok "dry run previews the refreshed bootstrap and ship" || bad "dry run misses the refreshed core skills"
+  grep -q 'recommended local diff: .*docs-writer.md -> .agent-army/agents/agent-army-docs-writer.agent' "$WORK/claude-031-plan.txt" \
+    && ok "dry run recommends the docs-writer merge" || bad "docs-writer recommendation missing for the Claude upgrade"
+  grep -q 'conflict: local changes kept.*new-agent' "$WORK/claude-031-plan.txt" && ok "a locally changed skill is reported as a conflict" || bad "local skill change not reported"
+  (cd "$C031" && python3 .claude/skills/bootstrap/bootstrap.py claude --mode auto --upgrade-review-outcome skipped --skip-apm > "$WORK/claude-031-up.txt" 2>&1)
+  cmp -s "$C031/.agents/skills/bootstrap/bootstrap.py" "$ROOT/.apm/skills/bootstrap/bootstrap.py" \
+    && cmp -s "$C031/.agents/skills/ship/SKILL.md" "$ROOT/.apm/skills/ship/SKILL.md" \
+    && ok "unmodified 0.3.1 copies in .agents/skills are refreshed to 0.4.0" || bad "stale 0.3.1 copies left in .agents/skills"
+  grep -q 'LOCAL-NEW-AGENT-NOTE' "$C031/.agents/skills/new-agent/SKILL.md" && ok "the locally changed skill is kept" || bad "a locally changed skill was overwritten"
+  all_skills_present "$C031" && ok "the 14 product skills are added to .agents/skills" || bad "product skills missing in .agents/skills"
+  before="$(tree_digest "$C031")"
+  (cd "$C031" && python3 .agents/skills/bootstrap/bootstrap.py claude --mode auto --skip-apm > "$WORK/claude-031-next.txt" 2>&1)
+  [ "$before" = "$(tree_digest "$C031")" ] && grep -q 'profile is current' "$WORK/claude-031-next.txt" \
+    && ok "the documented .agents/skills generator then sees a current profile (no downgrade refusal, no writes)" \
+    || bad "follow-up run from .agents/skills was not a no-op: $(head -1 "$WORK/claude-031-next.txt")"
+else
+  bad "cannot read the 0.3.1 package (git archive 1e751e6); run smoke from a full clone"
+fi
+
+printf '\n\033[1mGATE 1.8 · Claude upgrade skip through APM keeps native agents\033[0m\n'
+if command -v apm >/dev/null 2>&1; then
+  CA="$WORK/claude-apm-up"; mkdir -p "$CA/.agents"; cp -R "$ROOT/.apm/skills" "$CA/.agents/skills"; init_repo "$CA"
+  bootstrap_apm "$CA" claude --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null 2>&1
+  rendered="$(find "$CA/.claude/agents" -name 'agent-army-*.md' 2>/dev/null | wc -l | tr -d ' ')"
+  [ "$rendered" = 9 ] && ok "fresh Claude install renders nine native agents" || bad "fresh Claude install rendered $rendered agents"
+  downgrade_to_031 "$CA"
+  # A 0.3.1 profile without the planning roles: the skipped review must not add them.
+  prepare_planning_role_upgrade "$CA"
+  rm -f "$CA/.claude/agents/agent-army-planning-analyst.md" "$CA/.claude/agents/agent-army-plan-reviewer.md"
+  bootstrap_apm "$CA" claude --mode auto --upgrade-review-outcome skipped >/dev/null 2>&1
+  rendered="$(find "$CA/.claude/agents" -name 'agent-army-*.md' 2>/dev/null | wc -l | tr -d ' ')"
+  [ "$rendered" = 7 ] && ok "skipped upgrade through APM keeps the seven native agents" || bad "skipped upgrade left $rendered native agents (expected 7)"
+  before="$(tree_digest "$CA")"
+  bootstrap_apm "$CA" claude --mode auto > "$WORK/claude-apm-next.txt" 2>&1
+  [ "$before" = "$(tree_digest "$CA")" ] && grep -q 'profile is current' "$WORK/claude-apm-next.txt" \
+    && ok "next Claude run through APM is a no-op" || bad "next Claude run wrote files: $(head -1 "$WORK/claude-apm-next.txt")"
+  [ ! -f "$CA/.agent-army/agents/agent-army-planning-analyst.agent" ] && ok "skipped planning roles stay absent" || bad "a skipped planning role was added later"
+else
+  bad "apm not on PATH: the Claude upgrade through APM is not exercised"
+fi
 
 printf '\n\033[1mGATE 2 · runtime safety\033[0m\n'
 SAFE="$WORK/safety"; init_repo "$SAFE"
@@ -383,7 +435,8 @@ for target in claude codex cursor copilot opencode gemini windsurf; do
     gemini) agent="$dir/.gemini/agents/agent-army-architect.md" ;;
     windsurf) agent="$dir/.windsurf/skills/agent-army-architect/SKILL.md" ;;
   esac
-  all_skills_present "$dir" && ok "$target: all 19 package skills present" || bad "$target: package skills missing"
+  # Gate 3 copies the skills in itself, so this proves only that the APM pass kept them.
+  all_skills_present "$dir" && ok "$target: APM kept all 19 package skills" || bad "$target: APM pruned package skills"
   no_advisor_agents "$dir" && ok "$target: no agent output for product skills" || bad "$target: product skill rendered as an agent"
   if [ "$target" = opencode ]; then
     [ -f "$dir/.agent-army/agents/agent-army-architect.agent" ] \

@@ -396,8 +396,18 @@ def sync_apm_agent_sources(root: Path, dry_run: bool) -> None:
             staging.unlink()
 
 
-def agent_sources_need_staging(root: Path, target: str) -> bool:
-    """Tell a current profile to rerender when canonical sources changed or staging is absent."""
+def agent_source_digests(root: Path) -> dict[str, str]:
+    """Digests of the canonical role contracts, recorded when they are staged for APM."""
+    source_dir = root / LOCAL_AGENT_SOURCE_DIR
+    return {path.name: sha256_file(path) for path in sorted(source_dir.glob(f"agent-army-*{LOCAL_AGENT_SUFFIX}"))}
+
+
+def agent_sources_need_staging(root: Path, target: str, previous: dict[str, Any] | None = None) -> bool:
+    """Tell a current profile to rerender when canonical sources changed since they were last staged.
+
+    Staging is temporary (removed after a successful render), so its absence alone means
+    nothing once the profile records the staged digests; older profiles fall back to it.
+    """
     if target not in NATIVE_AGENT_TARGETS:
         return False
     source_dir = root / LOCAL_AGENT_SOURCE_DIR
@@ -405,6 +415,10 @@ def agent_sources_need_staging(root: Path, target: str) -> bool:
     sources = sorted(source_dir.glob(f"agent-army-*{LOCAL_AGENT_SUFFIX}"))
     if not sources:
         return False
+    package = (previous or {}).get("package") if isinstance((previous or {}).get("package"), dict) else {}
+    staged = package.get("agent_sources")
+    if isinstance(staged, dict):
+        return staged != agent_source_digests(root)
     for source in sources:
         staging = staging_dir / f"{source.name}.md"
         if not staging.is_file() or staging.read_bytes() != source.read_bytes():
@@ -518,11 +532,69 @@ def skill_source_candidates(root: Path, target: str) -> list[Path]:
     return unique
 
 
-def materialize_skills(root: Path, target: str, dry_run: bool) -> dict[str, Path]:
-    """Copy missing package skills; return each planned or copied skill's source dir."""
+def skill_digests(skills_root: Path, skill: str) -> dict[str, str]:
+    """Hash what the package inventory tracks for one skill: SKILL.md, plus baseline templates for bootstrap."""
+    digests: dict[str, str] = {}
+    if (skills_root / skill / "SKILL.md").is_file():
+        digests[skill] = sha256_file(skills_root / skill / "SKILL.md")
+    if skill == "bootstrap":
+        baseline = skills_root / "bootstrap/baseline"
+        if baseline.is_dir():
+            for path in sorted(baseline.rglob("*")):
+                if path.is_file() and path.suffix in {".md", ".py", ".yml", ".yaml"}:
+                    digests[str(path.relative_to(skills_root))] = sha256_file(path)
+    return digests
+
+
+def recorded_digests(previous_inventory: dict[str, Any], skill: str) -> dict[str, str]:
+    """The digests the last bootstrap recorded for one skill, in skill_digests' shape."""
+    skills = previous_inventory.get("skills") if isinstance(previous_inventory.get("skills"), dict) else {}
+    templates = previous_inventory.get("templates") if isinstance(previous_inventory.get("templates"), dict) else {}
+    recorded = {skill: skills[skill]} if skill in skills else {}
+    if skill == "bootstrap":
+        recorded.update({name: digest for name, digest in templates.items() if name.startswith("bootstrap/baseline/")})
+    return recorded
+
+
+def materialize_skills(
+    root: Path, target: str, dry_run: bool, previous_inventory: dict[str, Any] | None = None
+) -> tuple[dict[str, Path], list[str]]:
+    """Copy missing package skills and refresh unmodified older package copies.
+
+    Returns each planned or copied skill's source dir, and the skills kept because they
+    differ from both the running package and the recorded inventory (local changes).
+    """
     destination = root / skills_dir(target)
+    previous_inventory = previous_inventory or {}
+    added: dict[str, Path] = {}
+    kept: list[str] = []
+    # The running generator's own package is the newest source (for Claude, apm updates
+    # .claude/skills while .agents/skills keeps the copy the previous bootstrap made).
+    package = HERE.parent
+    if (
+        is_agent_army_skills(destination)
+        and has_all_skills(package)
+        and package.resolve() != destination.resolve()
+    ):
+        for skill in SKILLS:
+            dst = destination / skill
+            if not dst.is_dir():
+                continue
+            current = skill_digests(destination, skill)
+            if current == skill_digests(package, skill):
+                continue
+            if current and current == recorded_digests(previous_inventory, skill):
+                # An unmodified copy of the previous package: refresh it to this version.
+                print(f"{'plan' if dry_run else 'refresh'} {dst.relative_to(ROOT)} (unmodified package copy)")
+                added[skill] = package / skill
+                if not dry_run:
+                    shutil.rmtree(dst)
+                    shutil.copytree(package / skill, dst)
+            else:
+                print(f"kept {dst.relative_to(ROOT)} (local changes; not refreshed)")
+                kept.append(skill)
     if is_agent_army_skills(destination) and has_all_skills(destination):
-        return {}
+        return added, kept
     sources = [
         path
         for path in skill_source_candidates(root, target)
@@ -531,8 +603,7 @@ def materialize_skills(root: Path, target: str, dry_run: bool) -> dict[str, Path
     # Prefer a complete package over an older cache; copy only missing skills.
     source = next((path for path in sources if has_all_skills(path)), sources[0] if sources else None)
     if source is None:
-        return {}
-    added: dict[str, Path] = {}
+        return added, kept
     for skill in SKILLS:
         src = source / skill
         dst = destination / skill
@@ -543,7 +614,7 @@ def materialize_skills(root: Path, target: str, dry_run: bool) -> dict[str, Path
         if not dry_run:
             destination.mkdir(parents=True, exist_ok=True)
             shutil.copytree(src, dst)
-    return added
+    return added, kept
 
 
 def sha256_file(path: Path) -> str:
@@ -591,6 +662,7 @@ def print_upgrade_review(
     root: Path,
     from_version: str | None,
     delta: dict[str, dict[str, list[str]]],
+    kept_skills: list[str] | None = None,
 ) -> None:
     """Print the deterministic portion of the user-facing upgrade review card."""
     print("\nIncremental Upgrade Review")
@@ -602,6 +674,8 @@ def print_upgrade_review(
                 print(f"  {prefix} {label}: {', '.join(values)}")
     if not has_inventory_delta(delta):
         print("  package delta: no changed live package material detected")
+    if kept_skills:
+        print(f"  conflict: local changes kept, not refreshed to {PACKAGE_VERSION}: {', '.join(kept_skills)} (merge by hand or delete to refresh)")
     for name in delta["templates"]["changed"]:
         role = re.fullmatch(r"bootstrap/baseline/core/agents/([a-z-]+)\.md", name)
         if role and role.group(1) in ROLES:
@@ -687,8 +761,10 @@ def apply_incremental_changes(root: Path, target: str, dry_run: bool) -> list[st
 def needs_package_maintenance(previous: dict[str, Any], root: Path) -> bool:
     """Detect incomplete state or changed live package material on every update."""
     package = previous.get("package") if isinstance(previous.get("package"), dict) else {}
+    # A pre-0.3 install kept permanent *.agent.md sources here; temporary staging for a
+    # canonical .agent-army/agents contract is not legacy.
     legacy_agents = any(
-        legacy.is_file()
+        legacy.is_file() and not (root / LOCAL_AGENT_SOURCE_DIR / legacy.name[: -len(".md")]).is_file()
         for legacy in (root / APM_AGENT_STAGING_DIR).glob(f"agent-army-*{APM_AGENT_SUFFIX}")
     )
     legacy_native_agents = previous.get("target") == "opencode" and any(
@@ -752,12 +828,16 @@ def write_runtime_sources(root: Path, target: str, install_hooks: bool, dry_run:
         print(f"note runtime_hooks: {target} has no supported native runtime hook adapter")
 
 
-def write_agents(root: Path, target: str, routing: dict[str, Any], dry_run: bool) -> None:
+def write_agents(
+    root: Path, target: str, routing: dict[str, Any], dry_run: bool, add_missing: bool = True, reconcile: bool = True
+) -> None:
+    """Write missing role contracts when allowed, reconcile existing ones, and stage every existing one."""
     for role in ROLES:
         path = root / LOCAL_AGENT_SOURCE_DIR / f"agent-army-{role}{LOCAL_AGENT_SUFFIX}"
         if path.exists():
-            reconcile_role_model(path, role, routing, dry_run)
-        else:
+            if reconcile:
+                reconcile_role_model(path, role, routing, dry_run)
+        elif add_missing:
             write_text(path, source_agent(role, target, routing), dry_run)
     if target in NATIVE_AGENT_TARGETS:
         sync_apm_agent_sources(root, dry_run)
@@ -771,12 +851,15 @@ def write_degraded_adapters(root: Path, target: str, dry_run: bool) -> None:
         # local and explicit until that primitive is supported upstream.
         for role in ROLES:
             source = root / LOCAL_AGENT_SOURCE_DIR / f"agent-army-{role}{LOCAL_AGENT_SUFFIX}"
-            write_new_text(root / f".gemini/agents/agent-army-{role}.md", source.read_text(encoding="utf-8"), dry_run)
+            if source.is_file():
+                write_new_text(root / f".gemini/agents/agent-army-{role}.md", source.read_text(encoding="utf-8"), dry_run)
     elif target == "windsurf":
         # Windsurf has no native subagent file; named skills retain roles without
         # pretending that it can delegate to native subagents.
         for role in ROLES:
             source = root / LOCAL_AGENT_SOURCE_DIR / f"agent-army-{role}{LOCAL_AGENT_SUFFIX}"
+            if not source.is_file():
+                continue
             content = "---\nname: agent-army-" + role + "\ndescription: Agent Army fallback role for Windsurf.\n---\n\n" + source.read_text(encoding="utf-8")
             write_new_text(root / f".windsurf/skills/agent-army-{role}/SKILL.md", content, dry_run)
 
@@ -847,12 +930,14 @@ def main() -> int:
         bootstrap_mode, from_version = resolve_bootstrap_mode(previous, args.target, args.mode)
     except ValueError as exc:
         parser.error(str(exc))
+    restage_only = False
     if bootstrap_mode == "current":
         if needs_package_maintenance(previous, ROOT):
             bootstrap_mode = "incremental"
             print("Agent Army package is current; applying the pending shared-skills correction and upgrade review.")
-        elif agent_sources_need_staging(ROOT, args.target):
+        elif agent_sources_need_staging(ROOT, args.target, previous):
             bootstrap_mode = "full"
+            restage_only = True
             print("Agent Army canonical agent sources changed; refreshing native output.")
         elif args.upgrade_review_outcome is not None:
             bootstrap_mode = "incremental"
@@ -913,21 +998,25 @@ def main() -> int:
     if args.target == "opencode" and selections["runtime_hooks"] == "army":
         selections["runtime_hooks"] = "blocked"
 
-    planned_skills = materialize_skills(ROOT, args.target, args.dry_run)
+    previous_package = previous.get("package") if isinstance(previous.get("package"), dict) else {}
+    previous_inventory = previous_package.get("inventory") if isinstance(previous_package.get("inventory"), dict) else {}
+    planned_skills, kept_skills = materialize_skills(ROOT, args.target, args.dry_run, previous_inventory)
     inventory = package_inventory(ROOT)
     if args.dry_run:
-        # Preview the review the real run will show once the missing skills are copied.
+        # Preview the review the real run will show once skills are copied or refreshed.
         for skill, src in planned_skills.items():
-            if (src / "SKILL.md").is_file():
-                inventory["skills"][skill] = sha256_file(src / "SKILL.md")
-    previous_package = previous.get("package") if isinstance(previous.get("package"), dict) else {}
+            for name, digest in skill_digests(src.parent, skill).items():
+                inventory["templates" if "/" in name else "skills"][name] = digest
     delta = inventory_delta(previous_package, inventory)
     if bootstrap_mode == "incremental":
-        print_upgrade_review(ROOT, from_version, delta)
+        print_upgrade_review(ROOT, from_version, delta, kept_skills)
     if bootstrap_mode == "incremental" and args.upgrade_review_outcome == "skipped":
         print("preserve: local role contracts and model routing (Incremental Upgrade Review skipped)")
+        # Stage the existing contracts so APM's frozen pass keeps their native output; add none.
+        write_agents(ROOT, args.target, routing, args.dry_run, add_missing=False, reconcile=False)
     else:
-        write_agents(ROOT, args.target, routing, args.dry_run)
+        # A re-render after edited contracts stages them; it never adds a role the user did not choose.
+        write_agents(ROOT, args.target, routing, args.dry_run, add_missing=not restage_only)
     routing["effective_roles"] = effective_role_models(ROOT, args.target)
     if "army" in selections.values():
         write_runtime_sources(ROOT, args.target, selections["runtime_hooks"] == "army", args.dry_run)
@@ -953,6 +1042,7 @@ def main() -> int:
             "version": PACKAGE_VERSION,
             "profile_schema_version": PROFILE_SCHEMA_VERSION,
             "inventory": inventory,
+            **({"agent_sources": agent_source_digests(ROOT)} if args.target in NATIVE_AGENT_TARGETS else {}),
             **({"upgrade_review": review} if review else {}),
         },
         "model_routing": {"target": args.target, **routing},

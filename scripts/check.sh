@@ -724,11 +724,19 @@ hits = []
 for f in files:
     for no, text in enumerate(f.read_text(errors='ignore').splitlines(), 1):
         where = f'{f.relative_to(root)}:{no}'
-        if re.search(r'npx\s+skills\b', text) or re.search(r'/plugin\s+install\b', text):
+        if (re.search(r'npx\s+skills\b', text) or re.search(r'/plugin\s+(install|marketplace\s+add)\b', text)
+                or re.search(r'claude\s+plugin\s+(install|marketplace)\b', text)):
             hits.append(where)
         for span in re.findall(r'apm\s+install\b([^`"\'\n]*)', text):
             for token in span.split():
-                pkg = token.split('@')[0].split('#')[0]
+                if token.startswith(('-', '.', '/', '$', '<')):
+                    continue  # flags, local paths and placeholders are not packages
+                token = token.split('#')[0]
+                if '://' in token or token.startswith('git@'):
+                    # https://host/owner/repo(.git) and git@host:owner/repo(.git) name owner/repo
+                    pkg = re.sub(r'\.git$', '', re.sub(r'^(https?://[^/]+/|git@[^:]+:)', '', token))
+                else:
+                    pkg = token.split('@')[0]
                 if re.fullmatch(r'[A-Za-z0-9_][\w.-]*/[\w./-]+', pkg) and pkg != own:
                     hits.append(f'{where} ({pkg})')
 if hits:
@@ -764,14 +772,23 @@ def frontmatter(path):
     m = re.match(r'---\n(.*?)\n---', path.read_text(), re.S)
     return m.group(1) if m else ''
 
+def description(path):
+    # Parse the frontmatter as YAML so block scalars (`description: >-`) are measured whole.
+    try:
+        import yaml
+        data = yaml.safe_load(frontmatter(path)) or {}
+        return str(data.get('description') or '').strip()
+    except Exception:
+        m = re.search(r'^description:\s*(.*)$', frontmatter(path), re.M)
+        return m.group(1).strip().strip('"\'') if m else ''
+
 # (d) description length
 long = []
 for name in product:
     f = apm / 'skills' / name / 'SKILL.md'
     if not f.is_file():
         continue
-    m = re.search(r'^description:\s*(.*)$', frontmatter(f), re.M)
-    desc = m.group(1).strip().strip('"\'') if m else ''
+    desc = description(f)
     if len(desc) > 300:
         long.append(f'{name} ({len(desc)})')
 if long:
