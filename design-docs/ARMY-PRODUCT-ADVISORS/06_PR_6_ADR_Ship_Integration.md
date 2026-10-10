@@ -6,23 +6,23 @@
 **Objective:** `docs-writer` and the `/ship` docs stage write ADRs with the shared template before commit, move plan decisions into ADRs before a task closes, and mark a delivered work item `delivered` in its bound store. `architect` accepts `docs/product/*` as input. `/ship` recommends an interaction mode from the tasks' Execution Profiles (D13). Blueprint task statuses are English (D14) and the Execution Profile drops `Capability` and `Deliberation` (D15). `/ship` and the baseline `AGENTS.md` carry the collaborative-pace text (D16), and Interactive mode pauses once before and once after each task (D19). No new mandatory gate.
 
 ## Execution State
-- **PR status:** in_progress
+- **PR status:** ready_for_human_review
 - **Interaction policy:** autonomous for Tasks 6.1–6.5; Task 6.6 interactive (the flow is settled with the user first) (user, 2026-10-10)
 - **Execution scope:** PR 6
 - **Scope Profile:** one PR; coordinator = highest unfinished task profile (`design_decision`); coordination `medium`
 - **Model routing:** inherit (source repo has no `.agent-army/config.json`)
 - **Last manual configuration:** stay current
-- **Current task:** 6.2 (S8 re-run after the §5 fix), then closure
+- **Current task:** none (closure done)
 - **Temporary delegation:** none
-- **Active roles:** main session
-- **Last verified stage:** baseline (2026-10-10): `scripts/check.sh` 196 passed, 0 failed, 0 warnings
-- **Awaiting decision:** none
+- **Active roles:** none
+- **Last verified stage:** closure (2026-10-10): `scripts/check.sh` 198 passed, 0 failed; `scripts/smoke.sh` 119/9 = baseline (gate 3 needs `apm`, absent here). Manual `/ship` fixtures (actor `claude -p` in a scratch repo, evaluator subagent with the oracle): mode-recommendation pass in both variants; resume-red first run implemented past the pending legacy RED card → resume rule fixed → re-run pass (the remaining status misses were oracle errors, oracle corrected); pace re-run: one miss left, the "everything at once" reply drops `step X of ~Y` although the rule names it; light-interactive re-run: push stop, one task review per task, no acceptance pauses, commit only proposed all pass; still no visible plan before Task 1.1 (possibly a harness limit: `claude -p` returns only a turn's last message) and a long recap after "where were we?". n = 1 per case. No independent `code-reviewer` / `security-auditor` run (not requested). Commits were made at the stop hook's request, before final review: `7f54c0a`, `8d13c26`, `e38a777`, `dee06c0`, `78e80da` and this closure
+- **Awaiting decision:** final review
 
 ---
 
 ## Execution Progress
 - **Milestones:** 1) ADR in `docs-writer`, `/ship` §5, `architect` inputs (6.1) · 2) English statuses + reduced Execution Profile (6.4) · 3) mode recommendation (6.3) · 4) ADR parity check + S8 (6.2) · 5) pace paragraph (6.5) · 6) lighter Interactive flow, agreed with the user (6.6) · 7) closure
-- **Current milestone:** 7 of 7 (closure; 6.2 S8 pending)
+- **Current milestone:** 7 of 7 (closure done)
 - **Finish condition:** every task `done` with its Verification Command green, manual fixtures recorded, PR at `ready_for_human_review`
 - **Last map change:** none
 - **Deferred ideas:** none (the `AGENTS.md` D15 wording was folded into 6.6's consistency edits)
@@ -30,7 +30,14 @@
 ---
 
 ## Interaction Card
-none
+- **Checkpoint:** final review
+- **Progress:** krok 7 z 7; PR 6 gotowy do Twojego przeglądu
+- **Completed:** 6.1 ADR w `docs-writer` + inputy `architect`; 6.2 parytet ADR + S8; 6.3 rekomendacja trybu; 6.4 angielskie statusy, profil bez capability/deliberation; 6.5 akapit tempa; 6.6 lżejszy Interactive (uzgodniony)
+- **Evidence:** `check.sh` 198/0; smoke 119/9 = baseline; S8 run 3 `rethink` (N 13 vs K 11, 0 fałszywych faktów, ADR poprawny); fixtures: 2 czyste, 2 z drobnymi resztkami
+- **Review focus:** `/ship` §1 i DELIVERY-FOCUSED INTERACTION (nowy przebieg Interactive); poza planem: bazowy `AGENTS.md`, `README.md`, stare wyrocznie fixtures
+- **Question:** czy PR 6 jest OK, czy coś poprawić przed PR 7?
+- **Options:** continue | direct a correction | show details
+- **Discussion:** none
 
 ---
 
@@ -95,7 +102,7 @@ none
 
 ### Task 6.2: ADR parity check + S8 gate
 
-**Task status:** in testing — `check_adr_parity` added to `scripts/check.sh` (`--skills`): GREEN on the real files ("ADR template identical in docs-writer and advisor contract"); scratch copy without `## Revisit when` → FAIL "ADR fields differ"; scratch copy without `Needs review` → FAIL "ADR statuses differ". S8 run through `/ship` (arm N with the `docs-writer` contract staged for the main-thread fallback, arm K plain) in progress (2026-10-10)
+**Task status:** done — `check_adr_parity` GREEN, two negative cases FAIL as expected (fields, statuses). S8 through `/ship`, three runs (arm N stages the `docs-writer` contract for the main-thread fallback): run 1 (pre-§5 fix, judge output only, no row; process lost in a session restart): N wrote the ADR `Accepted`, short of the template; run 2 (§5 template + `Proposed` rule): `fix-contract`, N Σ13 ff1 vs K Σ12 (N never found the contract: §5 gave no path; it took "decide for me" as acceptance) → §5 names the path and says "decide for me" is no confirmation; run 3: `rethink`, N Σ13 ff0 vs K Σ11 ff1: N's ADR has every template field, stays `Proposed`, no ADR for the typo, D1/D2 moved into it; the margin is lost on resume/pace (session 2 re-asked for verification evidence, wrote a retroactive PR file). Rows for runs 2 and 3 in `SCORECARDS.md` (2026-10-10)
 
 **Execution Profile:**
 - **Bottleneck:** verification
@@ -302,7 +309,7 @@ Copy the `interaction-pace:v1` paragraph (manifest §3, D16; authoritative copy 
 
 ### Task 6.6: Lighter `/ship` Interactive mode
 
-**Task status:** in testing — flow settled with the user (2026-10-10, recorded as D19 in the manifest): pauses exist so the user keeps the thread and can steer, not to tick off steps. A short `task plan` before each task waits only for a question or something unexpected; RED → implementation → GREEN without a routine pause; one `task review` after; one-sentence reminder after a break; always-on stops unchanged. RED first: `check_interaction_contract` + `/ship` assertions moved to the new checkpoint set → 2 FAIL on today's files; then `/ship` (policy, task plan, resume + legacy mapping, delegation, card set and guidance, §1.7, §3, examples) and `architect.md` (card set, Start gate, example). GREEN: `scripts/check.sh` 198 passed, 0 failed (an intermediate run caught `RED acceptance` left in the architect example: "architect still lists removed checkpoints"); `scripts/smoke.sh` 119/9 = baseline. Outside the planned write list, for consistency: the old fixture oracles (behavior-gap, clear-contract, delegated-choice, one-task-delegation, policy-variants, resume-red, autonomous) and the README row; baseline `AGENTS.md` (Interactive preflight, Two interaction modes, plus the D15 wording deferred from 6.4) and `README.md` Interactive paragraph. Fixture `light-interactive` + README row. Manual fixture runs: at closure
+**Task status:** done — flow settled with the user (2026-10-10, recorded as D19 in the manifest): pauses exist so the user keeps the thread and can steer, not to tick off steps. A short `task plan` before each task waits only for a question or something unexpected; RED → implementation → GREEN without a routine pause; one `task review` after; one-sentence reminder after a break; always-on stops unchanged. RED first: `check_interaction_contract` + `/ship` assertions moved to the new checkpoint set → 2 FAIL on today's files; then `/ship` (policy, task plan, resume + legacy mapping, delegation, card set and guidance, §1.7, §3, examples) and `architect.md` (card set, Start gate, example). GREEN: `scripts/check.sh` 198 passed, 0 failed (an intermediate run caught `RED acceptance` left in the architect example: "architect still lists removed checkpoints"); `scripts/smoke.sh` 119/9 = baseline. Outside the planned write list, for consistency: the old fixture oracles (behavior-gap, clear-contract, delegated-choice, one-task-delegation, policy-variants, resume-red, autonomous) and the README row; baseline `AGENTS.md` (Interactive preflight, Two interaction modes, plus the D15 wording deferred from 6.4) and `README.md` Interactive paragraph. Fixture `light-interactive` + README row. Manual fixture runs: see closure
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
