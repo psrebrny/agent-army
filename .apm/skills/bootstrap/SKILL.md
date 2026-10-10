@@ -248,7 +248,7 @@ Apply role-specific depth:
 - `security-auditor` and `perf-auditor`: stack-specific sinks and bottlenecks.
 - `docs-writer` and `coder`: actual documentation ownership and module limits.
 
-Write or refresh root `AGENTS.md` first: stacks, commands, laws, reusable
+Write or refresh root `AGENTS.md` first (keep the generator's `agent-army:feedback-router` block in it unchanged): stacks, commands, laws, reusable
 assets, policy, roster, delegation/review rules, PR execution-state conventions, adapter model-control availability and the ownership status of controls. Claude alone gets
 a thin `CLAUDE.md` pointer to it. Keep `architect`, `tester`, `ship` and the
 architect's embedded blueprint skeletons in lockstep.

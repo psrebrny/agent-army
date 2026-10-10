@@ -408,7 +408,7 @@ def agent_sources_need_staging(root: Path, target: str, previous: dict[str, Any]
     Staging is temporary (removed after a successful render), so its absence alone means
     nothing once the profile records the staged digests; older profiles fall back to it.
     """
-    if target not in NATIVE_AGENT_TARGETS:
+    if target not in NATIVE_AGENT_TARGETS | {"windsurf"}:
         return False
     source_dir = root / LOCAL_AGENT_SOURCE_DIR
     staging_dir = root / APM_AGENT_STAGING_DIR
@@ -419,6 +419,8 @@ def agent_sources_need_staging(root: Path, target: str, previous: dict[str, Any]
     staged = package.get("agent_sources")
     if isinstance(staged, dict):
         return staged != agent_source_digests(root)
+    if target not in NATIVE_AGENT_TARGETS:
+        return False  # windsurf renders without APM staging; an old profile has nothing to compare
     for source in sources:
         staging = staging_dir / f"{source.name}.md"
         if not staging.is_file() or staging.read_bytes() != source.read_bytes():
@@ -864,6 +866,7 @@ def write_runtime_sources(root: Path, target: str, install_hooks: bool, dry_run:
 def write_agents(
     root: Path, target: str, routing: dict[str, Any], dry_run: bool, add_missing: bool = True, reconcile: bool = True
 ) -> None:
+    """Degraded targets also need write_degraded_adapters after this, with the recorded digests."""
     """Write missing role contracts when allowed, reconcile existing ones, and stage every existing one."""
     for role in ROLES:
         path = root / LOCAL_AGENT_SOURCE_DIR / f"agent-army-{role}{LOCAL_AGENT_SUFFIX}"
@@ -874,27 +877,62 @@ def write_agents(
             write_text(path, source_agent(role, target, routing), dry_run)
     if target in NATIVE_AGENT_TARGETS:
         sync_apm_agent_sources(root, dry_run)
-    if target != "opencode":
-        write_degraded_adapters(root, target, dry_run)
 
 
-def write_degraded_adapters(root: Path, target: str, dry_run: bool) -> None:
-    if target == "gemini":
-        # APM 0.19 does not yet deploy project Gemini agents. Keep the adapter
-        # local and explicit until that primitive is supported upstream.
-        for role in ROLES:
-            source = root / LOCAL_AGENT_SOURCE_DIR / f"agent-army-{role}{LOCAL_AGENT_SUFFIX}"
-            if source.is_file():
-                write_new_text(root / f".gemini/agents/agent-army-{role}.md", source.read_text(encoding="utf-8"), dry_run)
-    elif target == "windsurf":
-        # Windsurf has no native subagent file; named skills retain roles without
-        # pretending that it can delegate to native subagents.
-        for role in ROLES:
-            source = root / LOCAL_AGENT_SOURCE_DIR / f"agent-army-{role}{LOCAL_AGENT_SUFFIX}"
-            if not source.is_file():
+DEGRADED_TARGETS = {"gemini", "windsurf"}
+
+
+def degraded_adapter_files(root: Path, target: str) -> dict[str, str]:
+    """The adapter file each existing role contract renders to: {repo-relative path: content}."""
+    files: dict[str, str] = {}
+    for role in ROLES:
+        source = root / LOCAL_AGENT_SOURCE_DIR / f"agent-army-{role}{LOCAL_AGENT_SUFFIX}"
+        if not source.is_file():
+            continue
+        text = source.read_text(encoding="utf-8")
+        if target == "gemini":
+            # APM 0.19 did not deploy project Gemini agents. Keep the adapter local and explicit.
+            files[f".gemini/agents/agent-army-{role}.md"] = text
+        elif target == "windsurf":
+            # Windsurf has no native subagent file; named skills retain roles without
+            # pretending that it can delegate to native subagents.
+            files[f".windsurf/skills/agent-army-{role}/SKILL.md"] = (
+                "---\nname: agent-army-" + role + "\ndescription: Agent Army fallback role for Windsurf.\n---\n\n" + text
+            )
+    return files
+
+
+def write_degraded_adapters(
+    root: Path, target: str, dry_run: bool, recorded: dict[str, str] | None = None
+) -> dict[str, str]:
+    """Render the degraded adapter files and return the digests to record for them.
+
+    A file is (re)written when it is missing or still equals what this generator last wrote
+    (its recorded digest); a file changed by hand is kept and reported, never overwritten.
+    """
+    recorded = recorded if isinstance(recorded, dict) else {}
+    outputs: dict[str, str] = {}
+    for rel, content in degraded_adapter_files(root, target).items():
+        path = root / rel
+        digest = hashlib.sha256(content.encode("utf-8")).hexdigest()
+        if path.is_symlink():
+            print(f"kept {rel} (symlink; not refreshed)")
+            if rel in recorded:
+                outputs[rel] = recorded[rel]
+            continue
+        if path.is_file():
+            live = sha256_file(path)
+            if live == digest:
+                outputs[rel] = digest
                 continue
-            content = "---\nname: agent-army-" + role + "\ndescription: Agent Army fallback role for Windsurf.\n---\n\n" + source.read_text(encoding="utf-8")
-            write_new_text(root / f".windsurf/skills/agent-army-{role}/SKILL.md", content, dry_run)
+            if live != recorded.get(rel):
+                print(f"kept {rel} (local changes; not refreshed — delete it to regenerate)")
+                if rel in recorded:
+                    outputs[rel] = recorded[rel]
+                continue
+        write_text(path, content, dry_run)
+        outputs[rel] = digest
+    return outputs
 
 
 def update_gitignore(root: Path, target: str, dry_run: bool) -> None:
@@ -1015,6 +1053,12 @@ def main() -> int:
             for conflict in conflicts:
                 print(f"  - {conflict}", file=sys.stderr)
             return 2
+        # The managed router block belongs to every profile; without it each later run would
+        # report a pending correction. A block the user edited is left alone.
+        if managed_router_status(ROOT / "AGENTS.md") == "append":
+            ensure_feedback_router(ROOT, args.dry_run)
+        elif managed_router_status(ROOT / "AGENTS.md") == "conflict":
+            print("note AGENTS.md: the Agent Army feedback-router block was edited; kept as is")
     try:
         routing = model_routing(args.target, previous, args)
     except ValueError as exc:
@@ -1052,6 +1096,9 @@ def main() -> int:
     else:
         # A re-render after edited contracts stages them; it never adds a role the user did not choose.
         write_agents(ROOT, args.target, routing, args.dry_run, add_missing=not (restage_only or profile_change_only))
+    adapter_outputs: dict[str, str] = {}
+    if args.target in DEGRADED_TARGETS:
+        adapter_outputs = write_degraded_adapters(ROOT, args.target, args.dry_run, previous_package.get("adapter_outputs"))
     routing["effective_roles"] = effective_role_models(ROOT, args.target)
     if "army" in selections.values():
         write_runtime_sources(ROOT, args.target, selections["runtime_hooks"] == "army", args.dry_run)
@@ -1077,7 +1124,8 @@ def main() -> int:
             "version": PACKAGE_VERSION,
             "profile_schema_version": PROFILE_SCHEMA_VERSION,
             "inventory": inventory,
-            **({"agent_sources": agent_source_digests(ROOT)} if args.target in NATIVE_AGENT_TARGETS else {}),
+            **({"agent_sources": agent_source_digests(ROOT)} if args.target in NATIVE_AGENT_TARGETS | {"windsurf"} else {}),
+            **({"adapter_outputs": adapter_outputs} if args.target in DEGRADED_TARGETS else {}),
             **({"upgrade_review": review} if review else {}),
         },
         "model_routing": {"target": args.target, **routing},
@@ -1103,8 +1151,8 @@ def main() -> int:
         # APM may clean directories it does not integrate. Reassert only the
         # explicitly degraded adapters after its native pass; do not recreate
         # the temporary APM staging files.
-        if args.target in {"gemini", "windsurf"}:
-            write_degraded_adapters(ROOT, args.target, False)
+        if args.target in DEGRADED_TARGETS:
+            write_degraded_adapters(ROOT, args.target, False, adapter_outputs)
     return result
 
 

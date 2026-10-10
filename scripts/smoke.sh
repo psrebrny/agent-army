@@ -418,6 +418,35 @@ else
   bad "apm not on PATH: the Claude upgrade through APM is not exercised"
 fi
 
+printf '\n\033[1mGATE 1.9 · reruns and degraded adapters\033[0m\n'
+NOAG="$WORK/no-agents-md"; init_repo "$NOAG"
+bootstrap "$NOAG" opencode --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null 2>&1
+grep -q 'agent-army:feedback-router:start' "$NOAG/AGENTS.md" && ok "first bootstrap without AGENTS.md adds the managed router block" || bad "no router block after first bootstrap"
+(cd "$NOAG" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --skip-apm > "$WORK/no-agents-md-rerun.txt" 2>&1)
+[ $? -eq 0 ] && grep -q 'profile is current' "$WORK/no-agents-md-rerun.txt" \
+  && ok "a plain rerun after a fresh install is a no-op" || bad "plain rerun demanded a review: $(head -1 "$WORK/no-agents-md-rerun.txt")"
+OWNAG="$WORK/own-agents-md"; init_repo "$OWNAG"; printf '# My repo\nMY-RULE\n' > "$OWNAG/AGENTS.md"
+bootstrap "$OWNAG" claude --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null 2>&1
+head -2 "$OWNAG/AGENTS.md" | grep -q 'MY-RULE' && [ "$(grep -c 'feedback-router:start' "$OWNAG/AGENTS.md")" = 1 ] \
+  && ok "an existing AGENTS.md keeps its content and gets one router block" || bad "existing AGENTS.md changed or router duplicated"
+for target in gemini windsurf; do
+  DG="$WORK/degraded-$target"; init_repo "$DG"
+  bootstrap "$DG" "$target" --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null 2>&1
+  case "$target" in
+    gemini) out_arch="$DG/.gemini/agents/agent-army-architect.md"; out_coder="$DG/.gemini/agents/agent-army-coder.md" ;;
+    windsurf) out_arch="$DG/.windsurf/skills/agent-army-architect/SKILL.md"; out_coder="$DG/.windsurf/skills/agent-army-coder/SKILL.md" ;;
+  esac
+  printf '\n# NEW-ARCHITECT-RULE\n' >> "$DG/.agent-army/agents/agent-army-architect.agent"
+  printf '\n# NEW-CODER-RULE\n' >> "$DG/.agent-army/agents/agent-army-coder.agent"
+  printf '\n# HAND-EDIT\n' >> "$out_coder"
+  (cd "$DG" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" "$target" --skip-apm > "$WORK/degraded-$target.txt" 2>&1)
+  grep -q 'NEW-ARCHITECT-RULE' "$out_arch" && ok "$target: an edited contract refreshes its unmodified adapter file" || bad "$target: adapter file kept the old text"
+  grep -q 'HAND-EDIT' "$out_coder" && ! grep -q 'NEW-CODER-RULE' "$out_coder" && grep -q "kept .*agent-army-coder" "$WORK/degraded-$target.txt" \
+    && ok "$target: a hand-edited adapter file is kept and reported" || bad "$target: hand-edited adapter file overwritten or not reported"
+  (cd "$DG" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" "$target" --skip-apm > "$WORK/degraded-$target-2.txt" 2>&1)
+  grep -q 'profile is current' "$WORK/degraded-$target-2.txt" && ok "$target: the next run is a no-op" || bad "$target: the next run re-rendered again"
+done
+
 printf '\n\033[1mGATE 2 · runtime safety\033[0m\n'
 SAFE="$WORK/safety"; init_repo "$SAFE"
 printf '{"scripts":{"lint":"true","test":"true"}}\n' > "$SAFE/package.json"
