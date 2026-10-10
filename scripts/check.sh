@@ -416,9 +416,9 @@ check_skill() {
       && grep -q 'INTERACTION CARD' "$f" \
       && grep -q 'Interaction policy: supervised' "$f" \
       && grep -q 'migrated to interactive' "$f" \
-      && grep -q 'RED acceptance' "$f" \
+      && grep -q 'resumes as `task plan`' "$f" \
       && grep -q 'task-review Interaction Card' "$f" \
-      && grep -q 'contract interpretation, exact RED tests, smallest implementation' "$f" \
+      && grep -q 'behavior, significant cases, verification and exact write list' "$f" \
       && grep -q 'focused diff summary, GREEN' "$f" \
       && grep -q 'PERSIST EVERY ROLE TRANSITION' "$f" \
       && grep -q 'switch and continue | stay current' "$f" \
@@ -484,6 +484,8 @@ def fields(text, heading):
     section = re.split(r'\n(?:## |---|`{3,})', section, maxsplit=1)[0]
     return dict(re.findall(r'^- \*\*(.+?):\*\* (.+)$', section, re.M))
 
+LEGACY_LINE = 'A PR paused at a legacy `RED acceptance`, `baseline acceptance` or `implementation acceptance` card resumes as `task plan`'
+
 def choices(value):
     return {item.strip() for item in value.strip('[]').split('|')} - {'none'}
 
@@ -493,7 +495,12 @@ try:
     assert all(set(card) == required for card in cards), 'interaction card fields differ or are missing'
     for name in ('Checkpoint', 'Options'):
         assert choices(cards[0][name]) == choices(cards[1][name]), f'{name} choices drifted between author and executor'
-    assert {'behavior decision', 'RED acceptance', 'baseline acceptance', 'implementation acceptance', 'task review', 'final review'} <= choices(cards[0]['Checkpoint']), 'missing lifecycle checkpoint'
+    assert {'behavior decision', 'task plan', 'task review', 'final review'} <= choices(cards[0]['Checkpoint']), 'missing lifecycle checkpoint'
+    # D19: the separate RED / baseline / implementation acceptance pauses fold into `task plan`.
+    legacy = {'RED acceptance', 'baseline acceptance', 'implementation acceptance'}
+    for name, text in (('ship', ship), ('architect', architect)):
+        left = [c for c in legacy if c in text.replace(LEGACY_LINE, '')]
+        assert not left, f'{name} still lists removed checkpoints: {sorted(left)}'
     progress = fields(architect, 'Execution Progress')
     assert set(progress) == {'Milestones', 'Current milestone', 'Finish condition', 'Last map change', 'Deferred ideas'}, 'progress map contract changed or acquired a second status ledger'
     state = fields(architect, 'Execution State')

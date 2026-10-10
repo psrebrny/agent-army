@@ -218,7 +218,7 @@ flowchart TD
 
 ## Interaction Card
 <!-- Required whenever /ship pauses or records a reviewer/security finding; otherwise write "none". Use the user's language and clear/replace only after the response is persisted. -->
-- **Checkpoint:** [blueprint approval | behavior decision | RED acceptance | baseline acceptance | implementation acceptance | task review | finding decision | final review | risk decision | none]
+- **Checkpoint:** [blueprint approval | task plan | behavior decision | task review | finding decision | final review | risk decision | none]
 - **Progress:** [step X of approximately Y; current action; remaining outcomes; finish condition, or not yet scoped]
 - **Completed:** [what changed or was verified]
 - **Evidence:** [test command/result, diff summary, report path/verdict, or decision]
@@ -262,7 +262,7 @@ flowchart TD
   - `coder` / main session: `[production path(s)]`
 - **Forbidden / never-touch zones:**
   - `[path or area]`
-- **Start gate:** [Interactive: include plan + exact write list in the RED acceptance card, or baseline acceptance for an approved behavior-preserving refactor, and wait for the user's response | Autonomous: proceed only when the write list stays in scope]
+- **Start gate:** [Interactive: the `task plan` names behavior, cases, verification and the exact write list, and waits only when it carries a question | Autonomous: proceed only when the write list stays in scope]
 - **STOP and return `awaiting_approval` when:** a needed write is outside scope; the contract is ambiguous or disproved; a new dependency/migration is required but unapproved; or the next attempt would repeat a failed approach. State the exact proposed scope expansion. Use `needs_input` for a business/technical decision and `blocked` only for an external obstacle that remains after safe clarification.
 
 **Verification Command:** `[exact command]`
@@ -296,7 +296,7 @@ flowchart TD
 
 ## <prompt_examples>
 **EX 1 — UI/Integration (agnostic):** USER: "Add a role dropdown and filter the user list."
-→ Manifest + `01_PR_1_Feature.md`, Task 1.1 "UI & Integration": Contract `options[]` in / `roleSelected` out; tester may write `e2e/user-list.*` and `component/role-dropdown.*`; coder may write only `src/features/users/**`; shared primitives are forbidden. In Interactive mode the RED acceptance card shows the exact write list and waits for the user's response. **E2E** (`e2e/user-list.*`): ✓ select 'Admin' → URL has `role=ADMIN`, table shows admins; ✓ force API 500 → error toast (no crash). **COMPONENT** (`component/role-dropdown.*`): ✓ required-field validation when cleared. **UNIT** (`*.mapper.*`): ✓ DTO→option mapping only. TDD: write tests → RED → implement → GREEN.
+→ Manifest + `01_PR_1_Feature.md`, Task 1.1 "UI & Integration": Contract `options[]` in / `roleSelected` out; tester may write `e2e/user-list.*` and `component/role-dropdown.*`; coder may write only `src/features/users/**`; shared primitives are forbidden. In Interactive mode the `task plan` shows the exact write list; it waits only if a write falls outside that scope or a behavior question is open. **E2E** (`e2e/user-list.*`): ✓ select 'Admin' → URL has `role=ADMIN`, table shows admins; ✓ force API 500 → error toast (no crash). **COMPONENT** (`component/role-dropdown.*`): ✓ required-field validation when cleared. **UNIT** (`*.mapper.*`): ✓ DTO→option mapping only. TDD: write tests → RED → implement → GREEN.
 
 **EX 2 — Backend endpoint (micro):** USER: "Add GET /api/users/{id}/roles."
 → `01_PR_1_API.md`, Task 1.1: route → RoleService. **INTEGRATION** (`api/user_roles_spec.*`): ✓ 200 + matches RolesDTO; ✓ 404 for unknown id. **UNIT** (`services/role_service_spec.*`): ✓ filters inactive roles (complex rule only). No redundant unit test for the controller.

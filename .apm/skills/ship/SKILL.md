@@ -45,10 +45,12 @@ If `Interaction policy` is `unset`, ask once and persist one of two user-visible
 
 - **Autonomous** — after the mandatory blueprint + routing + scope gate, continue through normal stages
   without routine pauses. Stop only for a decision condition below, final human review, or commit approval.
-- **Interactive** — after that same gate, work one atomic task at a time and pause with an Interaction Card
-  after its RED test (or approved refactor baseline) and after its verified result, before proceeding further.
-  Resolve genuine behavior gaps before test authoring; do not introduce a routine approval before every test.
-  A recorded one-task delegation below can waive the routine pre-implementation pause, never task review.
+- **Interactive** — after that same gate, work one atomic task at a time together with the user. Pauses
+  exist so the user keeps the thread and can steer, not to tick off steps: before a task, show its
+  `task plan` and wait only when it carries a question or something unexpected; then run RED,
+  implementation and GREEN without a routine pause; after the verified result, pause once at `task review`.
+  A recorded one-task delegation below lets the main session settle the task's in-scope choices itself; it
+  never waives task review.
 
 When asking, give one recommendation with a one-line reason. Recommend **Interactive** if any selected task has `Bottleneck` `design_decision | multiple_approaches | unknown`, or a Verification Command that is not runnable (a manual evaluation such as scorecard rows does not count), and name those tasks. Otherwise recommend **Autonomous**. The user decides: the recommendation never sets the mode, adds no pause and is not repeated after the choice. In Interactive mode, once every remaining selected task would earn the Autonomous recommendation, the task-review card's `Review focus` says "remaining tasks qualify for autonomous"; the existing `switch to autonomous` option does the rest.
 
@@ -85,11 +87,14 @@ and finish condition. Link to detailed diffs and results instead of dumping repo
 plan. Label a GREEN task as verified and awaiting audit, not fully complete; `Task status` and the evidence
 in `Execution State` remain authoritative. A card's progress line is a view, not separately maintained state.
 
-Before each task, briefly state the behavior, significant cases and proposed verification. Ask only when a
-missing requirement, trade-off, scope choice or interpretation would change the work. Read discoverable
-facts and reuse confirmed decisions first. Ask one concrete question with a recommendation and consequences;
-record it as `behavior decision` only when such a decision is needed, with `needs_input` and task
-`awaiting decision`. After resolution restore the appropriate execution stage without discarding prior evidence. This is delivery, not tutoring: never
+Before each task, show its `task plan` in two or three lines: behavior, significant cases, verification and exact write list.
+When nothing is open and the write list is inside approved scope, show it and continue; it is a heads-up, not
+an approval step. It waits only when it carries a question: a missing requirement, trade-off, scope choice or
+interpretation that would change the work, or something unexpected such as a needed write outside scope. Read
+discoverable facts and reuse confirmed decisions first. Ask one concrete question with a recommendation and
+consequences, with `needs_input` and task `awaiting decision`. A gap found later, mid-task, is a
+`behavior decision` with the same shape. During the task the chat shows only `step X of ~Y` and what changed;
+RED/GREEN evidence and statuses go to the PR file. After resolution restore the appropriate execution stage without discarding prior evidence. This is delivery, not tutoring: never
 quiz the user, ask syntax questions, or make them rediscover an answer already supported by the contract.
 - On "I don't know", explain the relevant consequence and recommend a resolution, without guided guessing.
 - On "decide for me", make the current in-scope choice and record its rationale; do not waive checkpoints.
@@ -109,6 +114,9 @@ On resume, read `Execution State`, task decisions/evidence, the pending card, pr
 delegation before acting. If progress is absent in an older PR, derive it from the selected tasks and actual
 evidence, preserving already verified work and pending approvals. Initialize a missing temporary delegation
 to `none`. Missing evidence stays unknown: inspect or rerun the relevant check without replaying decisions.
+When the user returns after a break, open with one sentence on where the work stands (task, last verified
+result, the pending question or next step) before anything else. A PR paused at a legacy `RED acceptance`, `baseline acceptance` or `implementation acceptance` card resumes as `task plan`, keeping its saved tests,
+baseline and write list; the user's response continues to implementation.
 When a simple inline task has no PR file, keep the same compact state in the conversation; do not create a
 blueprint solely for a progress counter or claim file-backed resumption where none exists.
 
@@ -126,8 +134,9 @@ approved write scope and return point (`task review`). Include this authorizatio
 packet; the coder returns to `/ship` for verification/interactive review rather than owning the dialogue.
 It is a bounded exception, not a third mode.
 
-Within that task, preserve the usual RED/baseline evidence and implementation plan/write list but do not
-wait at routine RED, baseline or implementation acceptance. At verified completion clear the exception
+Within that task, preserve the usual RED/baseline evidence and the plan/write list, but settle the task's
+in-scope choices yourself with a recorded rationale instead of waiting at `task plan` or `behavior decision`.
+At verified completion clear the exception
 before presenting `task review` and wait. It never grants permission to start the next task, skip checks,
 change scope, cross a risk boundary, or bypass blueprint/final review/commit approval. Ordinary required
 stops still apply. Cancel the exception on user revocation, explicit mode switch, or a scope/risk/contract
@@ -142,7 +151,7 @@ emit a bare `ok/fix` pause or make the user infer what to inspect.
 
 ```md
 ## Interaction Card
-- **Checkpoint:** [blueprint approval | behavior decision | RED acceptance | baseline acceptance | implementation acceptance | task review | finding decision | final review | risk decision]
+- **Checkpoint:** [blueprint approval | task plan | behavior decision | task review | finding decision | final review | risk decision]
 - **Progress:** [step X of approximately Y; current action; remaining outcomes; finish condition, or not yet scoped]
 - **Completed:** [what changed or was verified]
 - **Evidence:** [test command/result, diff summary, report path/verdict, or decision]
@@ -152,10 +161,11 @@ emit a bare `ok/fix` pause or make the user infer what to inspect.
 - **Discussion:** [current unresolved topic; consecutive exchanges without new decision/evidence: 0/1/2; or none]
 ```
 
-For an Interactive RED card, include the contract interpretation, exact RED tests, smallest implementation
-plan and planned write scope. Highlight the decisive assertion, expected value/source and actual failure
-reason. For an Interactive task-review card, include the focused diff summary, GREEN
-command/result, known limitations, and the next planned task. Group the diff by the behavior just delivered,
+A `task plan` that waits names the behavior, significant cases, verification and exact write list, then its
+one question with a recommendation; a plan without a question is shown and not persisted as a pause. For an
+Interactive task-review card, include the decisive RED assertion and its failure reason (or the passing
+baseline for a refactor), the focused diff summary, GREEN command/result, known limitations, and the next
+planned task, in about one screen. Group the diff by the behavior just delivered,
 with file/line pointers and the important implementation decisions. Explain what the check cannot establish.
 For `behavior decision`, include the unknown, recommendation and consequence; do not pause when all are settled.
 A finding-decision card names the finding,
@@ -165,9 +175,9 @@ For a plainly in-scope finding in Autonomous mode, record the same finding-decis
 `Question: none` and `Options: none`, then continue the repair immediately. If resolving the finding needs
 a decision, it becomes a pause in both modes.
 
-For an explicitly approved behavior-preserving refactor, use `baseline acceptance` in place of the RED
-card: show the passing before-change checks, preserved contract, refactor checkpoint/recovery and exact
-write list. Keep the same human interaction boundary unless one-task delegation is active; do not call a passing baseline RED.
+For an explicitly approved behavior-preserving refactor, the `task plan` names the preserved contract,
+refactor checkpoint/recovery and exact write list, and the task review shows the passing before-change checks;
+do not call a passing baseline RED.
 
 ### MANDATORY BLUEPRINT + ROUTING + SCOPE GATE
 When `architect` creates or materially revises a blueprint, this gate is mandatory even with
@@ -356,11 +366,11 @@ other manifest field.
 - **Plan reviewer:** before → active `plan-reviewer`, `Planning Session.Stage: review`; after → active `none`,
   persist verdict and exact reviewed revision. If the plan changes materially, update the revision and mark this result stale.
 - **Tester RED:** before → PR `implementing`, task `in progress`, active `tester`; after → active `none`,
-  persist the exact RED command and result. In Interactive mode, write `RED acceptance` Interaction Card
-  and wait before production implementation unless one-task delegation is active; the task remains `in progress`.
+  persist the exact RED command and result and continue to implementation in both modes; the task remains
+  `in progress`. A RED that fails for the wrong reason or disproves the contract is a `behavior decision`.
 - **Tester refactor baseline:** for an approved behavior-preserving task, before → PR `implementing`,
   task `in progress`, active `tester`; after → active `none`, persist the actual passing baseline.
-  Do not move to `in testing` until the refactor is implemented. In Interactive mode wait at `baseline acceptance` unless one-task delegation is active.
+  Do not move to `in testing` until the refactor is implemented.
 - **Implementation:** before → task `in progress`, active `main session` or `coder`; after implementation →
   task `in testing`, active `none`, and record the exact next verification.
 - **Tester GREEN:** before → active `tester`, task `in testing`; after a passing result → task `in review`,
@@ -389,21 +399,21 @@ A proposed configuration/adoption change still needs a concrete approved scope b
 
 ## 3 · IMPLEMENTATION per task — STRICT TDD `<auto_critic>` with `tester`
 _(The RED-first loop applies at `TEST_POLICY=strict`/`pragmatic`. At `light`: thin happy-path tests, no strict RED-first. At `none`: no authored tests; implement and check acceptance behavior, with required lint/security still active. The interaction and progress rules apply at every policy.)_
-For EACH task in the blueprint, first orient the user and resolve only genuine behavior gaps as above.
-In Interactive mode at `light`/`none`, when no RED or baseline exists, use `implementation acceptance` with the proposed check,
-smallest implementation plan and write list before coding; honor one-task delegation. After implementation,
+For EACH task in the blueprint, first show its `task plan` and resolve only genuine behavior gaps as above.
+At `light`/`none`, when no RED or baseline exists, the `task plan` names the proposed check, smallest
+implementation plan and write list before coding. After implementation,
 record the actual policy-appropriate verification and, in Interactive mode, pause at task review, without inventing RED/GREEN
 evidence for a test that was not run.
 Use the tester's risk-based selection and test-confidence guidance. Required repository checks remain
 mandatory; additional fault checks are targeted experiments, not a new gate for every task. Run mutations
 only in the tester's permitted isolated subject; never pass a mutated failure off as final verification.
 For an explicitly approved behavior-preserving refactor, substitute its passing before-change checks
-and `baseline acceptance` for RED in steps 1–2, preserving the same write-scope and interaction gates.
+for RED in steps 1–2, preserving the same write-scope and interaction gates.
 This exception does not let a bugfix or new feature claim success without demonstrating the required behavior.
 1. Persist PR `implementing`, task `in progress`, `Active roles: tester`, then **`tester` writes the tests (RED)** independently from the contract/acceptance criteria and proves they fail for the right reason. On return, persist `Active roles: none` and the exact RED result in `Last verified stage`; task status remains `in progress` while implementation is pending.
-2. In Interactive mode, write the RED acceptance Interaction Card and wait for its response unless one-task delegation is active. In Autonomous mode, continue unless a decision condition applies. Persist task `in progress` and `Active roles: main session` or `coder`. The main session implements the smallest change; a delegated `coder` receives only the Delegation Contract, RED tests and approved read paths. In Interactive mode the RED card already contains its plan and exact write list; after `continue` or the recorded one-task authorization, it may proceed only within that list. In Autonomous mode it proceeds only when the list is wholly inside approved scope.
+2. Continue in both modes unless a decision condition applies. Persist task `in progress` and `Active roles: main session` or `coder`. The main session implements the smallest change; a delegated `coder` receives only the Delegation Contract, RED tests and approved read paths. It proceeds only within the `task plan` write list, and only when that list is wholly inside approved scope; anything else is a stop.
 3. After implementation, persist task `in testing`, `Active roles: tester` and the exact next command; **`tester` verifies (GREEN)**. A passing command moves the task to `in review` only after the GREEN result is saved. On failure, persist `in progress` with the failure evidence and correction. A required path outside scope, ambiguous/disproved contract, unapproved dependency/migration or repeated failed approach becomes `awaiting decision` or `blocked`, never silent expansion.
-No batching without verification. *Exception:* for trivial tasks the main session may do the whole Red→Green cycle inline, without a round-trip to the subagent (the cheaper default — see AGENTS.md "Cost & context discipline"). This does not remove an Interactive RED or task-review card: it changes only who performs the work. Only explicit one-task delegation waives the routine RED wait. Run the configured verification command after every GREEN step; runtime hooks are feedback, while the user-selected pre-commit/CI controls provide repository enforcement.
+No batching without verification. *Exception:* for trivial tasks the main session may do the whole Red→Green cycle inline, without a round-trip to the subagent (the cheaper default — see AGENTS.md "Cost & context discipline"). This does not remove an Interactive `task plan` or task-review card: it changes only who performs the work. Run the configured verification command after every GREEN step; runtime hooks are feedback, while the user-selected pre-commit/CI controls provide repository enforcement.
 After every verified task in Interactive mode, clear any one-task delegation, write the task-review Interaction Card and wait. In Autonomous
 mode, continue to the next planned task without a routine pause.
 
@@ -437,6 +447,8 @@ the final-review card.
 ## 5 · DOCS + FINAL VERIFICATION
 Persist PR `docs` and `Active roles: docs-writer`; `docs-writer` updates only necessary, truthful docs.
 Before the task closes, `docs-writer` sweeps the plan for significant decisions without an ADR and proposes them (no new checkpoint).
+In the main-thread fallback, read the `docs-writer` role contract before writing docs. An ADR uses its template with every field, and stays
+`Proposed` until the user confirms the decision; ask for that confirmation in the final-review card, not in a new pause.
 Run the configured full verification, record its output in `Execution State`, set `Active roles: none`,
 set the PR to `ready_for_human_review`, and write a final-review Interaction Card. Return a compact summary:
 scope, diff, tests, review verdict, security result, actual role configurations and any non-blocking
@@ -449,8 +461,9 @@ The runtime hooks act independently as deterministic feedback. Whether pre-commi
 **EX 1 — Clear behavior, no quiz.** USER: "Implement the approved retry contract in Task PAY.1."
 → Show "Step 1 of approximately 2: identical retries; then closure". Read the contract's expected single
 charge, author `tests/api/payment_retry.spec.ts` and prove RED without asking the user to rediscover
-idempotency. The combined RED card points to the charge-count assertion, its requirement, the failing
-result and the planned edit in `src/payments/retry.ts`. Wait for acceptance, then implement and verify.
+idempotency. The two-line `task plan` names the charge-count case, the check and `src/payments/retry.ts`,
+and work continues; the task review points to the charge-count assertion, its failing-then-passing result
+and the diff.
 
 **EX 2 — A real gap, then a bounded handoff.** Task PAY.2 does not specify reuse of a key with a different
 amount. Ask one `behavior decision`, recommend rejecting the conflict and explain the alternative. Record
@@ -458,7 +471,7 @@ the user's choice before tests. USER: "Do PAY.2 yourself." → Save the task-bou
 RED evidence, implement within its write list, verify, clear the exception and stop at task review. Do not
 start PAY.3 or turn the PR autonomous.
 
-**EX 3 — Resume and repair.** `design-docs/PAY/01_PR_1_Retry.md` has a saved RED acceptance card but no
-`Execution Progress`. Derive the map from its selected tasks, retain the awaiting RED decision and previous
-verification, and show the next action without restarting discovery. A later audit finding returns to the
+**EX 3 — Resume and repair.** `design-docs/PAY/01_PR_1_Retry.md` has a saved legacy card awaiting RED
+approval but no `Execution Progress`. Open with one sentence on where it stands, derive the map from its
+selected tasks, resume the card as `task plan` with its RED evidence and previous verification, and show the next action without restarting discovery. A later audit finding returns to the
 same task milestone; explain the repair and invalidate affected checks without increasing the total.

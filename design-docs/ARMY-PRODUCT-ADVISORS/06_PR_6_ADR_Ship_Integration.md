@@ -12,7 +12,7 @@
 - **Scope Profile:** one PR; coordinator = highest unfinished task profile (`design_decision`); coordination `medium`
 - **Model routing:** inherit (source repo has no `.agent-army/config.json`)
 - **Last manual configuration:** stay current
-- **Current task:** 6.6 (6.2 S8 run in the background)
+- **Current task:** 6.2 (S8 re-run after the §5 fix), then closure
 - **Temporary delegation:** none
 - **Active roles:** main session
 - **Last verified stage:** baseline (2026-10-10): `scripts/check.sh` 196 passed, 0 failed, 0 warnings
@@ -22,10 +22,10 @@
 
 ## Execution Progress
 - **Milestones:** 1) ADR in `docs-writer`, `/ship` §5, `architect` inputs (6.1) · 2) English statuses + reduced Execution Profile (6.4) · 3) mode recommendation (6.3) · 4) ADR parity check + S8 (6.2) · 5) pace paragraph (6.5) · 6) lighter Interactive flow, agreed with the user (6.6) · 7) closure
-- **Current milestone:** 6 of 7
+- **Current milestone:** 7 of 7 (closure; 6.2 S8 pending)
 - **Finish condition:** every task `done` with its Verification Command green, manual fixtures recorded, PR at `ready_for_human_review`
 - **Last map change:** none
-- **Deferred ideas:** the baseline `AGENTS.md` bullets "Scope-aware routing" and "Bottleneck-aware effort" still say "raise deliberation" and "light task … strong model"; outside the 6.4 write scope (6.5 allows the paragraph only). Candidate for PR 7's upgrade review or a one-line follow-up the user approves
+- **Deferred ideas:** none (the `AGENTS.md` D15 wording was folded into 6.6's consistency edits)
 
 ---
 
@@ -302,7 +302,7 @@ Copy the `interaction-pace:v1` paragraph (manifest §3, D16; authoritative copy 
 
 ### Task 6.6: Lighter `/ship` Interactive mode
 
-**Task status:** open
+**Task status:** in testing — flow settled with the user (2026-10-10, recorded as D19 in the manifest): pauses exist so the user keeps the thread and can steer, not to tick off steps. A short `task plan` before each task waits only for a question or something unexpected; RED → implementation → GREEN without a routine pause; one `task review` after; one-sentence reminder after a break; always-on stops unchanged. RED first: `check_interaction_contract` + `/ship` assertions moved to the new checkpoint set → 2 FAIL on today's files; then `/ship` (policy, task plan, resume + legacy mapping, delegation, card set and guidance, §1.7, §3, examples) and `architect.md` (card set, Start gate, example). GREEN: `scripts/check.sh` 198 passed, 0 failed (an intermediate run caught `RED acceptance` left in the architect example: "architect still lists removed checkpoints"); `scripts/smoke.sh` 119/9 = baseline. Outside the planned write list, for consistency: the old fixture oracles (behavior-gap, clear-contract, delegated-choice, one-task-delegation, policy-variants, resume-red, autonomous) and the README row; baseline `AGENTS.md` (Interactive preflight, Two interaction modes, plus the D15 wording deferred from 6.4) and `README.md` Interactive paragraph. Fixture `light-interactive` + README row. Manual fixture runs: at closure
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
