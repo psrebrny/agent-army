@@ -447,8 +447,9 @@ the final-review card.
 ## 5 · DOCS + FINAL VERIFICATION
 Persist PR `docs` and `Active roles: docs-writer`; `docs-writer` updates only necessary, truthful docs.
 Before the task closes, `docs-writer` sweeps the plan for significant decisions without an ADR and proposes them (no new checkpoint).
-In the main-thread fallback, read the `docs-writer` role contract before writing docs. An ADR uses its template with every field, and stays
-`Proposed` until the user confirms the decision; ask for that confirmation in the final-review card, not in a new pause.
+Without a native `docs-writer` agent, read its contract at `.agent-army/agents/agent-army-docs-writer.agent` before writing docs. An ADR
+uses that contract's template with every field, and stays `Proposed` until the user confirms the decision itself; "decide for me" is not a
+confirmation. Ask for it in the final-review card, not in a new pause.
 Run the configured full verification, record its output in `Execution State`, set `Active roles: none`,
 set the PR to `ready_for_human_review`, and write a final-review Interaction Card. Return a compact summary:
 scope, diff, tests, review verdict, security result, actual role configurations and any non-blocking
