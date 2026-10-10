@@ -95,7 +95,9 @@ when the recommendation is material. It never invents a provider/model ID,
 changes the main-session setting, or claims that a role-level effort changed:
 effort falls back to the tool default unless the adapter explicitly supports it.
 
-`/ship` has two interaction modes per PR. **Autonomous** continues after the
+`/ship` has two interaction modes per PR. When it asks, it recommends one with a
+reason: Interactive when a task still has an open design choice or no runnable check,
+otherwise Autonomous; your choice wins. **Autonomous** continues after the
 mandatory gate until a real decision, risk, or final human review. **Interactive**
 works through small, verifiable outcomes with you. It shows "Step X of approximately
 Y", the current action, remaining outcomes and a finish condition. Each selected

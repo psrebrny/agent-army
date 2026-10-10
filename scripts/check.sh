@@ -213,10 +213,18 @@ PY
       && grep -q 'one consequential question per turn' "$f" \
       && grep -q '## Planning Session' "$f" \
       && grep -q 'Last confirmed action' "$f" \
-      && grep -q 'Task status.*do zrobienia' "$f"; then
+      && grep -q 'Task status:\*\* \[open | in progress | in testing | in review | done | awaiting decision | blocked | conditional\]' "$f"; then
       ok "Delegation Contract, interactive planning and resumable status are explicit"
     else
       bad "architect missing explicit contract, interactive planning or resumable status"
+    fi
+    # D14/D15: the PR skeleton writes English statuses and a Bottleneck-only Execution Profile.
+    if grep -qE 'do zrobienia|w trakcie|do testów|do review|wykonane|czeka na decyzję|zablokowane|warunkowe' "$f" \
+      || grep -qE '^- \*\*(Capability|Deliberation|Routing rationale):\*\*' "$f" \
+      || ! grep -q '^- \*\*Bottleneck rationale:\*\*' "$f"; then
+      bad "architect skeleton still carries a Polish status or Capability/Deliberation (D14/D15)"
+    else
+      ok "architect skeleton uses English statuses and a Bottleneck-only Execution Profile"
     fi
   fi
   if [ "$name" = "code-reviewer" ]; then
@@ -419,7 +427,10 @@ check_skill() {
       && grep -q 'Final review is a pause in both modes' "$f" \
       && grep -q 'ready_for_human_review' "$f" \
       && grep -q 'Never change a' "$f" \
-      && grep -q 'UI/CLI/API model' "$f"; then
+      && grep -q 'UI/CLI/API model' "$f" \
+      && grep -q 'legacy value on read' "$f" \
+      && grep -q '`do zrobienia` → `open`, `w trakcie` → `in progress`, `do testów` → `in testing`, `do review` → `in review`, `wykonane` → `done`, `czeka na decyzję` → `awaiting decision`, `zablokowane` → `blocked`, `warunkowe` → `conditional`' "$f" \
+      && [ "$(grep -cE 'do zrobienia|w trakcie|do testów|wykonane|czeka na decyzję|zablokowane|warunkowe' "$f")" -eq 1 ]; then
       ok "ship interaction modes, routing and closure loop are explicit"
     else
       bad "ship missing resolve, routing or closure-loop rule"
@@ -488,12 +499,19 @@ try:
     state = fields(architect, 'Execution State')
     assert 'Temporary delegation' in state, 'temporary authorization cannot survive resume'
     assert choices(state['Interaction policy'].split(' — ')[0] + ']') == {'autonomous', 'interactive', 'unset'}, 'unexpected third interaction mode'
+    # D13: the mode recommendation names only bottlenecks the architect can write.
+    rule = re.search(r'Recommend \*\*Interactive\*\* if any selected task has `Bottleneck` `([^`]+)`', ship)
+    assert rule, 'ship has no mode recommendation rule'
+    enum = re.search(r'^- \*\*Bottleneck:\*\* \[([^\]]+)\]', architect, re.M)
+    assert enum, 'architect has no Bottleneck enum'
+    unknown = choices(rule.group(1)) - choices(enum.group(1))
+    assert not unknown, f'mode rule names unknown bottlenecks: {sorted(unknown)}'
 except (AssertionError, IndexError) as exc:
     print(f'Interaction contract: {exc}', file=sys.stderr)
     sys.exit(1)
 PY_CONTRACT
   then
-    ok "interaction cards agree; progress and bounded-delegation fields are present"
+    ok "interaction cards agree; progress and bounded-delegation fields are present; mode rule names only known bottlenecks"
   else
     bad "interaction contract mismatch"
   fi
@@ -606,6 +624,43 @@ PY_PACE
   fi
 }
 
+# One ADR dialect per target repo: the docs-writer skeleton and the advisor contract carry the
+# same field names and the same status set (PR 6, Task 6.2).
+check_adr_parity() {
+  local out
+  if out="$(python3 - "$ROOT" 2>&1 <<'PY_ADR'
+import pathlib, re, sys
+root = pathlib.Path(sys.argv[1])
+srcs = {'docs-writer': '.apm/skills/bootstrap/baseline/core/agents/docs-writer.md',
+        'advisor contract': '.apm/skills/product-strategy/SKILL.md'}
+def template(rel):
+    blocks = [b for b in re.findall(r'```md\n(.*?)```', (root / rel).read_text(), re.S)
+              if b.startswith('# ADR-NNN')]
+    if len(blocks) != 1:
+        return None
+    b = blocks[0]
+    fields = re.findall(r'^- ([A-Z][A-Za-z ]*):', b, re.M) + re.findall(r'^## (.+)$', b, re.M)
+    status = re.search(r'^- Status: (.+)$', b, re.M)
+    return fields, {x.strip() for x in status.group(1).split('|')} if status else set()
+got = {name: template(rel) for name, rel in srcs.items()}
+errors = [f'{n}: needs exactly one ```md ADR-NNN template' for n, t in got.items() if t is None]
+if not errors:
+    (fa, sa), (fb, sb) = got.values()
+    if fa != fb:
+        errors.append(f'ADR fields differ: docs-writer {fa} vs contract {fb}')
+    if sa != sb or not sa:
+        errors.append(f'ADR statuses differ: docs-writer {sorted(sa)} vs contract {sorted(sb)}')
+for e in errors:
+    print(e)
+sys.exit(1 if errors else 0)
+PY_ADR
+)"; then
+    ok "ADR template identical in docs-writer and advisor contract"
+  else
+    while IFS= read -r line; do bad "$line"; done <<<"$out"
+  fi
+}
+
 # --- argument routing -------------------------------------------------------
 do_agents=1; do_skills=1; do_pack=0; filters=()
 for a in "$@"; do
@@ -654,6 +709,7 @@ if [ "$do_skills" = 1 ] && [ -z "$TARGET_DIR" ]; then
   printf '\n\033[1m• product skills\033[0m\n'
   check_advisor_contract
   check_interaction_pace
+  check_adr_parity
 fi
 if [ "$do_pack" = 1 ]; then
   printf '\n\033[1m• package (apm)\033[0m\n'

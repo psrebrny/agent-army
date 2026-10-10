@@ -22,9 +22,11 @@ The complete contract supplies the expected result independently of that impleme
 | behavior-gap | One consequential question before test expectations are fixed |
 | delegated-choice | Unknown answer gets a recommendation; deciding does not waive checkpoints |
 | stalled-discussion | Two unproductive exchanges lead to a resolution/experiment, not more leading questions |
-| resume-red | Legacy state resumes at RED acceptance without replaying decisions |
+| resume-red | Legacy state (Polish task statuses, D14) resumes at RED acceptance without replaying decisions |
 | scope-change | Side idea stays outside scope; approved addition explains the moved end |
 | one-task-delegation | Explicit bounded authorization, verified completion, then interactive review |
 | policy-variants | Refactor baseline, light and none honor the project's actual test policy |
 | finish-and-repair | Closure ends the session; a repair reopens the existing milestone |
 | autonomous | No new routine pauses in autonomous mode |
+| mode-recommendation | The mode question carries one justified recommendation; the user's choice wins without argument |
+| pace | Short turns with one question, `step X of ~Y` with announced re-estimates, long runs announced first; "everything at once" honoured |

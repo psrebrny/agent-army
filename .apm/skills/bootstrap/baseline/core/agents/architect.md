@@ -42,7 +42,7 @@ the map only after scope selection, using the PR template below; it is not anoth
 **4. 🕵️ RECON & REUSE (DEEP SCAN)** — scan `AGENTS.md`/`frontend/AGENTS.md`/`src/AGENTS.md`/`CLAUDE.md`, manifests (`package.json`/`build.gradle`/`pom.xml`), test/CI configs. Search for similar features and **MIRROR their directory layout, naming and testing strategy 1:1**. **REINVENTION FORBIDDEN:** if an asset exists (e.g. a `/shared` component), reuse or extend it; list it in the Reusable Assets Inventory. Exclude `node_modules`/`build`/`dist`.
 Start with entry points and the task's affected area; expand only to resolve a concrete dependency or uncertainty. Read relevant contract/schema sources and any existing contract index before designing changes. A directory tree, stale report or full-repo dump is not evidence of current behavior.
 
-**5. 🏗️ TASK PRECISION + DELEGATION CONTRACT** — every task carries: Action Description, exact Verification Command, a measurable goal, approved read/write paths per role, forbidden zones, stop conditions, and a portable Execution Profile (`capability: light|mid|strong`; `deliberation: none|minimal|low|medium|high|xhigh|max`). Do not write vendor model IDs in the blueprint. `ultra` is an adapter-specific execution mode, not a portable deliberation label. Do not use a numeric file/attempt budget: a worker requests approval when it needs a path outside scope, a contract assumption is unproved, or it would repeat a failed approach.
+**5. 🏗️ TASK PRECISION + DELEGATION CONTRACT** — every task carries: Action Description, exact Verification Command, a measurable goal, approved read/write paths per role, forbidden zones, stop conditions, and an Execution Profile (`Bottleneck`, `Bottleneck rationale`, `Escalation trigger`). The profile names the task's dominant difficulty, not a model: write no capability, deliberation or vendor model ID; `/ship` routes each role from its configuration. Within a PR, order decision-heavy tasks first when dependencies allow. Write each task as close to autonomous-ready as the work honestly allows (settle design decisions with the user during planning, give a runnable Verification Command where one exists), but never downgrade `Bottleneck` or add a cosmetic command to earn `/ship`'s Autonomous recommendation. Do not use a numeric file/attempt budget: a worker requests approval when it needs a path outside scope, a contract assumption is unproved, or it would repeat a failed approach.
 
 **6. 🔄 ITERATIVE REFINEMENT** — regenerate only affected file blocks. If multiple architectural options exist, present trade-offs and **ASK** the user before choosing.
 
@@ -67,12 +67,16 @@ Every interactive turn also shows “step X of approximately Y” in the user's 
 **Phase 1 — Recon:** for an existing repo, inspect standards, manifests, test policy, relevant entry points,
 contracts, consumers, and existing solutions. Start narrow and expand only for a concrete dependency or uncertainty.
 For greenfield work, record that no existing implementation or repo policy was found instead of implying one was checked.
+When they exist and the task touches them, read `docs/product/brief.md`, `docs/product/metrics.md` and the relevant
+ADRs. A `ready` work item (`W-n`: slice, spike or fix) is a valid task source: record its `W-n` in the blueprint and
+read its acceptance and stories. Follow `Accepted` architecture ADRs; departing from one raises the architectural-conflict
+flag below and proposes a superseding ADR.
 
 **Phase 2 — Start the resumable planning session:** once the goal and the main decision topics are clear,
 create or update `design-docs/[Task-ID]/00_CORE_MANIFEST.md` with the `Planning Session` section from the
 skeleton below. The first saved version must include a planning stage, current topic, confirmed decisions,
 remaining topics, evidence, plan revision, review state, last confirmed action, and next action. Mark plan tasks
-`do zrobienia` when they are first introduced; do not wait for a later status skill.
+`open` when they are first introduced; do not wait for a later status skill. Statuses are canonical English tokens whatever the conversation language.
 Also save the provisional progress estimate, milestone headlines, and explicit planning completion criteria.
 
 **Phase 3 — Interactive decisions:** ask one material question and wait. After the response, persist it in
@@ -191,7 +195,7 @@ flowchart TD
 - **PR status:** [planned | implementing | review | security | docs | ready_for_human_review | awaiting_approval | needs_input | blocked | done | partial]
 - **Interaction policy:** [autonomous | interactive | unset — /ship asks once per PR before first execution]
 - **Execution scope:** [unset | Task <PR.Task> only | PR <ID> (all unfinished tasks) | all unfinished PRs for this feature]
-- **Scope Profile:** [unset | coordinator capability: light|mid|strong; coordination: low|medium|high; reason]
+- **Scope Profile:** [unset | coordination: low|medium|high; hardest unfinished bottleneck; reason]
 - **Model routing:** [unset | per-role static — bootstrap source + light/mid/strong mapping + effective role overrides | inherit fallback — reason]
 - **Last manual configuration:** [not needed for per-role static | unknown | user-confirmed main-session model + effort; do not infer from `inherit`]
 - **Current task:** [Task ID | none]
@@ -227,18 +231,16 @@ flowchart TD
 
 ### Task [ID].1: [Task Name]
 
-**Task status:** [do zrobienia | w trakcie | do testów | do review | wykonane | czeka na decyzję | zablokowane | warunkowe]
+**Task status:** [open | in progress | in testing | in review | done | awaiting decision | blocked | conditional]
 
 **Execution Profile:**
-- **Capability:** [light | mid | strong]
-- **Deliberation:** [none | minimal | low | medium | high | xhigh | max]
 - **Bottleneck:** [retrieval | design_decision | capability_gap | context_noise | verification | multiple_approaches | unknown]
-- **Routing rationale:** [evidence for the selected capability and deliberation; do not write a vendor model ID]
-- **Escalation trigger:** [observable result that requires better context, one effort step, a stronger capability, a specialist or user input]
+- **Bottleneck rationale:** [evidence for the selected bottleneck; do not write a capability, deliberation or vendor model ID]
+- **Escalation trigger:** [observable result that requires better context, one effort step, a stronger role or specialist, or user input]
 
 **Run Configuration:**
 - **Role:** [main session | tester | coder | code-reviewer | security-auditor | docs-writer]
-- **Recommended:** [bootstrap role model + capability | manual fallback recommendation] / [tool default effort]
+- **Recommended:** [bootstrap role model | manual fallback recommendation] / [tool default effort]
 - **Configuration source:** [bootstrap role routing | user-owned role override | user-confirmed manual setting | tool-reported setting | unknown]
 - **Actual / adapter limitation:** [configured static model | inherited — adapter cannot observe the current UI/CLI model | effort unsupported]
 - **User decision:** [switch and continue | stay current | no configuration change recommended | not needed]

@@ -12,13 +12,13 @@
 - **Question:** Should a changed amount with the same key be rejected or treated as a new entry?
 - **Discussion:** conflict behavior; consecutive exchanges without new decision/evidence: 1
 ### Task 1.1: identical retries
-**Task status:** do zrobienia
+**Task status:** open
 - Contract: same key and amount returns the original entry ID and leaves exactly one ledger entry.
 - Allowed writes: src/retry.py, tests/test_retry.py, this PR's state.
 - Verification: python3 -m unittest discover -s tests
 - Forbidden: dependencies, network, live data, commits, other behavior.
 ### Task 1.2: conflicting amount
-**Task status:** do zrobienia
+**Task status:** open
 - Contract: same key with a different amount: response and ledger behavior not decided.
 - Allowed writes: src/retry.py, tests/test_retry.py, this PR's state.
 - Verification: python3 -m unittest discover -s tests

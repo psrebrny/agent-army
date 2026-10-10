@@ -6,26 +6,26 @@
 **Objective:** `docs-writer` and the `/ship` docs stage write ADRs with the shared template before commit, move plan decisions into ADRs before a task closes, and mark a delivered work item `delivered` in its bound store. `architect` accepts `docs/product/*` as input. `/ship` recommends an interaction mode from the tasks' Execution Profiles (D13). Blueprint task statuses are English (D14) and the Execution Profile drops `Capability` and `Deliberation` (D15). `/ship` and the baseline `AGENTS.md` carry the collaborative-pace text (D16), and Interactive mode pauses once before and once after each task (D19). No new mandatory gate.
 
 ## Execution State
-- **PR status:** planned
-- **Interaction policy:** unset — /ship asks once per PR before first execution
-- **Execution scope:** unset
-- **Scope Profile:** unset
-- **Model routing:** unset
-- **Last manual configuration:** unknown
-- **Current task:** none
+- **PR status:** in_progress
+- **Interaction policy:** autonomous for Tasks 6.1–6.5; Task 6.6 interactive (the flow is settled with the user first) (user, 2026-10-10)
+- **Execution scope:** PR 6
+- **Scope Profile:** one PR; coordinator = highest unfinished task profile (`design_decision`); coordination `medium`
+- **Model routing:** inherit (source repo has no `.agent-army/config.json`)
+- **Last manual configuration:** stay current
+- **Current task:** 6.6 (6.2 S8 run in the background)
 - **Temporary delegation:** none
-- **Active roles:** none
-- **Last verified stage:** planned
+- **Active roles:** main session
+- **Last verified stage:** baseline (2026-10-10): `scripts/check.sh` 196 passed, 0 failed, 0 warnings
 - **Awaiting decision:** none
 
 ---
 
 ## Execution Progress
-- **Milestones:** unset
-- **Current milestone:** none
-- **Finish condition:** unset
+- **Milestones:** 1) ADR in `docs-writer`, `/ship` §5, `architect` inputs (6.1) · 2) English statuses + reduced Execution Profile (6.4) · 3) mode recommendation (6.3) · 4) ADR parity check + S8 (6.2) · 5) pace paragraph (6.5) · 6) lighter Interactive flow, agreed with the user (6.6) · 7) closure
+- **Current milestone:** 6 of 7
+- **Finish condition:** every task `done` with its Verification Command green, manual fixtures recorded, PR at `ready_for_human_review`
 - **Last map change:** none
-- **Deferred ideas:** none
+- **Deferred ideas:** the baseline `AGENTS.md` bullets "Scope-aware routing" and "Bottleneck-aware effort" still say "raise deliberation" and "light task … strong model"; outside the 6.4 write scope (6.5 allows the paragraph only). Candidate for PR 7's upgrade review or a one-line follow-up the user approves
 
 ---
 
@@ -36,7 +36,7 @@ none
 
 ### Task 6.1: `docs-writer`, `/ship` §5 and `architect` inputs
 
-**Task status:** open
+**Task status:** done — `docs-writer` ADR template = contract block, ADR trigger list, verified-before-commit timing, plan sweep, `W-n` → `delivered` through the bound store; `/ship` §5 one sentence; `architect` Phase 1 reads brief/metrics/ADRs and accepts `ready` work items. `scripts/check.sh` 196 passed, 0 failed (2026-10-10)
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
@@ -95,7 +95,7 @@ none
 
 ### Task 6.2: ADR parity check + S8 gate
 
-**Task status:** open
+**Task status:** in testing — `check_adr_parity` added to `scripts/check.sh` (`--skills`): GREEN on the real files ("ADR template identical in docs-writer and advisor contract"); scratch copy without `## Revisit when` → FAIL "ADR fields differ"; scratch copy without `Needs review` → FAIL "ADR statuses differ". S8 run through `/ship` (arm N with the `docs-writer` contract staged for the main-thread fallback, arm K plain) in progress (2026-10-10)
 
 **Execution Profile:**
 - **Bottleneck:** verification
@@ -142,7 +142,7 @@ Add `check_adr_parity` to `scripts/check.sh`. It extracts the ADR field names an
 
 ### Task 6.3: Mode recommendation in `/ship`
 
-**Task status:** open
+**Task status:** done — RED first: `check_interaction_contract` failed with "ship has no mode recommendation rule"; then the rule in `/ship` §1 (recommendation + reason, names tasks, never sets the mode, `Review focus` hint), two sentences in `architect.md` Principle 5, one in `README.md`; fixture `mode-recommendation` + README row. GREEN: `scripts/check.sh` 197 passed, 0 failed; negative case in a scratch copy (`gut_feeling` in the rule) → FAIL "mode rule names unknown bottlenecks". Manual fixture run: recorded at closure (2026-10-10)
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
@@ -195,7 +195,7 @@ Add `check_adr_parity` to `scripts/check.sh`. It extracts the ADR field names an
 
 ### Task 6.4: English status vocabulary and a reduced Execution Profile
 
-**Task status:** open
+**Task status:** done — RED first: new `check.sh` assertions failed on the old skeleton (architect 2 FAIL, ship 1 FAIL); then `architect.md` (Principle 5, Phase 2, PR skeleton, Scope Profile, Run Configuration), `/ship` (status vocabulary + legacy read mapping, §1.4–1.6 routed from bottlenecks and role configuration) and fixtures (English statuses; `resume-red` keeps the legacy Polish values, its oracle extended). GREEN: `scripts/check.sh` 197 passed, 0 failed; `scripts/smoke.sh` 119/9, identical to the baseline (gate 3 needs `apm`, absent here). Legacy fixture run: recorded at closure (2026-10-10)
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
@@ -249,7 +249,7 @@ Add `check_adr_parity` to `scripts/check.sh`. It extracts the ADR field names an
 
 ### Task 6.5: Collaborative pace in `/ship` and the baseline `AGENTS.md`
 
-**Task status:** open
+**Task status:** done — `interaction-pace:v1` copied verbatim into `/ship` (DELIVERY-FOCUSED INTERACTION, plus one sentence: it governs size and rhythm, the existing progress line uses its marker) and the baseline `AGENTS.md` (after "Delivery-focused interaction"); fixture `pace` + README row. `scripts/check.sh` 198 passed, 0 failed ("identical in 3 present copies"); scratch copy with one changed word in `AGENTS.md` → FAIL; `scripts/smoke.sh` 119/9 = baseline. Manual fixture run: recorded at closure (2026-10-10)
 
 **Execution Profile:**
 - **Bottleneck:** verification
