@@ -6,23 +6,23 @@
 **Objective:** the generator registers 19 skills at 0.4.0. Checks enforce registry/skill/wrapper agreement and the sourcing rules. Smoke proves every target and a non-destructive, idempotent 0.3.1 → 0.4.0 upgrade. A real local APM install works.
 
 ## Execution State
-- **PR status:** implementing
+- **PR status:** ready_for_human_review
 - **Interaction policy:** autonomous (user, 2026-10-10)
 - **Execution scope:** PR 7
 - **Scope Profile:** one PR; coordinator = highest unfinished task profile (`verification`); coordination `low`
 - **Model routing:** inherit (source repo has no `.agent-army/config.json`)
 - **Last manual configuration:** stay current
-- **Current task:** none (re-review findings repaired; second re-review next)
+- **Current task:** none (closure done)
 - **Temporary delegation:** none
 - **Active roles:** none
-- **Last verified stage:** R1–R5 repaired (2026-10-10). RED: new smoke gates 1.7 (real 0.3.1 Claude core from `git archive 1e751e6`) and 1.8 (Claude skip through APM) against the pre-fix `bootstrap.py` → 225/8, the exact R1/R2 symptoms (stale copies, no docs-writer recommendation, downgrade refusal, 0 native agents after skip, roles added later). GREEN with apm 0.33.0: `scripts/check.sh --pack` 204/0/1, `scripts/smoke.sh` 233/0; without apm: `check.sh` 203/0/1, `smoke.sh` 160/10 (gate 3 + gate 1.8 report the missing apm). R4 negatives in a scratch copy: URL, `git@`, `claude plugin install`, `/plugin marketplace add` flagged, own URL and `./local` not; a 399-char `description: >-` warns. R5: opencode legacy dry run and real run list the same new templates. Also found while fixing R2: on native targets, staging left by a run without apm counted as "legacy" and every later run demanded an upgrade review; legacy is now staging without a canonical source
-- **Awaiting decision:** none
+- **Last verified stage:** closure (2026-10-10): with apm 0.33.0 `scripts/check.sh --pack` 204/0/1 (warning: 5 advisors changed since their last eval), `scripts/smoke.sh` 240/0; without apm `check.sh` 203/0/1, `smoke.sh` 167/10 (gate 3 and gate 1.8 need apm). Independent review → `CHANGES_REQUESTED` (R1–R5) → repaired → re-review `CHANGES_REQUESTED` → repaired → second re-review `APPROVED`, lows fixed. Commits made at the stop hook's request before final review: 1f543fb, c0d28e1, 9f7a038 and this closure
+- **Awaiting decision:** final review
 
 ---
 
 ## Execution Progress
 - **Milestones:** 1) registry, versions, upgrade (7.1) · 2) `check.sh` package rules (7.2) · 3) pack + real local install (7.3) · 4) closure
-- **Current milestone:** 4 of 4 (closure: independent review)
+- **Current milestone:** 4 of 4 (closure done)
 - **Finish condition:** every task `done` with its Verification Command green, PR at `ready_for_human_review`
 - **Last map change:** review repairs R1–R5 added to closure (independent review `CHANGES_REQUESTED`, 2026-10-10; user: fix all in PR 7)
 - **Deferred ideas:** none
@@ -35,17 +35,25 @@
   - **Repairs:** R1 `materialize_skills` refreshes a `.agents/skills` dir from the running package only when its tracked digests (SKILL.md, plus baseline templates for `bootstrap`) equal the recorded inventory; otherwise it is kept and printed as `conflict:` on the review card; `bootstrap/SKILL.md` runs `$BOOTSTRAP_DIR` (next to the loaded SKILL.md) and the `/bootstrap` command prefers its own tool's skill copy. R2 the config records `package.agent_sources` (digests of the staged contracts); a re-render runs only when they change, never adds a role, and a skipped review still stages the existing contracts for APM. R3 exact-name match for new skills; Gate 3 check relabelled ("APM kept all 19"). R4 URL/`git@`/plugin forms; YAML-parsed descriptions. R5 the dry-run overlay adds the planned skill's tracked digests, templates included.
 - **Re-review (independent, 2026-10-10): `CHANGES_REQUESTED`** on c0d28e1: the refresh could still delete user files (a kept conflict was recorded in the inventory and refreshed by the next release; `rmtree` dropped files outside the tracked digests); an explicit profile change re-added skipped roles; symlinked skill dir crashed; low gaps in the wrapper and `check.sh`.
   - **Repairs:** refresh is now per file and never deletes: a file is overwritten only when it is missing or its content equals that file in a known release (`bootstrap/package-manifests/0.3.1.json`, made by `scripts/package-manifest.py` from `git archive`; add the previous release's manifest before publishing); any other difference keeps the whole skill and reports a conflict; a symlinked skill is a conflict. Roles are added only on an initial run, `--mode full` or an applied review. The `/bootstrap` command follows the copy naming the newer version. `check.sh`: `ssh://`, `git+https://`, own subpaths; block-scalar descriptions without PyYAML. New smoke assertions (user file survives, the next release keeps a kept conflict, explicit profile change after skip, manifest = release): RED 2 FAIL + the rebuilt profile-change test FAIL on c0d28e1, GREEN with apm: `check.sh --pack` 204/0/1, `smoke.sh` 237/0; without apm `smoke.sh` 164/10 (gate 3 + gate 1.8 need apm). Known limit: a file the new package removed stays in `.agents/skills` (nothing is deleted), so the inventory keeps listing it.
+- **Second re-review (independent, 2026-10-10): `APPROVED`** on 9f7a038; no high or medium findings, no path that loses user content. Lows fixed in closure: hard-linked files (atomic replace, and `st_nlink > 1` is a conflict); a user folder with a new skill's name is no longer filled in (its SKILL.md must be a known release or the package); `check.sh` install rule: non-github hosts, `..`, uppercase schemes. New smoke checks for links and user folders: RED 3 FAIL on 9f7a038, GREEN. Release step documented in `AGENTS.md` (add the previous release's manifest). Not fixed, pre-existing and outside PR 7: a fresh install without `AGENTS.md` asks for a review outcome on every rerun; the Gemini adapter only creates missing files, so a re-render leaves old `.gemini/agents` text.
 
 ---
 
 ## Interaction Card
-none
+- **Checkpoint:** final review
+- **Progress:** krok 7 z 7; PR 7 gotowy do Twojego przeglądu
+- **Completed:** rejestr 19 skilli, 0.4.0, reguły pakietu w `check.sh`, upgrade 0.3.1 → 0.4.0 (także realny Claude), skip bez utraty agentów natywnych, odświeżanie kopii per plik bez kasowania
+- **Evidence:** smoke 240/0 i check --pack 204/0 z apm; drugi niezależny przegląd `APPROVED`
+- **Review focus:** `materialize_skills` w `bootstrap.py` (co jest nadpisywane, co zostaje jako konflikt); nowy krok wydania w `AGENTS.md`
+- **Question:** czy PR 7 jest OK i lecimy z PR 8 (katalog + dokumentacja)?
+- **Options:** continue | direct a correction | show details
+- **Discussion:** none
 
 ---
 
 ### Task 7.1: Registry, versions, upgrade recommendation
 
-**Task status:** in review — `SKILLS` = `CORE_SKILLS` (5) + `PRODUCT_SKILLS` (14), `PACKAGE_VERSION` 0.4.0, schema 2; detection on the core set, recovery prefers a complete source and copies only missing dirs; `PRESERVED_PATHS` makes `write_text` refuse `.agent-army/stores.json`; the review prints `recommended local diff: <template> -> <local contract>` per changed role template, and a dry run previews skills it would copy. RED `scripts/smoke.sh` 135/25 (5-skill registry, 0.3.1, no recommendation) → GREEN 151/9 without apm, 220/0 with apm (2026-10-10).
+**Task status:** done — `SKILLS` = `CORE_SKILLS` (5) + `PRODUCT_SKILLS` (14), `PACKAGE_VERSION` 0.4.0, schema 2; detection on the core set, recovery prefers a complete source and copies only missing dirs; `PRESERVED_PATHS` makes `write_text` refuse `.agent-army/stores.json`; the review prints `recommended local diff: <template> -> <local contract>` per changed role template, and a dry run previews skills it would copy. RED `scripts/smoke.sh` 135/25 (5-skill registry, 0.3.1, no recommendation) → GREEN 151/9 without apm, 220/0 with apm (2026-10-10).
 **`/ship` before `/bootstrap` (for PR 8):** yes, n = 1. Scratch greenfield repo with only the 19 skills (`.agents/skills` + `.claude/skills`), `claude -p "/ship Slice W-1 walking skeleton …"`: it built the slice (RED test first, then GREEN, CLI prints, workflow YAML parses) with no `.agent-army/`, no config and no blueprint (the "small self-contained description" path). Caveat: turn 1 skipped the independent review/security pass ("no blueprint, ~15 lines"); after "approve, PR 1, Autonomous" turn 2 ran both and fixed the findings. Docs should say: the walking skeleton can go through `/ship` before `/bootstrap`; ask for the review explicitly.
 
 **Execution Profile:**
@@ -100,7 +108,7 @@ In `bootstrap.py`, set `SKILLS` to the 19 names, `PACKAGE_VERSION = "0.4.0"` and
 
 ### Task 7.2: `check.sh` package rules
 
-**Task status:** in review — `check_package_rules` rules (a)–(f), one line each; never-evaluated advisors are listed as an info line, not a warning. Provoked in a scratch copy: missing wrapper, wrapper with a wrong path, registry drift, `npx skills add` in a skill, foreign `apm install someone/other-skills` in `README.md`, SOURCES row with `main` as commit, broken link → FAIL; edited advisor, 539-char description → WARN; the package's own `apm install psrebrny/agent-army` passes. `scripts/check.sh` 203/0/1 (2026-10-10).
+**Task status:** done — `check_package_rules` rules (a)–(f), one line each; never-evaluated advisors are listed as an info line, not a warning. Provoked in a scratch copy: missing wrapper, wrapper with a wrong path, registry drift, `npx skills add` in a skill, foreign `apm install someone/other-skills` in `README.md`, SOURCES row with `main` as commit, broken link → FAIL; edited advisor, 539-char description → WARN; the package's own `apm install psrebrny/agent-army` passes. `scripts/check.sh` 203/0/1 (2026-10-10).
 
 **Execution Profile:**
 - **Bottleneck:** verification
@@ -153,7 +161,7 @@ Add to `check.sh --skills`:
 
 ### Task 7.3: Pack and real local install
 
-**Task status:** in review — `scripts/check.sh --pack` ok (bundle `build/agent-army-0.4.0`: `skills/` + `commands/`, no `SOURCES.md`). `apm install /home/user/agent-army --target <t>` (apm 0.33.0, local path) in fresh scratch repos: claude → 19 skills in `.claude/skills/`; opencode → 19 skills in `.agents/skills/`. Neither target receives the `.apm/commands` wrappers or `SOURCES.md`; both stay only in the `apm_modules/_local/agent-army` cache. Finding for PR 8: four skills say "see `SOURCES.md`" (`product-strategy`, `product-red-team`, `validate-product`, `legal-review`), a dangling pointer in an installed repo; the plan's assumption "attribution lines are already in each skill" holds only for `product-strategy` and `product-red-team` (repo named), partly for `validate-product` (authors, no repo), and not for `legal-review` or `go-to-market`. 7.3 may not write this repo, so nothing was changed.
+**Task status:** done — `scripts/check.sh --pack` ok (bundle `build/agent-army-0.4.0`: `skills/` + `commands/`, no `SOURCES.md`). `apm install /home/user/agent-army --target <t>` (apm 0.33.0, local path) in fresh scratch repos: claude → 19 skills in `.claude/skills/`; opencode → 19 skills in `.agents/skills/`. Neither target receives the `.apm/commands` wrappers or `SOURCES.md`; both stay only in the `apm_modules/_local/agent-army` cache. Finding for PR 8: four skills say "see `SOURCES.md`" (`product-strategy`, `product-red-team`, `validate-product`, `legal-review`), a dangling pointer in an installed repo; the plan's assumption "attribution lines are already in each skill" holds only for `product-strategy` and `product-red-team` (repo named), partly for `validate-product` (authors, no repo), and not for `legal-review` or `go-to-market`. 7.3 may not write this repo, so nothing was changed.
 
 **Execution Profile:**
 - **Bottleneck:** verification

@@ -605,7 +605,14 @@ def materialize_skills(
             writes = [rel for rel, digest in wanted.items() if live.get(rel) != digest]
             if not writes:
                 continue
+            # A dir is a package copy only if its SKILL.md is one; otherwise it is the user's own folder.
+            if live.get("SKILL.md") not in known.get(f"{skill}/SKILL.md", set()) | {wanted.get("SKILL.md")}:
+                print(f"kept {dst.relative_to(ROOT)} (not an Agent Army copy; not refreshed)")
+                kept.append(skill)
+                continue
             local = [rel for rel in writes if rel in live and live[rel] not in known.get(f"{skill}/{rel}", set())]
+            # A hard-linked file would carry the write outside this copy.
+            local += [rel for rel in writes if rel in live and (dst / rel).stat().st_nlink > 1]
             if local:
                 print(f"kept {dst.relative_to(ROOT)} (local changes in {', '.join(local[:3])}; not refreshed)")
                 kept.append(skill)
@@ -616,7 +623,9 @@ def materialize_skills(
                 for rel in writes:
                     target_file = dst / rel
                     target_file.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(package / skill / rel, target_file)
+                    temp = target_file.with_name(target_file.name + ".agent-army-tmp")
+                    shutil.copy2(package / skill / rel, temp)
+                    os.replace(temp, target_file)
     if is_agent_army_skills(destination) and has_all_skills(destination):
         return added, kept
     sources = [

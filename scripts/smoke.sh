@@ -360,6 +360,7 @@ PY
   grep -q 'recommended local diff: .*docs-writer.md -> .agent-army/agents/agent-army-docs-writer.agent' "$WORK/claude-031-plan.txt" \
     && ok "dry run recommends the docs-writer merge" || bad "docs-writer recommendation missing for the Claude upgrade"
   grep -q 'conflict: local changes kept.*new-agent' "$WORK/claude-031-plan.txt" && ok "a locally changed skill is reported as a conflict" || bad "local skill change not reported"
+  cp -R "$C031" "$WORK/claude-031-pre"
   (cd "$C031" && python3 .claude/skills/bootstrap/bootstrap.py claude --mode auto --upgrade-review-outcome skipped --skip-apm > "$WORK/claude-031-up.txt" 2>&1)
   cmp -s "$C031/.agents/skills/bootstrap/bootstrap.py" "$ROOT/.apm/skills/bootstrap/bootstrap.py" \
     && cmp -s "$C031/.agents/skills/ship/SKILL.md" "$ROOT/.apm/skills/ship/SKILL.md" \
@@ -379,6 +380,18 @@ PY
   (cd "$C041" && python3 .claude/skills/bootstrap/bootstrap.py claude --mode auto --upgrade-review-outcome skipped --skip-apm > "$WORK/claude-041-up.txt" 2>&1)
   grep -q 'LOCAL-NEW-AGENT-NOTE' "$C041/.agents/skills/new-agent/SKILL.md" && grep -q 'conflict: local changes kept.*new-agent' "$WORK/claude-041-up.txt" \
     && ok "the next release still keeps and reports the local change" || bad "the next release overwrote a kept local change"
+  # Links and the user's own folders are never written through or filled in.
+  CS="$WORK/claude-031-links"; cp -R "$WORK/claude-031-pre" "$CS"; OUT="$WORK/outside"; mkdir -p "$OUT"
+  mv "$CS/.agents/skills/adapt-army" "$OUT/adapt-army"; ln -s "$OUT/adapt-army" "$CS/.agents/skills/adapt-army"
+  mv "$CS/.agents/skills/ship/SKILL.md" "$OUT/ship-SKILL.md"; ln "$OUT/ship-SKILL.md" "$CS/.agents/skills/ship/SKILL.md"
+  mkdir -p "$CS/.agents/skills/product"; printf 'my notes\n' > "$CS/.agents/skills/product/notes.md"
+  outside_before="$(tree_digest "$OUT")"
+  (cd "$CS" && python3 .claude/skills/bootstrap/bootstrap.py claude --mode auto --upgrade-review-outcome skipped --skip-apm > "$WORK/claude-031-links.txt" 2>&1)
+  [ "$outside_before" = "$(tree_digest "$OUT")" ] && ok "symlinked and hard-linked files outside the copy are untouched" || bad "a write went through a link"
+  grep -q 'conflict: .*adapt-army' "$WORK/claude-031-links.txt" && grep -q 'conflict: .*ship' "$WORK/claude-031-links.txt" \
+    && ok "linked skills are reported as conflicts" || bad "linked skills not reported"
+  [ ! -f "$CS/.agents/skills/product/SKILL.md" ] && grep -q 'conflict: .*product' "$WORK/claude-031-links.txt" \
+    && ok "a user folder with a product-skill name is kept, not filled in" || bad "a user folder was filled with package files"
 else
   bad "cannot read the 0.3.1 package (git archive 1e751e6); run smoke from a full clone"
 fi

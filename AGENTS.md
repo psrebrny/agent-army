@@ -56,6 +56,8 @@ scripts/check.sh --target-dir <dir>   # validate a MATERIALIZED tool dir (e.g. a
                                        # descriptor-driven: correct agents dir, exact hooks_live set,
                                        # settings.json iff claude-settings, per that tool's tools/<tool>.yml
 ```
+**Releasing a new version:** before bumping `PACKAGE_VERSION`, run `scripts/package-manifest.py <previous-version> <its commit>` so the new generator recognises unmodified copies of the previous release in `.agents/skills`; without it they are kept and reported as conflicts.
+
 **Generator preview — `python3 .apm/skills/bootstrap/bootstrap.py <target> --mode auto --dry-run`** prints what the v0.3.1 profile would create or migrate.
 
 **Smoke test — `scripts/smoke.sh`.** Deterministic gates cover all target profiles, external-control preservation, unsafe hook collision handling, shell secret writes, staged secret content, failing structured commands, native APM rendering where enabled, and OpenCode's main-thread fallback. See `tests/GUIDE.md` for the full testing guide.

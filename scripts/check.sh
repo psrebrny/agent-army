@@ -733,11 +733,15 @@ for f in files:
                     continue  # flags, local paths and placeholders are not packages
                 token = token.split('#')[0]
                 if '://' in token or token.startswith('git@'):
-                    # https://, ssh://, git+https:// and git@host: forms all name owner/repo
-                    pkg = re.sub(r'\.git$', '', re.sub(r'^([a-z+]+://([^@/]+@)?[^/]+/|git@[^:]+:)', '', token))
+                    # https://, ssh://, git+https:// and git@host: forms all name owner/repo; only
+                    # github.com can be this package, so any other host counts as foreign.
+                    host = re.match(r'^(?:[A-Za-z+]+://(?:[^@/]+@)?|git@)([^/:]+)', token)
+                    pkg = re.sub(r'\.git$', '', re.sub(r'^([A-Za-z+]+://([^@/]+@)?[^/]+/|git@[^:]+:)', '', token))
+                    if host and host.group(1).lower() != 'github.com':
+                        pkg = f'{host.group(1)}/{pkg}'
                 else:
                     pkg = token.split('@')[0]
-                if re.fullmatch(r'[A-Za-z0-9_][\w.-]*/[\w./-]+', pkg) and pkg != own and not pkg.startswith(own + '/'):
+                if re.fullmatch(r'[A-Za-z0-9_][\w.-]*/[\w./-]+', pkg) and (pkg != own and not pkg.startswith(own + '/') or '..' in pkg.split('/')):
                     hits.append(f'{where} ({pkg})')
 if hits:
     emit('BAD', 'third-party install guidance: ' + ', '.join(hits))
