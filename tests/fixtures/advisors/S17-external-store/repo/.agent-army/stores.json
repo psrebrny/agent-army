@@ -1,0 +1,1 @@
+{"version": 1, "types": {"work_item": {"store": "external", "connector": "<CONNECTOR>", "container": "<CONTAINER>", "id_in": "title-prefix", "allowed": ["create", "update"]}}}

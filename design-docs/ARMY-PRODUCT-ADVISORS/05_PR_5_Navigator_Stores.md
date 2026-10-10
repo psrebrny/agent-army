@@ -6,37 +6,44 @@
 **Objective:** `/product` shows where the user is, what they skipped or let go stale, and the one next step, reading through the stores. It also shows and changes the project's store bindings. It runs last among the product skills, because it reads every record schema from PR 2–4.
 
 ## Execution State
-- **PR status:** planned
-- **Interaction policy:** unset — /ship asks once per PR before first execution
-- **Execution scope:** unset
-- **Scope Profile:** unset
-- **Model routing:** unset
-- **Last manual configuration:** unknown
-- **Current task:** none
+- **PR status:** ready_for_human_review
+- **Interaction policy:** autonomous for Task 5.1 (D18; user, 2026-10-09 "lecimy z PR 5"); Task 5.2 Interactive (outward-facing writes, per its Start gate)
+- **Execution scope:** PR 5
+- **Scope Profile:** one PR; coordinator = highest unfinished task profile (`design_decision`); coordination `medium`
+- **Model routing:** inherit (source repo has no `.agent-army/config.json`)
+- **Last manual configuration:** stay current
+- **Current task:** none (5.1 done; 5.2 closed without a run; closure complete)
 - **Temporary delegation:** none
 - **Active roles:** none
-- **Last verified stage:** planned
-- **Awaiting decision:** none
+- **Last verified stage:** closure (2026-10-09): `/product` + wrapper; `scripts/check.sh` green (contract identical in 14 skills); spot check S12 (D18): pass (N Σ16 ff0 vs K Σ13 ff0); judge notes fixed after the run (one literal state per stage, map snapshot for resume, no guessed skip revisits, shorter map), re-run started then stopped at the user's request; S3 not run (its oracle judges `product-strategy` brief edits that `/product` must not make; resume covered by S12 session 2); Task 5.2 closed without a run (user: external stores are optional, no writes to their real tools), so the seam is not proven against a real connector; no independent `code-reviewer` run
+- **Awaiting decision:** final review
 
 ---
 
 ## Execution Progress
-- **Milestones:** unset
-- **Current milestone:** none
-- **Finish condition:** unset
-- **Last map change:** none
+- **Milestones:** 1) `/product` + wrapper (5.1) · 2) spot check S12 (N, K) · 3) external store evidence (5.2, Interactive) · 4) closure
+- **Current milestone:** 4 of 4 (closure done)
+- **Finish condition:** `check.sh` green, S12 passes the decision rule, S17 rows for `work_item` and `adr`, PR at `ready_for_human_review`
+- **Last map change:** milestone 3 dropped: Task 5.2 closed without a run (user, 2026-10-09)
 - **Deferred ideas:** none
 
 ---
 
 ## Interaction Card
-none
+- **Checkpoint:** final review
+- **Progress:** krok 4 z 4; PR 5 gotowy do Twojego przeglądu
+- **Completed:** `/product` (mapa 12 etapów, ostrzeżenia, jeden następny krok, `skip`, tryb `/product stores` z migracją) + wrapper; Task 5.2 zamknięty bez testu
+- **Evidence:** `check.sh` zielony; S12: N 16 vs K 13, 0 fałszywych faktów; poprawki po uwagach sędziego bez ponownego przebiegu
+- **Review focus:** uruchom `/product` na rekordach swojego pomysłu: czy mapa zgadza się z tym, co zrobiłeś i pominąłeś
+- **Question:** czy PR 5 jest OK i lecimy z PR 6 (ADR + integracja z `/ship`)?
+- **Options:** continue | direct a correction | show details
+- **Discussion:** none
 
 ---
 
 ### Task 5.1: `/product` navigator
 
-**Task status:** open
+**Task status:** done
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
@@ -79,7 +86,7 @@ The navigator reads only status-bearing parts through the bound stores: register
 
 **TDD Execution & Auto-Critic:**
 1. Task type: non-code with a behavioral gate.
-2. Baseline from PR 1 (S12 K arm: a plain session asked "where am I?").
+2. The bar is arm K from the same run (S12: a plain session asked "where am I?").
 3. Write the skill.
 4. Run check + eval; record the rows.
 
@@ -87,7 +94,7 @@ The navigator reads only status-bearing parts through the bound stores: register
 
 ### Task 5.2: External store evidence (S17 across skills)
 
-**Task status:** open
+**Task status:** done (closed without a run; user, 2026-10-09: external stores are optional and the user's real tools are off limits; S17 stays as a manual fixture for later)
 
 **Execution Profile:**
 - **Bottleneck:** verification

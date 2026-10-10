@@ -95,7 +95,9 @@ when the recommendation is material. It never invents a provider/model ID,
 changes the main-session setting, or claims that a role-level effort changed:
 effort falls back to the tool default unless the adapter explicitly supports it.
 
-`/ship` has two interaction modes per PR. **Autonomous** continues after the
+`/ship` has two interaction modes per PR. When it asks, it recommends one with a
+reason: Interactive when a task still has an open design choice or no runnable check,
+otherwise Autonomous; your choice wins. **Autonomous** continues after the
 mandatory gate until a real decision, risk, or final human review. **Interactive**
 works through small, verifiable outcomes with you. It shows "Step X of approximately
 Y", the current action, remaining outcomes and a finish condition. Each selected
@@ -109,15 +111,16 @@ new evidence or a decision, it names the obstacle and proposes a resolution or s
 experiment. Side ideas stay deferred; a scope change needs your decision and an
 explained update to the map.
 
-Interactive pauses after RED (or an approved refactor baseline) and after verified
-implementation. A lighter test policy uses implementation acceptance when no RED
-exists. One combined Interaction Card shows progress, the decisive assertion and its
-expected-result source, the small behavior-focused diff, verification limits and the
-next action. Required checks and independent review/security still apply.
+Interactive pauses so you keep the thread and can steer, not to tick off steps. Each
+task opens with a two- or three-line plan that waits only when it has a question; tests,
+implementation and verification then run without a pause, and one task review follows.
+It shows progress, the decisive assertion and its expected-result source, the small
+behavior-focused diff, verification limits and the next action. After a break it opens
+with one sentence on where the work stands. Required checks and independent review/security still apply.
 
 "Decide for me" delegates the current in-scope choice. "Do this task yourself" grants
 one explicitly bounded task through verification: the agent records the authorization,
-waives its routine pre-implementation pause, then returns automatically to interactive
+settles that task's in-scope choices itself, then returns automatically to interactive
 task review. Risk/scope stops and final approval remain. "Switch to autonomous" changes
 the PR policy explicitly. Progress, pending questions and temporary delegation persist
 in the PR; older PRs derive missing progress from existing task evidence without

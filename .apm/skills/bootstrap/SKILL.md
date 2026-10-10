@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: Evidence-led setup and safe incremental migration of a tailored Agent Army v0.3.1. It preserves existing user controls, creates canonical role contracts, and uses native agent adapters only where enabled.
+description: Evidence-led setup and safe incremental migration of a tailored Agent Army v0.4.0. It preserves existing user controls, creates canonical role contracts, and uses native agent adapters only where enabled.
 ---
 # /bootstrap — own controls, then author a real team
 
@@ -37,10 +37,15 @@ the user chooses. After applying selected/all local diffs, rerun the generator w
 `--upgrade-review-outcome applied`; after `skip`, rerun it with `--upgrade-review-outcome skipped`. The
 mechanical migration then updates only versioned, managed fragments and runs targeted validation. New shared
 role contracts appear in the inventory delta: `apply` adds missing role files while preserving every existing
-specialization; `skip` preserves the current local roster and role contracts. A local file colliding with a newly
+specialization; `skip` preserves the current local roster and role contracts. New product skills (from 0.4.0:
+`/product` and the thirteen product advisors) are capabilities only: list them under new capabilities, as
+optional and callable on their own; they need no local file, role contract or native agent. Each generator line
+`recommended local diff: <template> -> <local contract>` names a changed baseline role template (for 0.4.0, the
+`docs-writer` ADR rules): show the package change applied to that local specialized contract, merged into the
+specialization so its repository-specific rules stay, never a replacement of the file. A local file colliding with a newly
 introduced role name stops the upgrade before writes and requires the user to resolve the exact path. The update
-does not redo deep recon or overwrite `.agent-army/agents`, user-owned model routing, quality policy or external
-controls. If the managed feedback-router block in `AGENTS.md` was edited, stop on the conflict rather than
+does not redo deep recon or overwrite `.agent-army/agents`, `.agent-army/stores.json`, user-owned model routing,
+quality policy or external controls. If the managed feedback-router block in `AGENTS.md` was edited, stop on the conflict rather than
 replacing it. Use `--mode full` only when the user asks to re-specialize the team or deliberately switches targets.
 
 Use this exact user-facing card after the dry-run and live-material review:

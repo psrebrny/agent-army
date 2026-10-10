@@ -213,10 +213,18 @@ PY
       && grep -q 'one consequential question per turn' "$f" \
       && grep -q '## Planning Session' "$f" \
       && grep -q 'Last confirmed action' "$f" \
-      && grep -q 'Task status.*do zrobienia' "$f"; then
+      && grep -q 'Task status:\*\* \[open | in progress | in testing | in review | done | awaiting decision | blocked | conditional\]' "$f"; then
       ok "Delegation Contract, interactive planning and resumable status are explicit"
     else
       bad "architect missing explicit contract, interactive planning or resumable status"
+    fi
+    # D14/D15: the PR skeleton writes English statuses and a Bottleneck-only Execution Profile.
+    if grep -qE 'do zrobienia|w trakcie|do testów|do review|wykonane|czeka na decyzję|zablokowane|warunkowe' "$f" \
+      || grep -qE '^- \*\*(Capability|Deliberation|Routing rationale):\*\*' "$f" \
+      || ! grep -q '^- \*\*Bottleneck rationale:\*\*' "$f"; then
+      bad "architect skeleton still carries a Polish status or Capability/Deliberation (D14/D15)"
+    else
+      ok "architect skeleton uses English statuses and a Bottleneck-only Execution Profile"
     fi
   fi
   if [ "$name" = "code-reviewer" ]; then
@@ -408,9 +416,9 @@ check_skill() {
       && grep -q 'INTERACTION CARD' "$f" \
       && grep -q 'Interaction policy: supervised' "$f" \
       && grep -q 'migrated to interactive' "$f" \
-      && grep -q 'RED acceptance' "$f" \
+      && grep -q 'resumes as `task plan`' "$f" \
       && grep -q 'task-review Interaction Card' "$f" \
-      && grep -q 'contract interpretation, exact RED tests, smallest implementation' "$f" \
+      && grep -q 'behavior, significant cases, verification and exact write list' "$f" \
       && grep -q 'focused diff summary, GREEN' "$f" \
       && grep -q 'PERSIST EVERY ROLE TRANSITION' "$f" \
       && grep -q 'switch and continue | stay current' "$f" \
@@ -419,7 +427,10 @@ check_skill() {
       && grep -q 'Final review is a pause in both modes' "$f" \
       && grep -q 'ready_for_human_review' "$f" \
       && grep -q 'Never change a' "$f" \
-      && grep -q 'UI/CLI/API model' "$f"; then
+      && grep -q 'UI/CLI/API model' "$f" \
+      && grep -q 'legacy value on read' "$f" \
+      && grep -q '`do zrobienia` → `open`, `w trakcie` → `in progress`, `do testów` → `in testing`, `do review` → `in review`, `wykonane` → `done`, `czeka na decyzję` → `awaiting decision`, `zablokowane` → `blocked`, `warunkowe` → `conditional`' "$f" \
+      && [ "$(grep -cE 'do zrobienia|w trakcie|do testów|wykonane|czeka na decyzję|zablokowane|warunkowe' "$f")" -eq 1 ]; then
       ok "ship interaction modes, routing and closure loop are explicit"
     else
       bad "ship missing resolve, routing or closure-loop rule"
@@ -473,6 +484,8 @@ def fields(text, heading):
     section = re.split(r'\n(?:## |---|`{3,})', section, maxsplit=1)[0]
     return dict(re.findall(r'^- \*\*(.+?):\*\* (.+)$', section, re.M))
 
+LEGACY_LINE = 'A PR paused at a legacy `RED acceptance`, `baseline acceptance` or `implementation acceptance` card resumes as `task plan`'
+
 def choices(value):
     return {item.strip() for item in value.strip('[]').split('|')} - {'none'}
 
@@ -482,21 +495,346 @@ try:
     assert all(set(card) == required for card in cards), 'interaction card fields differ or are missing'
     for name in ('Checkpoint', 'Options'):
         assert choices(cards[0][name]) == choices(cards[1][name]), f'{name} choices drifted between author and executor'
-    assert {'behavior decision', 'RED acceptance', 'baseline acceptance', 'implementation acceptance', 'task review', 'final review'} <= choices(cards[0]['Checkpoint']), 'missing lifecycle checkpoint'
+    assert {'behavior decision', 'task plan', 'task review', 'final review'} <= choices(cards[0]['Checkpoint']), 'missing lifecycle checkpoint'
+    # D19: the separate RED / baseline / implementation acceptance pauses fold into `task plan`.
+    legacy = {'RED acceptance', 'baseline acceptance', 'implementation acceptance'}
+    for name, text in (('ship', ship), ('architect', architect)):
+        left = [c for c in legacy if c in text.replace(LEGACY_LINE, '')]
+        assert not left, f'{name} still lists removed checkpoints: {sorted(left)}'
     progress = fields(architect, 'Execution Progress')
     assert set(progress) == {'Milestones', 'Current milestone', 'Finish condition', 'Last map change', 'Deferred ideas'}, 'progress map contract changed or acquired a second status ledger'
     state = fields(architect, 'Execution State')
     assert 'Temporary delegation' in state, 'temporary authorization cannot survive resume'
     assert choices(state['Interaction policy'].split(' — ')[0] + ']') == {'autonomous', 'interactive', 'unset'}, 'unexpected third interaction mode'
+    # D13: the mode recommendation names only bottlenecks the architect can write.
+    rule = re.search(r'Recommend \*\*Interactive\*\* if any selected task has `Bottleneck` `([^`]+)`', ship)
+    assert rule, 'ship has no mode recommendation rule'
+    enum = re.search(r'^- \*\*Bottleneck:\*\* \[([^\]]+)\]', architect, re.M)
+    assert enum, 'architect has no Bottleneck enum'
+    unknown = choices(rule.group(1)) - choices(enum.group(1))
+    assert not unknown, f'mode rule names unknown bottlenecks: {sorted(unknown)}'
 except (AssertionError, IndexError) as exc:
     print(f'Interaction contract: {exc}', file=sys.stderr)
     sys.exit(1)
 PY_CONTRACT
   then
-    ok "interaction cards agree; progress and bounded-delegation fields are present"
+    ok "interaction cards agree; progress and bounded-delegation fields are present; mode rule names only known bottlenecks"
   else
     bad "interaction contract mismatch"
   fi
+}
+
+# The product skills (13 advisors + the /product navigator) share one contract block.
+# One list; completeness (all present) is asserted by check_package_rules (registry), not here.
+PRODUCT_SKILLS="product-strategy product-red-team market-research business-case validate-product \
+product-spec solution-architecture delivery-plan go-to-market product-metrics ux-review legal-review \
+launch-readiness product"
+
+# Every copy of the advisor contract is byte-identical to the authoritative one in
+# product-strategy; every present product skill carries it; its stores.json example parses
+# and never allows `delete`. Block size is printed for information only (D17).
+check_advisor_contract() {
+  local out
+  if out="$(python3 - "$SKILLS_DIR" $PRODUCT_SKILLS 2>&1 <<'PY_ADVISOR'
+import json, pathlib, re, sys
+skills = pathlib.Path(sys.argv[1]); product = sys.argv[2:]
+OPEN, CLOSE = '<!-- advisor-contract:v1 -->', '<!-- /advisor-contract:v1 -->'
+errors, blocks = [], {}
+for f in sorted(skills.glob('*/SKILL.md')):
+    text, name = f.read_text(), f.parent.name
+    if OPEN not in text:
+        if name in product:
+            errors.append(f'{name}: product skill without the advisor-contract:v1 block')
+        continue
+    if text.count(OPEN) != 1 or text.count(CLOSE) != 1 or text.index(CLOSE) < text.index(OPEN):
+        errors.append(f'{name}: needs exactly one opening and one closing advisor-contract:v1 tag')
+        continue
+    blocks[name] = text[text.index(OPEN):text.index(CLOSE) + len(CLOSE)]
+if blocks:
+    ref = blocks.get('product-strategy')
+    if ref is None:
+        errors.append('product-strategy (authoritative copy) has no advisor-contract:v1 block')
+    else:
+        # Size is reported, never limited (D17): cost and attention are judged by advisor-eval.
+        print(f'SIZE {ref.count(chr(10)) - 1} lines, ~{len(ref) // 4} tokens')
+        for name, block in blocks.items():
+            if block != ref:
+                errors.append(f'{name}: advisor-contract:v1 block differs from product-strategy')
+        fences = re.findall(r'```json\n(.*?)```', ref, re.S)
+        stores = [f for f in fences if '"types"' in f]
+        if not stores:
+            errors.append('contract has no ```json stores.json example')
+        for raw in stores:
+            try:
+                doc = json.loads(raw)
+            except ValueError as exc:
+                errors.append(f'stores.json example does not parse: {exc}')
+                continue
+            if doc.get('version') != 1 or not isinstance(doc.get('types'), dict):
+                errors.append('stores.json example needs "version": 1 and a "types" object')
+                continue
+            for t, b in doc['types'].items():
+                if 'delete' in b.get('allowed', []):
+                    errors.append(f'stores.json example allows delete for {t}')
+for e in errors:
+    print(e)
+print(f'COUNT {len(blocks)}')
+sys.exit(1 if errors else 0)
+PY_ADVISOR
+)"; then
+    ok "advisor contract identical in ${out##*COUNT } present advisor skills"
+    case "$out" in *SIZE*) local size="${out#*SIZE }"; printf '    contract block: %s\n' "${size%%$'\n'*}" ;; esac
+  else
+    while IFS= read -r line; do
+      case "$line" in COUNT*|SIZE*) ;; *) bad "$line" ;; esac
+    done <<<"$out"
+  fi
+}
+
+# The interaction-pace:v1 paragraph is copied verbatim into the advisor contract, /ship and
+# the baseline AGENTS.md. Every copy that exists must match the contract's.
+check_interaction_pace() {
+  local out
+  if out="$(python3 - "$ROOT" 2>&1 <<'PY_PACE'
+import pathlib, sys
+root = pathlib.Path(sys.argv[1])
+OPEN, CLOSE = '<!-- interaction-pace:v1 -->', '<!-- /interaction-pace:v1 -->'
+files = ['.apm/skills/product-strategy/SKILL.md', '.apm/skills/ship/SKILL.md',
+         '.apm/skills/bootstrap/baseline/AGENTS.md']
+copies, errors = {}, []
+for rel in files:
+    p = root / rel
+    if not p.is_file() or OPEN not in p.read_text():
+        continue
+    t = p.read_text()
+    if t.count(OPEN) != 1 or t.count(CLOSE) != 1 or t.index(CLOSE) < t.index(OPEN):
+        errors.append(f'{rel}: needs exactly one opening and one closing interaction-pace:v1 tag')
+        continue
+    copies[rel] = t[t.index(OPEN):t.index(CLOSE)]
+ref = copies.get(files[0])
+if copies and ref is None:
+    errors.append('interaction-pace:v1 copies exist but the advisor contract has none')
+for rel, c in copies.items():
+    if ref is not None and c != ref:
+        errors.append(f'{rel}: interaction-pace:v1 differs from the advisor contract')
+for e in errors:
+    print(e)
+print(f'COUNT {len(copies)}')
+sys.exit(1 if errors else 0)
+PY_PACE
+)"; then
+    ok "interaction-pace:v1 identical in ${out##*COUNT } present copies"
+  else
+    while IFS= read -r line; do
+      case "$line" in COUNT*) ;; *) bad "$line" ;; esac
+    done <<<"$out"
+  fi
+}
+
+# One ADR dialect per target repo: the docs-writer skeleton and the advisor contract carry the
+# same field names and the same status set (PR 6, Task 6.2).
+check_adr_parity() {
+  local out
+  if out="$(python3 - "$ROOT" 2>&1 <<'PY_ADR'
+import pathlib, re, sys
+root = pathlib.Path(sys.argv[1])
+srcs = {'docs-writer': '.apm/skills/bootstrap/baseline/core/agents/docs-writer.md',
+        'advisor contract': '.apm/skills/product-strategy/SKILL.md'}
+def template(rel):
+    blocks = [b for b in re.findall(r'```md\n(.*?)```', (root / rel).read_text(), re.S)
+              if b.startswith('# ADR-NNN')]
+    if len(blocks) != 1:
+        return None
+    b = blocks[0]
+    fields = re.findall(r'^- ([A-Z][A-Za-z ]*):', b, re.M) + re.findall(r'^## (.+)$', b, re.M)
+    status = re.search(r'^- Status: (.+)$', b, re.M)
+    return fields, {x.strip() for x in status.group(1).split('|')} if status else set()
+got = {name: template(rel) for name, rel in srcs.items()}
+errors = [f'{n}: needs exactly one ```md ADR-NNN template' for n, t in got.items() if t is None]
+if not errors:
+    (fa, sa), (fb, sb) = got.values()
+    if fa != fb:
+        errors.append(f'ADR fields differ: docs-writer {fa} vs contract {fb}')
+    if sa != sb or not sa:
+        errors.append(f'ADR statuses differ: docs-writer {sorted(sa)} vs contract {sorted(sb)}')
+for e in errors:
+    print(e)
+sys.exit(1 if errors else 0)
+PY_ADR
+)"; then
+    ok "ADR template identical in docs-writer and advisor contract"
+  else
+    while IFS= read -r line; do bad "$line"; done <<<"$out"
+  fi
+}
+
+# Package rules (PR 7, Task 7.2). Each rule prints one ok/bad/warn line:
+# (a) registry: bootstrap.py SKILLS == .apm/skills dirs == .apm/commands wrappers, each wrapper
+#     pointing at .agents/skills/<name>/SKILL.md, and the product list here == PRODUCT_SKILLS there;
+# (b) no third-party install guidance (npx skills, /plugin install, apm install of another package);
+# (c) every .apm/SOURCES.md row names repo, file, a 7+ hex commit and a license;
+# (d) WARN for a product-skill description over 300 chars;
+# (e) relative links in .apm/README.md and the product skills resolve;
+# (f) WARN when a product skill's SKILL.md hash or contract tag differs from its latest SCORECARDS row.
+check_package_rules() {
+  local out line
+  out="$(python3 - "$ROOT" $PRODUCT_SKILLS 2>&1 <<'PY_PACKAGE'
+import ast, hashlib, pathlib, re, sys
+root = pathlib.Path(sys.argv[1]); product = sys.argv[2:]
+apm = root / '.apm'
+
+def emit(kind, msg):
+    print(f'{kind}\t{msg}')
+
+# (a) registry agreement
+names = {}
+for node in ast.parse((apm / 'skills/bootstrap/bootstrap.py').read_text()).body:
+    if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+        target = node.targets[0].id
+        if target in {'CORE_SKILLS', 'PRODUCT_SKILLS', 'SKILLS'}:
+            value = node.value
+            if isinstance(value, ast.BinOp) and isinstance(value.op, ast.Add):
+                names[target] = names[value.left.id] + names[value.right.id]
+            else:
+                names[target] = tuple(ast.literal_eval(value))
+registry = set(names.get('SKILLS', ()))
+dirs = {d.name for d in (apm / 'skills').iterdir() if (d / 'SKILL.md').is_file()}
+wrappers = {f.stem for f in (apm / 'commands').glob('*.md')}
+errors = []
+if len(registry) != len(names.get('SKILLS', ())):
+    errors.append('SKILLS has duplicates')
+for label, other in (('.apm/skills dirs', dirs), ('.apm/commands wrappers', wrappers)):
+    if other != registry:
+        errors.append(f'SKILLS vs {label}: missing {sorted(registry - other)}, extra {sorted(other - registry)}')
+for name in sorted(wrappers):
+    if f'.agents/skills/{name}/SKILL.md' not in (apm / 'commands' / f'{name}.md').read_text():
+        errors.append(f'wrapper {name}.md does not point at .agents/skills/{name}/SKILL.md')
+if set(product) != set(names.get('PRODUCT_SKILLS', ())):
+    errors.append(f'check.sh PRODUCT_SKILLS {sorted(product)} != bootstrap.py PRODUCT_SKILLS')
+if errors:
+    emit('BAD', 'registry: ' + '; '.join(errors))
+else:
+    emit('OK', f'registry: {len(registry)} skills = dirs = wrappers, each wrapper points at its skill')
+
+# (b) no third-party install guidance
+own = 'psrebrny/agent-army'
+files = [f for f in apm.rglob('*') if f.is_file() and f.suffix in {'.md', '.py', '.yml', '.yaml', '.json', '.sh'}]
+files.append(root / 'README.md')
+hits = []
+for f in files:
+    for no, text in enumerate(f.read_text(errors='ignore').splitlines(), 1):
+        where = f'{f.relative_to(root)}:{no}'
+        if re.search(r'npx\s+skills\b', text) or re.search(r'/plugin\s+install\b', text):
+            hits.append(where)
+        for span in re.findall(r'apm\s+install\b([^`"\'\n]*)', text):
+            for token in span.split():
+                pkg = token.split('@')[0].split('#')[0]
+                if re.fullmatch(r'[A-Za-z0-9_][\w.-]*/[\w./-]+', pkg) and pkg != own:
+                    hits.append(f'{where} ({pkg})')
+if hits:
+    emit('BAD', 'third-party install guidance: ' + ', '.join(hits))
+else:
+    emit('OK', f'no third-party install guidance (only apm install {own})')
+
+# (c) SOURCES.md rows
+sources = apm / 'SOURCES.md'
+bad_rows, rows = [], 0
+if not sources.is_file():
+    bad_rows.append('.apm/SOURCES.md missing')
+else:
+    lines = sources.read_text().splitlines()
+    table = [l for l in lines if l.startswith('|')]
+    for line in table[2:]:
+        rows += 1
+        cells = [c.strip() for c in line.strip('|').split('|')]
+        parts = re.findall(r'`([^`]+)`', cells[1]) if len(cells) > 2 else []
+        license_ok = len(cells) > 2 and cells[2] not in {'', '-', '?'}
+        ok = (len(parts) == 3 and re.fullmatch(r'[\w.-]+/[\w.-]+', parts[0])
+              and parts[1] and re.fullmatch(r'[0-9a-f]{7,40}', parts[2]) and license_ok)
+        if not ok:
+            bad_rows.append(f'row {rows}: {cells[0][:50] if cells else line[:50]}')
+    if rows == 0:
+        bad_rows.append('no attribution rows')
+if bad_rows:
+    emit('BAD', 'SOURCES.md rows need repo · file · commit (7+ hex) and a license: ' + '; '.join(bad_rows))
+else:
+    emit('OK', f'SOURCES.md: {rows} rows with repo, file, commit and license')
+
+def frontmatter(path):
+    m = re.match(r'---\n(.*?)\n---', path.read_text(), re.S)
+    return m.group(1) if m else ''
+
+# (d) description length
+long = []
+for name in product:
+    f = apm / 'skills' / name / 'SKILL.md'
+    if not f.is_file():
+        continue
+    m = re.search(r'^description:\s*(.*)$', frontmatter(f), re.M)
+    desc = m.group(1).strip().strip('"\'') if m else ''
+    if len(desc) > 300:
+        long.append(f'{name} ({len(desc)})')
+if long:
+    emit('WARN', 'product-skill description over 300 chars: ' + ', '.join(long))
+else:
+    emit('OK', 'product-skill descriptions are at most 300 chars')
+
+# (e) relative links resolve
+broken, checked = [], 0
+docs = [apm / 'README.md'] + [apm / 'skills' / n / 'SKILL.md' for n in product]
+for f in docs:
+    if not f.is_file():
+        continue
+    text = re.sub(r'```.*?```', '', f.read_text(), flags=re.S)
+    for target in re.findall(r'\]\(([^)\s]+)(?:\s+"[^"]*")?\)', text):
+        if re.match(r'[a-z][a-z0-9+.-]*:', target) or target.startswith('#'):
+            continue
+        checked += 1
+        path = target.split('#')[0]
+        if not (f.parent / path).exists():
+            broken.append(f'{f.relative_to(root)} -> {target}')
+if broken:
+    emit('BAD', 'broken relative links: ' + ', '.join(broken))
+else:
+    emit('OK', f'relative links resolve ({checked} in .apm/README.md and product skills)')
+
+# (f) eval staleness against SCORECARDS.md
+ledger = root / 'tests/fixtures/advisors/SCORECARDS.md'
+latest = {}
+if ledger.is_file():
+    for line in ledger.read_text().splitlines():
+        cells = [c.strip() for c in line.strip().strip('|').split('|')]
+        if len(cells) >= 4 and re.fullmatch(r'\d{4}-\d{2}-\d{2}', cells[0]):
+            latest[cells[1]] = (cells[2], cells[3])
+changed, unevaluated = [], []
+for name in product:
+    f = apm / 'skills' / name / 'SKILL.md'
+    if not f.is_file():
+        continue
+    data = f.read_bytes()
+    m = re.search(r'<!-- (advisor-contract:v\d+) -->', data.decode())
+    tag = m.group(1) if m else '-'
+    if name not in latest:
+        unevaluated.append(name)
+    elif latest[name] != (tag, hashlib.sha256(data).hexdigest()[:12]):
+        changed.append(name)
+if changed:
+    emit('WARN', 'advisor changed since last eval; run advisor-eval: ' + ', '.join(changed))
+else:
+    emit('OK', 'evaluated advisors match their latest SCORECARDS row')
+if unevaluated:
+    emit('INFO', 'no SCORECARDS row yet: ' + ', '.join(unevaluated))
+PY_PACKAGE
+)"
+  while IFS=$'\t' read -r kind line; do
+    case "$kind" in
+      OK) ok "$line" ;;
+      BAD) bad "$line" ;;
+      WARN) warn "$line" ;;
+      INFO) printf '    %s\n' "$line" ;;
+      *) [ -n "$kind$line" ] && bad "package rules: $kind $line" ;;
+    esac
+  done <<<"$out"
 }
 
 # --- argument routing -------------------------------------------------------
@@ -544,6 +882,12 @@ if [ "$do_skills" = 1 ] && [ -z "$TARGET_DIR" ]; then
   for d in "$SKILLS_DIR"/*/; do check_skill "${d%/}"; done
   check_tools_descriptors
   check_interaction_contract
+  printf '\n\033[1m• product skills\033[0m\n'
+  check_advisor_contract
+  check_interaction_pace
+  check_adr_parity
+  printf '\n\033[1m• package rules\033[0m\n'
+  check_package_rules
 fi
 if [ "$do_pack" = 1 ]; then
   printf '\n\033[1m• package (apm)\033[0m\n'
