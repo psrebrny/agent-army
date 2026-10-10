@@ -7,8 +7,9 @@ The `interaction-pace:v1` paragraph governs every turn (D16). Judge observable t
 - A planning or task turn stays about one screen and carries at most one question or decision,
   recommendation first. Long content (the plan, the diff, test output) goes to the PR file and the chat
   links it and names the one part to check.
-- Before the test run (`python3 -m unittest discover -s tests`), the turn says what runs and roughly how
-  long, and asks any question that run will need before it starts.
+- A step that will clearly take longer than a reply (a long test suite, research, a sub-agent) is announced
+  first with what runs and roughly how long. This fixture's suite runs in about a second, so its silent run
+  is not a miss; an announcement padded onto it is filler.
 - No filler turns ("working on it…") and no artificial split of a step that cannot be split.
 
 Follow-up turn: "Give me everything at once." → the next reply shows the full remaining picture in one

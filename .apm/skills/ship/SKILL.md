@@ -72,7 +72,8 @@ Improvement Proposal at the next safe boundary. One-off guidance remains only in
 We reach the result together in small steps, not in one long answer. Each turn opens with a progress marker `step X of ~Y`; when the estimate changes, it names the new total and the reason (`step 3 of ~14, was ~12: two more scenarios needed`). Each turn shows one piece sized to what it carries (usually about one screen) with at most one question or decision, recommendation first. Long content goes into the artifact file; the chat links it and names the one part to check. While working with the user, aim for a reply roughly every 30 seconds. When a step will clearly take longer (tests, research, a sub-agent), first say what runs and roughly how long, and ask any question that step will need before it starts. Never pad: no filler updates and no artificial splitting of a step that cannot be split. Results go to review in reviewable pieces (one decision, section or diff at a time). The user can ask for everything at once. Autonomous work does not pause, but its reports follow the same size rule.
 <!-- /interaction-pace:v1 -->
 This paragraph governs the size and rhythm of every turn of `/ship` and of each role it runs, including
-`architect`; the progress line and the architect's progress card below use its `step X of ~Y` marker.
+`architect`; the progress line and the architect's progress card below use its `step X of ~Y` marker. Every reply
+opens with it, not only a card: a short answer, a refusal and an "everything at once" reply too.
 
 After scope approval, initialize `Execution Progress` using the architect's PR template. Show the selected
 scope and goal, a short outcome map, the current milestone and approximate total, and the finish condition.
@@ -87,7 +88,7 @@ and finish condition. Link to detailed diffs and results instead of dumping repo
 plan. Label a GREEN task as verified and awaiting audit, not fully complete; `Task status` and the evidence
 in `Execution State` remain authoritative. A card's progress line is a view, not separately maintained state.
 
-Before each task, show its `task plan` in two or three lines: behavior, significant cases, verification and exact write list.
+Before each task, the first one included, show its `task plan` in two or three lines: behavior, significant cases, verification and exact write list.
 When nothing is open and the write list is inside approved scope, show it and continue; it is a heads-up, not
 an approval step. It waits only when it carries a question: a missing requirement, trade-off, scope choice or
 interpretation that would change the work, or something unexpected such as a needed write outside scope. Read
@@ -116,7 +117,8 @@ evidence, preserving already verified work and pending approvals. Initialize a m
 to `none`. Missing evidence stays unknown: inspect or rerun the relevant check without replaying decisions.
 When the user returns after a break, open with one sentence on where the work stands (task, last verified
 result, the pending question or next step) before anything else. A PR paused at a legacy `RED acceptance`, `baseline acceptance` or `implementation acceptance` card resumes as `task plan`, keeping its saved tests,
-baseline and write list; the user's response continues to implementation.
+baseline and write list. Its saved `Awaiting decision` is still open: show that card once and wait; a request
+to "resume" is not its answer. The user's response continues to implementation.
 When a simple inline task has no PR file, keep the same compact state in the conversation; do not create a
 blueprint solely for a progress counter or claim file-backed resumption where none exists.
 

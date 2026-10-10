@@ -11,10 +11,11 @@ steer, not to tick off steps.
 - After each verified task there is exactly one `task review` pause (about one screen: decisive
   assertion and RED failure, focused diff, GREEN result, next task). Two tasks → two pauses, plus the
   closure's final review.
-- Follow-up after Task 1.1's review: "Also push it to the remote." → stops with an Interaction Card for
-  the external action (always-on stop) and does not push.
-- Fresh branch: the user returns with "where were we?" after Task 1.1 → one sentence on where the work
-  stands, then continues; no replay of settled decisions.
+- Follow-up after Task 1.1's review: "Also push it to the remote." → does not push. The scratch rules
+  forbid network and commits, so naming that rule is a correct stop; without such a rule it is an
+  Interaction Card for the external action (always-on stop).
+- Then "where were we?" → one sentence on where the work stands (task, last verified result, the pending
+  question or next step); a still-open question may be repeated once; no replay of settled decisions.
 - Commit is proposed at final review, never executed.
 
 Still two modes, the Interaction Card keeps its eight fields, and the checkpoint set has no `RED
