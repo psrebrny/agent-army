@@ -25,7 +25,7 @@
 - **Current milestone:** 4 of 4 (closure done)
 - **Finish condition:** 8.1 and 8.2 `done`, all three verification commands green, no staleness WARN, PR at `ready_for_human_review`
 - **Last map change:** scope expansion (user, 2026-10-10): APM does not install `.apm/SOURCES.md` (PR 7, Task 7.3), so the "see `SOURCES.md`" pointers in `product-strategy`, `product-red-team`, `validate-product` and `legal-review` dangled in an installed repo. The user chose to fix the skills now: each names its source repo and license inline, `go-to-market` gains its missing `marketing-loops` attribution, and `SOURCES.md` says it stays in the source repo. `product-strategy` joins the `advisor-eval` runs (13 advisors), and the `go-to-market` run on the old text was stopped and re-queued.
-- **Post-closure repair (user, 2026-10-10, "napraw i powtórz oceny"):** the `rethink` on `/product` S12 had two causes found in the raw actor transcripts. (1) Skill: turn 1 wrote the map snapshot to `journey.md` and replied with only the stage footer; step 8 now says the snapshot never replaces the reply. (2) Harness: `run.py` kept only the text after the last tool call (`claude -p` `result`), so text before a file write never reached the persona or the judge; about 12% of actor turns across all runs (128 of 1052, both arms) lost text. `run.py` now streams actor turns and joins every text block. `/product` S12 and `product-spec` S13 re-run on the fixed harness; earlier `pass` rows stand (the loss could only lower scores).
+- **Post-closure repair (user, 2026-10-10, "napraw i powtórz oceny"):** the `rethink` on `/product` S12 had two causes found in the raw actor transcripts. (1) Skill: turn 1 wrote the map snapshot to `journey.md` and replied with only the stage footer; step 8 now says the snapshot never replaces the reply. (2) Harness: `run.py` kept only the text after the last tool call (`claude -p` `result`), so text before a file write never reached the persona or the judge; about 12% of actor turns across all runs (128 of 1052, both arms) lost text. `run.py` now streams actor turns and joins every text block. Re-runs on the fixed harness: `/product` S12 `pass` (N Σ17 ff0, K Σ13; N showed the map, warned about building before validation and ads before measurement, one next step), `product-spec` S13 `pass` (N Σ17 ff0, K Σ14). Earlier `pass` rows stand (the loss could only lower scores). Every product skill now has a current `pass` row; `check.sh` 204/0/0.
 - **Deferred ideas:** the judge sometimes returns malformed JSON (2 of 15 runs today); `run.py` stops and the run is repeated by hand
 
 ---
@@ -34,7 +34,7 @@
 - **Checkpoint:** final review
 - **Progress:** krok 4 z 4; PR 8 gotowy do Twojego przeglądu
 - **Completed:** katalog `.apm/README.md`, README/AGENTS/baseline AGENTS/tests GUIDE, atrybucja w skillach, poprawka odczytu danych w product-metrics, oceny 13 advisorów
-- **Evidence:** check 204/0/0, smoke 249/0, pack 205/0/0 (apm 0.33.0); 11 × `pass`, 2 × `rethink`; niezależny przegląd `APPROVED`
+- **Evidence:** check 204/0/0, smoke 249/0, pack 205/0/0 (apm 0.33.0); 13 × `pass` (po naprawie harnessu i `/product`); niezależny przegląd `APPROVED`
 - **Review focus:** `.apm/README.md` „Pick by situation” i „Product skills in detail”; dwa `rethink` (`/product` S12: sesja 1 nie pokazała mapy; `product-spec` S13: test odnowień bez progu i kill criterion)
 - **Question:** czy PR 8 jest OK, i czy zawężamy `/product` / `product-spec` teraz, czy po merge?
 - **Options:** continue | direct a correction | show details
