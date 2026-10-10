@@ -52,7 +52,7 @@ No model-evaluation runs are checked in with these fixtures.
 The fourteen product skills are prose, so `check.sh` can only prove their structure (frontmatter,
 examples, the identical `advisor-contract:v1` block, links, description length). Their behavior is
 measured by `advisor-eval`, a maintainer tool in `.claude/skills/advisor-eval/` that is never shipped.
-Each run calls models and costs money (roughly $0.5–3 per advisor × scenario), so it is not part of
+Each run calls models and costs money (observed: roughly $1–9 per advisor × scenario, both arms plus the persona and judge), so it is not part of
 `check.sh` or `smoke.sh`.
 
 - **Fixtures:** [`fixtures/advisors/`](fixtures/advisors/README.md) holds synthetic scenarios S1–S17

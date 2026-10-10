@@ -72,7 +72,7 @@ sending it. If the connector is unavailable it stops and tells you; it never fal
 | `/new-agent` | engineering | add a specialised local role | a local agent contract and its adapter output |
 | `/new-skill` | engineering | add a reusable local workflow with its own entry point | a local skill source, optional command wrapper |
 | `/adapt-army` | engineering | turn a recurring workflow problem into a targeted improvement | an Army Improvement Proposal and approved local changes |
-| `/product` | navigator | where am I, what did I skip, what is the one next step | `skip` records, the map snapshot, store bindings (all after you confirm) |
+| `/product` | navigator | where am I, what did I skip, what is the one next step | `skip` records and store bindings after you confirm; a one-line map snapshot |
 | `/product-strategy` | advisor | audience, problem, advantage, features, revenue model, out of scope | `brief.md` with the register |
 | `/product-red-team` | advisor | attack a brief, business case, GTM or launch plan before reality does | `product-red-team.md` |
 | `/market-research` | advisor | competitors, alternatives, prices, their channels, with dated sources | `market-research.md` |
@@ -280,7 +280,7 @@ behave the same way where it matters:
 Product skills produce conversation and documents. Anything that becomes code is a work item `W-n`
 (`kind: slice | spike | fix`, status `proposed | ready | in progress | delivered (evidence)`). You start
 `/ship` with a `ready` item; its docs stage marks the item `delivered` with evidence in whichever store
-it lives in, and `/product` reads that status.
+it lives in (or asks you to, when that store's connector is unavailable), and `/product` reads that status.
 
 | Skill | Artifact | Standalone (conversation + docs only) | Hands off to `/ship` (coding) |
 |---|---|---|---|
@@ -303,7 +303,8 @@ Small fixes from UX, legal or metrics go straight in as `fix` work items; the ne
 run absorbs them into the order.
 
 **Greenfield:** `solution-architecture` ADRs → `delivery-plan` W-1 walking skeleton → `/ship` builds it
-→ `/bootstrap` tailors the team to the now-real stack → next slices. In an existing product,
+→ `/bootstrap` tailors the team to the now-real stack → next slices. `/ship` works before `/bootstrap`,
+but for this small first slice ask for the independent review and security pass explicitly. In an existing product,
 `solution-architecture` keeps the current stack and proposes a change only through an ADR with a reason.
 
 ## Typical paths
