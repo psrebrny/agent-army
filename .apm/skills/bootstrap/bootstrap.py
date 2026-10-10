@@ -34,17 +34,37 @@ ROLES = (
     "plan-reviewer",
 )
 PLANNING_ROLES = ("planning-analyst", "plan-reviewer")
-SKILLS = ("bootstrap", "ship", "new-agent", "new-skill", "adapt-army")
+# The 0.3.1 core identifies an Agent Army install; the product skills joined in 0.4.0.
+CORE_SKILLS = ("bootstrap", "ship", "new-agent", "new-skill", "adapt-army")
+PRODUCT_SKILLS = (
+    "product",
+    "product-strategy",
+    "product-red-team",
+    "market-research",
+    "business-case",
+    "validate-product",
+    "product-spec",
+    "solution-architecture",
+    "delivery-plan",
+    "go-to-market",
+    "product-metrics",
+    "ux-review",
+    "legal-review",
+    "launch-readiness",
+)
+SKILLS = CORE_SKILLS + PRODUCT_SKILLS
 RUNTIME_TARGETS = {"claude", "codex", "cursor", "copilot", "gemini", "windsurf"}
 AGENT_TARGETS = {"claude", "codex", "cursor", "copilot", "opencode", "gemini"}
 NATIVE_AGENT_TARGETS = {"claude", "codex", "cursor", "copilot", "gemini"}
 ALL_TARGETS = AGENT_TARGETS | {"windsurf"}
-PACKAGE_VERSION = "0.3.1"
+PACKAGE_VERSION = "0.4.0"
 PROFILE_SCHEMA_VERSION = 2
 OWNERSHIP_MARKER = "# agent-army-owned"
 MANAGED_ROUTER_START = "<!-- agent-army:feedback-router:start -->"
 MANAGED_ROUTER_END = "<!-- agent-army:feedback-router:end -->"
 LOCAL_AGENT_SOURCE_DIR = ".agent-army/agents"
+# User-owned files the generator never writes, in any mode.
+PRESERVED_PATHS = (".agent-army/stores.json",)
 APM_AGENT_STAGING_DIR = ".apm/agents"
 APM_AGENT_SUFFIX = ".agent.md"
 LOCAL_AGENT_SUFFIX = ".agent"
@@ -146,6 +166,8 @@ def is_tracked(root: Path, path: Path) -> bool:
 
 
 def write_text(path: Path, content: str, dry_run: bool) -> None:
+    if any(path.resolve() == (ROOT / preserved).resolve() for preserved in PRESERVED_PATHS):
+        raise RuntimeError(f"refusing to write user-owned {path.relative_to(ROOT)}")
     print(f"{'plan' if dry_run else '+'} {path.relative_to(ROOT)}")
     if dry_run:
         return
@@ -466,7 +488,12 @@ def skills_dir(target: str) -> str:
 
 
 def is_agent_army_skills(path: Path) -> bool:
-    return all((path / skill / "SKILL.md").is_file() for skill in SKILLS) and (path / "bootstrap/bootstrap.py").is_file()
+    """Recognise any Agent Army install, including a 0.3.1 one without product skills."""
+    return all((path / skill / "SKILL.md").is_file() for skill in CORE_SKILLS) and (path / "bootstrap/bootstrap.py").is_file()
+
+
+def has_all_skills(path: Path) -> bool:
+    return all((path / skill / "SKILL.md").is_file() for skill in SKILLS)
 
 
 def skill_source_candidates(root: Path, target: str) -> list[Path]:
@@ -491,22 +518,32 @@ def skill_source_candidates(root: Path, target: str) -> list[Path]:
     return unique
 
 
-def materialize_skills(root: Path, target: str, dry_run: bool) -> None:
+def materialize_skills(root: Path, target: str, dry_run: bool) -> dict[str, Path]:
+    """Copy missing package skills; return each planned or copied skill's source dir."""
     destination = root / skills_dir(target)
-    if is_agent_army_skills(destination):
-        return
-    source = next((path for path in skill_source_candidates(root, target) if is_agent_army_skills(path)), None)
-    if source is None or source.resolve() == destination.resolve():
-        return
+    if is_agent_army_skills(destination) and has_all_skills(destination):
+        return {}
+    sources = [
+        path
+        for path in skill_source_candidates(root, target)
+        if is_agent_army_skills(path) and path.resolve() != destination.resolve()
+    ]
+    # Prefer a complete package over an older cache; copy only missing skills.
+    source = next((path for path in sources if has_all_skills(path)), sources[0] if sources else None)
+    if source is None:
+        return {}
+    added: dict[str, Path] = {}
     for skill in SKILLS:
         src = source / skill
         dst = destination / skill
         if not src.is_dir() or dst.exists():
             continue
         print(f"{'plan' if dry_run else '+'} {dst.relative_to(ROOT)}")
+        added[skill] = src
         if not dry_run:
             destination.mkdir(parents=True, exist_ok=True)
             shutil.copytree(src, dst)
+    return added
 
 
 def sha256_file(path: Path) -> str:
@@ -565,6 +602,11 @@ def print_upgrade_review(
                 print(f"  {prefix} {label}: {', '.join(values)}")
     if not has_inventory_delta(delta):
         print("  package delta: no changed live package material detected")
+    for name in delta["templates"]["changed"]:
+        role = re.fullmatch(r"bootstrap/baseline/core/agents/([a-z-]+)\.md", name)
+        if role and role.group(1) in ROLES:
+            local = f"{LOCAL_AGENT_SOURCE_DIR}/agent-army-{role.group(1)}{LOCAL_AGENT_SUFFIX}"
+            print(f"  recommended local diff: {name} -> {local} (merge into the specialization, never replace it)")
     print("  inspect before recommending a local diff: .agents/skills, AGENTS.md, .agent-army/agents")
     print("  decision: apply selected | apply all | show details | skip")
 
@@ -838,7 +880,7 @@ def main() -> int:
     if bootstrap_mode == "incremental":
         print(f"\nAgent Army incremental migration plan: {from_version or 'legacy profile'} -> {PACKAGE_VERSION}")
         print("  apply: AGENTS.md managed feedback-router block; package metadata; inventory refresh")
-        print("  preserve: .agent-army/agents, model routing, quality policy and external controls")
+        print("  preserve: .agent-army/agents, .agent-army/stores.json, model routing, quality policy and external controls")
         print("  local role contracts: add the new planning roles only when the upgrade review is applied")
         conflicts = apply_incremental_changes(ROOT, args.target, args.dry_run)
         if conflicts:
@@ -871,8 +913,13 @@ def main() -> int:
     if args.target == "opencode" and selections["runtime_hooks"] == "army":
         selections["runtime_hooks"] = "blocked"
 
-    materialize_skills(ROOT, args.target, args.dry_run)
+    planned_skills = materialize_skills(ROOT, args.target, args.dry_run)
     inventory = package_inventory(ROOT)
+    if args.dry_run:
+        # Preview the review the real run will show once the missing skills are copied.
+        for skill, src in planned_skills.items():
+            if (src / "SKILL.md").is_file():
+                inventory["skills"][skill] = sha256_file(src / "SKILL.md")
     previous_package = previous.get("package") if isinstance(previous.get("package"), dict) else {}
     delta = inventory_delta(previous_package, inventory)
     if bootstrap_mode == "incremental":

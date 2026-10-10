@@ -6,24 +6,24 @@
 **Objective:** the generator registers 19 skills at 0.4.0. Checks enforce registry/skill/wrapper agreement and the sourcing rules. Smoke proves every target and a non-destructive, idempotent 0.3.1 → 0.4.0 upgrade. A real local APM install works.
 
 ## Execution State
-- **PR status:** planned
-- **Interaction policy:** unset — /ship asks once per PR before first execution
-- **Execution scope:** unset
-- **Scope Profile:** unset
-- **Model routing:** unset
-- **Last manual configuration:** unknown
-- **Current task:** none
+- **PR status:** review
+- **Interaction policy:** autonomous (user, 2026-10-10)
+- **Execution scope:** PR 7
+- **Scope Profile:** one PR; coordinator = highest unfinished task profile (`verification`); coordination `low`
+- **Model routing:** inherit (source repo has no `.agent-army/config.json`)
+- **Last manual configuration:** stay current
+- **Current task:** none (tasks 7.1–7.3 verified; independent review running)
 - **Temporary delegation:** none
-- **Active roles:** none
-- **Last verified stage:** planned
+- **Active roles:** code-reviewer, security-auditor (one independent read-only subagent)
+- **Last verified stage:** 7.1–7.3 verified (2026-10-10): `scripts/check.sh` 203 passed, 0 failed, 1 warning (5 advisors changed since their last eval); `scripts/check.sh --pack` 204/0/1, `apm pack` ok; `scripts/smoke.sh` 220/0 with `apm` 0.33.0 on PATH (scratch venv; gate 3 renders for real for the first time), 151/9 without `apm` (the 9 = gate 3, unchanged baseline). PR 6 accepted by the user ("lecimy dalej")
 - **Awaiting decision:** none
 
 ---
 
 ## Execution Progress
-- **Milestones:** unset
-- **Current milestone:** none
-- **Finish condition:** unset
+- **Milestones:** 1) registry, versions, upgrade (7.1) · 2) `check.sh` package rules (7.2) · 3) pack + real local install (7.3) · 4) closure
+- **Current milestone:** 4 of 4 (closure: independent review)
+- **Finish condition:** every task `done` with its Verification Command green, PR at `ready_for_human_review`
 - **Last map change:** none
 - **Deferred ideas:** none
 
@@ -36,7 +36,8 @@ none
 
 ### Task 7.1: Registry, versions, upgrade recommendation
 
-**Task status:** open
+**Task status:** in review — `SKILLS` = `CORE_SKILLS` (5) + `PRODUCT_SKILLS` (14), `PACKAGE_VERSION` 0.4.0, schema 2; detection on the core set, recovery prefers a complete source and copies only missing dirs; `PRESERVED_PATHS` makes `write_text` refuse `.agent-army/stores.json`; the review prints `recommended local diff: <template> -> <local contract>` per changed role template, and a dry run previews skills it would copy. RED `scripts/smoke.sh` 135/25 (5-skill registry, 0.3.1, no recommendation) → GREEN 151/9 without apm, 220/0 with apm (2026-10-10).
+**`/ship` before `/bootstrap` (for PR 8):** yes, n = 1. Scratch greenfield repo with only the 19 skills (`.agents/skills` + `.claude/skills`), `claude -p "/ship Slice W-1 walking skeleton …"`: it built the slice (RED test first, then GREEN, CLI prints, workflow YAML parses) with no `.agent-army/`, no config and no blueprint (the "small self-contained description" path). Caveat: turn 1 skipped the independent review/security pass ("no blueprint, ~15 lines"); after "approve, PR 1, Autonomous" turn 2 ran both and fixed the findings. Docs should say: the walking skeleton can go through `/ship` before `/bootstrap`; ask for the review explicitly.
 
 **Execution Profile:**
 - **Bottleneck:** verification
@@ -90,7 +91,7 @@ In `bootstrap.py`, set `SKILLS` to the 19 names, `PACKAGE_VERSION = "0.4.0"` and
 
 ### Task 7.2: `check.sh` package rules
 
-**Task status:** open
+**Task status:** in review — `check_package_rules` rules (a)–(f), one line each; never-evaluated advisors are listed as an info line, not a warning. Provoked in a scratch copy: missing wrapper, wrapper with a wrong path, registry drift, `npx skills add` in a skill, foreign `apm install someone/other-skills` in `README.md`, SOURCES row with `main` as commit, broken link → FAIL; edited advisor, 539-char description → WARN; the package's own `apm install psrebrny/agent-army` passes. `scripts/check.sh` 203/0/1 (2026-10-10).
 
 **Execution Profile:**
 - **Bottleneck:** verification
@@ -143,7 +144,7 @@ Add to `check.sh --skills`:
 
 ### Task 7.3: Pack and real local install
 
-**Task status:** open
+**Task status:** in review — `scripts/check.sh --pack` ok (bundle `build/agent-army-0.4.0`: `skills/` + `commands/`, no `SOURCES.md`). `apm install /home/user/agent-army --target <t>` (apm 0.33.0, local path) in fresh scratch repos: claude → 19 skills in `.claude/skills/`; opencode → 19 skills in `.agents/skills/`. Neither target receives the `.apm/commands` wrappers or `SOURCES.md`; both stay only in the `apm_modules/_local/agent-army` cache. Finding for PR 8: four skills say "see `SOURCES.md`" (`product-strategy`, `product-red-team`, `validate-product`, `legal-review`), a dangling pointer in an installed repo; the plan's assumption "attribution lines are already in each skill" holds only for `product-strategy` and `product-red-team` (repo named), partly for `validate-product` (authors, no repo), and not for `legal-review` or `go-to-market`. 7.3 may not write this repo, so nothing was changed.
 
 **Execution Profile:**
 - **Bottleneck:** verification

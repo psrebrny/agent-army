@@ -7,7 +7,7 @@
 ## Planning Session
 - **Mode:** interactive-complete
 - **Stage:** review
-- **Progress:** execution: PR 1 done; PRs 2–5 `ready_for_human_review` (PR 5: Task 5.2 closed without a run, external stores unproven against a real connector); PR 6 `ready_for_human_review` (S8 `rethink`: ADR correct, margin lost on resume/pace); PRs 7–8 `planned`. Planning finished at step 7 of 7; the independent plan review was never run.
+- **Progress:** execution: PR 1 done; PRs 2–5 `ready_for_human_review` (PR 5: Task 5.2 closed without a run, external stores unproven against a real connector); PR 6 `ready_for_human_review` (S8 `rethink`: ADR correct, margin lost on resume/pace; user continued to PR 7); PR 7 `review` (autonomous; 7.1–7.3 verified); PR 8 `planned`. Planning finished at step 7 of 7; the independent plan review was never run.
 - **Planning completion criteria:** every scope/sourcing/evaluation decision is recorded below; each PR file has contracts, write scope and verification; an independent review of revision 6 has no open blocking findings
 - **Current topic:** none
 - **Pending decision:** none
@@ -36,7 +36,7 @@
 - **Plan revision:** 11 (rev 10 → 11: D19 and Task 6.6, lighter `/ship` Interactive mode). Rev 9 → 10 ( D18 eval becomes a spot check; advisors written in batches, Autonomous). Rev 8 → 9 ( D17 removes the 120-line contract cap; size is reported, cost and quality are judged by `advisor-eval`). Rev 7 → 8 ( no separate baseline run; arm K runs with every advisor evaluation; Task 1.3 becomes a policy). Rev 6 → 7 ( D16 collaborative pace for every skill, carried by the advisor contract, `/ship` and the baseline `AGENTS.md`; `pace` as the 9th eval criterion with a simulated user; Task 6.5). Rev 5 → 6 ( from the user's PR review: D13 says the user decides and the architect aims for autonomous-ready tasks without biasing the profile; D14 English status vocabulary; D15 no capability/deliberation at planning; planning-levels table; D6 removed; Task 6.4). Rev 4 → 5: D13 mode recommendation in `/ship`, Task 6.3. Rev 3 → 4: `solution-architecture` + `delivery-plan`, record types + `stores.json` seam, 12-stage model, product-spec stories feed `delivery-plan`, 19 skills, PRs renumbered 1–8. Rev 2 → 3: `/product` navigator with a stage model, `product-spec`, pricing/formalities/post-launch extensions, handoff status loop, 17 skills, PRs renumbered 1–7. Rev 1 → 2: +3 advisors, shared contract, ADR model, evaluation skill, `/ship` boundary.
 - **Review:** pending (user approved revision 6 without an independent review; revision 7 not reviewed)
 - **Last confirmed action:** user asked that every skill reach results together in ~30 s steps instead of walls of text (D16)
-- **Next action:** user reviews PR 6 (new Interactive flow in `/ship`), then PR 7 (packaging + upgrade)
+- **Next action:** finish PR 7 (packaging + upgrade), then the user reviews it
 
 ## 1. Background
 Agent Army 0.3.1 ships five skills (`bootstrap`, `ship`, `new-agent`, `new-skill`, `adapt-army`). Its roles cover engineering only. Product work (who buys, why, at what price, how it is marketed, legal exposure and launch readiness) has no support. `.apm/README.md` already contains a draft catalog of seven proposed advisors.

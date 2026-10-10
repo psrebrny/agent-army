@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deterministic v0.3 smoke tests.  They intentionally exercise the generator
+# Deterministic v0.4 smoke tests.  They intentionally exercise the generator
 # without APM network/install state; the generator itself owns the frozen APM
 # handoff in normal bootstrap mode.
 set -uo pipefail
@@ -10,7 +10,7 @@ bad(){ printf '  \033[31m✗\033[0m %s\n' "$1"; FAIL=$((FAIL+1)); }
 need(){ "$@" >/dev/null 2>&1 && ok "$2" || bad "$2"; }
 
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/agent-army-v2.XXXXXX")"
-cleanup(){ rm -rf "$WORK"; }
+cleanup(){ [ -n "${KEEP_WORK:-}" ] && echo "kept $WORK" || rm -rf "$WORK"; }
 trap cleanup EXIT
 init_repo(){
   local dir="$1"
@@ -48,6 +48,45 @@ PY
   fi
 }
 
+PACKAGE_SKILLS="bootstrap ship new-agent new-skill adapt-army product product-strategy product-red-team market-research business-case validate-product product-spec solution-architecture delivery-plan go-to-market product-metrics ux-review legal-review launch-readiness"
+PRODUCT_SKILLS="${PACKAGE_SKILLS#bootstrap ship new-agent new-skill adapt-army }"
+all_skills_present(){
+  local dir="$1" skill
+  for skill in $PACKAGE_SKILLS; do [ -f "$dir/.agents/skills/$skill/SKILL.md" ] || return 1; done
+}
+no_advisor_agents(){
+  # Product skills are skills only: no role contract, APM staging or native
+  # agent/role-skill output may carry a product skill name.
+  local dir="$1" skill
+  for skill in $PRODUCT_SKILLS; do
+    if find "$dir" \( -path "$dir/.git" -o -path "$dir/apm_modules" \) -prune \
+      -o \( -path "*/agents/*$skill*" -o -path "*/agent/*$skill*" -o -name "agent-army-$skill*" \) -print 2>/dev/null | grep -q .; then return 1; fi
+  done
+}
+tree_digest(){
+  (cd "$1" && find . -path ./.git -prune -o -type f -print | LC_ALL=C sort | xargs sha256sum | sha256sum)
+}
+# Turn a fresh 0.4.0 profile into the shape a 0.3.1 install leaves behind:
+# the five core skills, package version 0.3.1, a hash-only inventory without
+# the product skills, and the pre-ADR docs-writer template digest.
+downgrade_to_031(){
+  local dir="$1" skill
+  for skill in $PRODUCT_SKILLS; do rm -rf "$dir/.agents/skills/$skill"; done
+  python3 - "$dir" $PRODUCT_SKILLS <<'PY'
+import json, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+path = root / '.agent-army/config.json'
+data = json.loads(path.read_text())
+package = data['package']
+package['version'] = '0.3.1'
+package.pop('upgrade_review', None)
+for skill in sys.argv[2:]:
+    package['inventory']['skills'].pop(skill, None)
+package['inventory']['templates']['bootstrap/baseline/core/agents/docs-writer.md'] = '0' * 64
+path.write_text(json.dumps(data, indent=2) + '\n')
+PY
+}
+
 printf '\n\033[1mGATE 0 · profile generation for every target\033[0m\n'
 for target in claude codex cursor copilot opencode gemini windsurf; do
   dir="$WORK/$target"; init_repo "$dir"
@@ -80,6 +119,8 @@ PY
   fi
   grep -q '## Execution Progress' "$progress_agent" && grep -q 'Temporary delegation' "$progress_agent" \
     && ok "$target: resumable interactive contract present" || bad "$target: interactive contract missing"
+  all_skills_present "$dir" && ok "$target: all 19 package skills present" || bad "$target: package skills missing"
+  no_advisor_agents "$dir" && ok "$target: no agent output for product skills" || bad "$target: product skill rendered as an agent"
   "$ROOT/scripts/check.sh" --target-dir "$dir" >/dev/null 2>&1 && ok "$target: profile validates" || bad "$target: profile validation failed"
 done
 
@@ -102,7 +143,7 @@ MIG="$WORK/cache-migration"; init_repo "$MIG"
 mkdir -p "$MIG/apm_modules/psrebrny/agent-army/.apm"
 cp -R "$ROOT/.apm/skills" "$MIG/apm_modules/psrebrny/agent-army/.apm/"
 (cd "$MIG" && python3 apm_modules/psrebrny/agent-army/.apm/skills/bootstrap/bootstrap.py opencode --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null 2>&1)
-[ -f "$MIG/.agents/skills/ship/SKILL.md" ] && [ -f "$MIG/.agents/skills/new-skill/SKILL.md" ] \
+all_skills_present "$MIG" \
   && ok "cache migration: all skills materialized to .agents/skills" || bad "cache migration: skills not materialized"
 [ -f "$MIG/.agent-army/agents/agent-army-architect.agent" ] \
   && [ ! -f "$MIG/.opencode/agents/agent-army-architect.md" ] \
@@ -171,12 +212,12 @@ printf '# Existing repo specialization\n' > "$UPGRADE/AGENTS.md"
 printf '\n# PROFILE-SPECIALIZATION\n' >> "$UPGRADE/.agent-army/agents/agent-army-architect.agent"
 legacy_profile "$UPGRADE/.agent-army/config.json"
 (cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --dry-run --skip-apm > "$WORK/upgrade-plan.txt")
-grep -q 'legacy profile -> 0.3.1' "$WORK/upgrade-plan.txt" && ok "unversioned profile gets an incremental plan" || bad "incremental plan missing"
+grep -q 'legacy profile -> 0.4.0' "$WORK/upgrade-plan.txt" && ok "unversioned profile gets an incremental plan" || bad "incremental plan missing"
 grep -q 'Incremental Upgrade Review' "$WORK/upgrade-plan.txt" && grep -q 'new-skill' "$WORK/upgrade-plan.txt" && ok "unversioned profile previews package capabilities" || bad "upgrade review missing capabilities"
 grep -q 'agent-army:feedback-router:start' "$UPGRADE/AGENTS.md" && bad "incremental dry-run changed AGENTS.md" || ok "incremental dry-run preserves AGENTS.md"
 (cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --upgrade-review-outcome applied --skip-apm >/dev/null)
 grep -q 'agent-army:feedback-router:start' "$UPGRADE/AGENTS.md" && ok "incremental migration adds managed feedback router" || bad "feedback router missing after migration"
-grep -q '"version": "0.3.1"' "$UPGRADE/.agent-army/config.json" && ok "incremental migration records package version" || bad "package version not recorded"
+grep -q '"version": "0.4.0"' "$UPGRADE/.agent-army/config.json" && ok "incremental migration records package version" || bad "package version not recorded"
 grep -q '"inventory"' "$UPGRADE/.agent-army/config.json" && grep -q '"upgrade_review"' "$UPGRADE/.agent-army/config.json" && ok "incremental migration records hash-only inventory and review" || bad "incremental inventory or review missing"
 grep -q 'PROFILE-SPECIALIZATION' "$UPGRADE/.agent-army/agents/agent-army-architect.agent" && ok "incremental update preserves specialized agent" || bad "incremental update overwrote specialized agent"
 count="$(grep -c 'agent-army:feedback-router:start' "$UPGRADE/AGENTS.md")"
@@ -243,12 +284,50 @@ if (cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" codex --
 else
   ok "target switch requires full bootstrap"
 fi
-sed -i.bak 's/"version": "0.3.1"/"version": "9.0.0"/' "$UPGRADE/.agent-army/config.json"; rm -f "$UPGRADE/.agent-army/config.json.bak"
+sed -i.bak 's/"version": "0.4.0"/"version": "9.0.0"/' "$UPGRADE/.agent-army/config.json"; rm -f "$UPGRADE/.agent-army/config.json.bak"
 if (cd "$UPGRADE" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --skip-apm) >/dev/null 2>&1; then
   bad "newer profile downgrade was allowed"
 else
   ok "newer profile downgrade is blocked"
 fi
+
+printf '\n\033[1mGATE 1.6 · upgrade from 0.3.1 to 0.4.0\033[0m\n'
+STORES='{"stores":{"work_items":{"kind":"local"}}}'
+UP031="$WORK/upgrade-031"; init_repo "$UP031"
+mkdir -p "$UP031/.agent-army"; printf '%s\n' "$STORES" > "$UP031/.agent-army/stores.json"
+cp "$UP031/.agent-army/stores.json" "$WORK/stores-before.json"
+bootstrap "$UP031" opencode --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null
+cmp -s "$WORK/stores-before.json" "$UP031/.agent-army/stores.json" && ok "first bootstrap leaves stores.json byte-identical" || bad "first bootstrap changed stores.json"
+downgrade_to_031 "$UP031"
+printf '\n# LOCAL-DOCS-WRITER-SPECIALIZATION\n' >> "$UP031/.agent-army/agents/agent-army-docs-writer.agent"
+cp -R "$UP031" "$WORK/upgrade-031-apply"
+cp -R "$UP031/.agent-army/agents" "$WORK/agents-031-before"
+(cd "$UP031" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --dry-run --skip-apm > "$WORK/upgrade-031-plan.txt")
+grep -q '0.3.1 -> 0.4.0' "$WORK/upgrade-031-plan.txt" && ok "0.3.1 profile gets an incremental 0.4.0 plan" || bad "0.3.1 -> 0.4.0 plan missing"
+missing_new=""
+for skill in $PRODUCT_SKILLS; do grep -q "new skills:.*\b$skill\b" "$WORK/upgrade-031-plan.txt" || missing_new="$missing_new $skill"; done
+[ -z "$missing_new" ] && ok "upgrade review lists the 14 product skills as new capabilities" || bad "upgrade review misses new skills:$missing_new"
+grep -q 'recommended local diff: .*docs-writer.md -> .agent-army/agents/agent-army-docs-writer.agent' "$WORK/upgrade-031-plan.txt" \
+  && ok "upgrade review recommends merging the docs-writer change into the local contract" || bad "docs-writer recommendation missing"
+(cd "$UP031" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --upgrade-review-outcome skipped --skip-apm >/dev/null)
+all_skills_present "$UP031" && ok "0.3.1 upgrade adds the 14 missing skills" || bad "0.3.1 upgrade did not add the missing skills"
+diff -r "$WORK/agents-031-before" "$UP031/.agent-army/agents" >/dev/null \
+  && ok "skipped upgrade leaves every local role contract byte-identical" || bad "skipped upgrade changed local role contracts"
+cmp -s "$WORK/stores-before.json" "$UP031/.agent-army/stores.json" && ok "upgrade leaves stores.json byte-identical" || bad "upgrade changed stores.json"
+grep -q '"version": "0.4.0"' "$UP031/.agent-army/config.json" \
+  && grep -A2 '"upgrade_review"' "$UP031/.agent-army/config.json" | grep -q '"status": "skipped"' \
+  && ok "upgrade records 0.4.0 and the skipped review" || bad "upgrade version or skipped review not recorded"
+before="$(tree_digest "$UP031")"
+(cd "$UP031" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --skip-apm > "$WORK/upgrade-031-second.txt" 2>&1)
+[ "$before" = "$(tree_digest "$UP031")" ] && grep -q 'profile is current' "$WORK/upgrade-031-second.txt" \
+  && ok "second 0.4.0 run is a no-op" || bad "second 0.4.0 run wrote files"
+bootstrap "$UP031" opencode --mode full >/dev/null
+cmp -s "$WORK/stores-before.json" "$UP031/.agent-army/stores.json" && ok "--mode full leaves stores.json byte-identical" || bad "--mode full changed stores.json"
+UP031_APPLY="$WORK/upgrade-031-apply"
+(cd "$UP031_APPLY" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --upgrade-review-outcome applied --skip-apm >/dev/null)
+grep -A2 '"upgrade_review"' "$UP031_APPLY/.agent-army/config.json" | grep -q '"status": "applied"' \
+  && grep -q 'LOCAL-DOCS-WRITER-SPECIALIZATION' "$UP031_APPLY/.agent-army/agents/agent-army-docs-writer.agent" \
+  && ok "applied upgrade records the outcome and keeps the docs-writer specialization" || bad "applied upgrade outcome or specialization missing"
 
 printf '\n\033[1mGATE 2 · runtime safety\033[0m\n'
 SAFE="$WORK/safety"; init_repo "$SAFE"
@@ -304,8 +383,8 @@ for target in claude codex cursor copilot opencode gemini windsurf; do
     gemini) agent="$dir/.gemini/agents/agent-army-architect.md" ;;
     windsurf) agent="$dir/.windsurf/skills/agent-army-architect/SKILL.md" ;;
   esac
-  [ -f "$dir/.agents/skills/ship/SKILL.md" ] && [ -f "$dir/.agents/skills/new-skill/SKILL.md" ] \
-    && ok "$target: five shared skills present" || bad "$target: shared skills missing"
+  all_skills_present "$dir" && ok "$target: all 19 package skills present" || bad "$target: package skills missing"
+  no_advisor_agents "$dir" && ok "$target: no agent output for product skills" || bad "$target: product skill rendered as an agent"
   if [ "$target" = opencode ]; then
     [ -f "$dir/.agent-army/agents/agent-army-architect.agent" ] \
       && ok "$target: main-thread role contract available" \

@@ -525,7 +525,7 @@ PY_CONTRACT
 }
 
 # The product skills (13 advisors + the /product navigator) share one contract block.
-# One list; completeness (all present) is asserted by the registry check, not here.
+# One list; completeness (all present) is asserted by check_package_rules (registry), not here.
 PRODUCT_SKILLS="product-strategy product-red-team market-research business-case validate-product \
 product-spec solution-architecture delivery-plan go-to-market product-metrics ux-review legal-review \
 launch-readiness product"
@@ -668,6 +668,175 @@ PY_ADR
   fi
 }
 
+# Package rules (PR 7, Task 7.2). Each rule prints one ok/bad/warn line:
+# (a) registry: bootstrap.py SKILLS == .apm/skills dirs == .apm/commands wrappers, each wrapper
+#     pointing at .agents/skills/<name>/SKILL.md, and the product list here == PRODUCT_SKILLS there;
+# (b) no third-party install guidance (npx skills, /plugin install, apm install of another package);
+# (c) every .apm/SOURCES.md row names repo, file, a 7+ hex commit and a license;
+# (d) WARN for a product-skill description over 300 chars;
+# (e) relative links in .apm/README.md and the product skills resolve;
+# (f) WARN when a product skill's SKILL.md hash or contract tag differs from its latest SCORECARDS row.
+check_package_rules() {
+  local out line
+  out="$(python3 - "$ROOT" $PRODUCT_SKILLS 2>&1 <<'PY_PACKAGE'
+import ast, hashlib, pathlib, re, sys
+root = pathlib.Path(sys.argv[1]); product = sys.argv[2:]
+apm = root / '.apm'
+
+def emit(kind, msg):
+    print(f'{kind}\t{msg}')
+
+# (a) registry agreement
+names = {}
+for node in ast.parse((apm / 'skills/bootstrap/bootstrap.py').read_text()).body:
+    if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+        target = node.targets[0].id
+        if target in {'CORE_SKILLS', 'PRODUCT_SKILLS', 'SKILLS'}:
+            value = node.value
+            if isinstance(value, ast.BinOp) and isinstance(value.op, ast.Add):
+                names[target] = names[value.left.id] + names[value.right.id]
+            else:
+                names[target] = tuple(ast.literal_eval(value))
+registry = set(names.get('SKILLS', ()))
+dirs = {d.name for d in (apm / 'skills').iterdir() if (d / 'SKILL.md').is_file()}
+wrappers = {f.stem for f in (apm / 'commands').glob('*.md')}
+errors = []
+if len(registry) != len(names.get('SKILLS', ())):
+    errors.append('SKILLS has duplicates')
+for label, other in (('.apm/skills dirs', dirs), ('.apm/commands wrappers', wrappers)):
+    if other != registry:
+        errors.append(f'SKILLS vs {label}: missing {sorted(registry - other)}, extra {sorted(other - registry)}')
+for name in sorted(wrappers):
+    if f'.agents/skills/{name}/SKILL.md' not in (apm / 'commands' / f'{name}.md').read_text():
+        errors.append(f'wrapper {name}.md does not point at .agents/skills/{name}/SKILL.md')
+if set(product) != set(names.get('PRODUCT_SKILLS', ())):
+    errors.append(f'check.sh PRODUCT_SKILLS {sorted(product)} != bootstrap.py PRODUCT_SKILLS')
+if errors:
+    emit('BAD', 'registry: ' + '; '.join(errors))
+else:
+    emit('OK', f'registry: {len(registry)} skills = dirs = wrappers, each wrapper points at its skill')
+
+# (b) no third-party install guidance
+own = 'psrebrny/agent-army'
+files = [f for f in apm.rglob('*') if f.is_file() and f.suffix in {'.md', '.py', '.yml', '.yaml', '.json', '.sh'}]
+files.append(root / 'README.md')
+hits = []
+for f in files:
+    for no, text in enumerate(f.read_text(errors='ignore').splitlines(), 1):
+        where = f'{f.relative_to(root)}:{no}'
+        if re.search(r'npx\s+skills\b', text) or re.search(r'/plugin\s+install\b', text):
+            hits.append(where)
+        for span in re.findall(r'apm\s+install\b([^`"\'\n]*)', text):
+            for token in span.split():
+                pkg = token.split('@')[0].split('#')[0]
+                if re.fullmatch(r'[A-Za-z0-9_][\w.-]*/[\w./-]+', pkg) and pkg != own:
+                    hits.append(f'{where} ({pkg})')
+if hits:
+    emit('BAD', 'third-party install guidance: ' + ', '.join(hits))
+else:
+    emit('OK', f'no third-party install guidance (only apm install {own})')
+
+# (c) SOURCES.md rows
+sources = apm / 'SOURCES.md'
+bad_rows, rows = [], 0
+if not sources.is_file():
+    bad_rows.append('.apm/SOURCES.md missing')
+else:
+    lines = sources.read_text().splitlines()
+    table = [l for l in lines if l.startswith('|')]
+    for line in table[2:]:
+        rows += 1
+        cells = [c.strip() for c in line.strip('|').split('|')]
+        parts = re.findall(r'`([^`]+)`', cells[1]) if len(cells) > 2 else []
+        license_ok = len(cells) > 2 and cells[2] not in {'', '-', '?'}
+        ok = (len(parts) == 3 and re.fullmatch(r'[\w.-]+/[\w.-]+', parts[0])
+              and parts[1] and re.fullmatch(r'[0-9a-f]{7,40}', parts[2]) and license_ok)
+        if not ok:
+            bad_rows.append(f'row {rows}: {cells[0][:50] if cells else line[:50]}')
+    if rows == 0:
+        bad_rows.append('no attribution rows')
+if bad_rows:
+    emit('BAD', 'SOURCES.md rows need repo · file · commit (7+ hex) and a license: ' + '; '.join(bad_rows))
+else:
+    emit('OK', f'SOURCES.md: {rows} rows with repo, file, commit and license')
+
+def frontmatter(path):
+    m = re.match(r'---\n(.*?)\n---', path.read_text(), re.S)
+    return m.group(1) if m else ''
+
+# (d) description length
+long = []
+for name in product:
+    f = apm / 'skills' / name / 'SKILL.md'
+    if not f.is_file():
+        continue
+    m = re.search(r'^description:\s*(.*)$', frontmatter(f), re.M)
+    desc = m.group(1).strip().strip('"\'') if m else ''
+    if len(desc) > 300:
+        long.append(f'{name} ({len(desc)})')
+if long:
+    emit('WARN', 'product-skill description over 300 chars: ' + ', '.join(long))
+else:
+    emit('OK', 'product-skill descriptions are at most 300 chars')
+
+# (e) relative links resolve
+broken, checked = [], 0
+docs = [apm / 'README.md'] + [apm / 'skills' / n / 'SKILL.md' for n in product]
+for f in docs:
+    if not f.is_file():
+        continue
+    text = re.sub(r'```.*?```', '', f.read_text(), flags=re.S)
+    for target in re.findall(r'\]\(([^)\s]+)(?:\s+"[^"]*")?\)', text):
+        if re.match(r'[a-z][a-z0-9+.-]*:', target) or target.startswith('#'):
+            continue
+        checked += 1
+        path = target.split('#')[0]
+        if not (f.parent / path).exists():
+            broken.append(f'{f.relative_to(root)} -> {target}')
+if broken:
+    emit('BAD', 'broken relative links: ' + ', '.join(broken))
+else:
+    emit('OK', f'relative links resolve ({checked} in .apm/README.md and product skills)')
+
+# (f) eval staleness against SCORECARDS.md
+ledger = root / 'tests/fixtures/advisors/SCORECARDS.md'
+latest = {}
+if ledger.is_file():
+    for line in ledger.read_text().splitlines():
+        cells = [c.strip() for c in line.strip().strip('|').split('|')]
+        if len(cells) >= 4 and re.fullmatch(r'\d{4}-\d{2}-\d{2}', cells[0]):
+            latest[cells[1]] = (cells[2], cells[3])
+changed, unevaluated = [], []
+for name in product:
+    f = apm / 'skills' / name / 'SKILL.md'
+    if not f.is_file():
+        continue
+    data = f.read_bytes()
+    m = re.search(r'<!-- (advisor-contract:v\d+) -->', data.decode())
+    tag = m.group(1) if m else '-'
+    if name not in latest:
+        unevaluated.append(name)
+    elif latest[name] != (tag, hashlib.sha256(data).hexdigest()[:12]):
+        changed.append(name)
+if changed:
+    emit('WARN', 'advisor changed since last eval; run advisor-eval: ' + ', '.join(changed))
+else:
+    emit('OK', 'evaluated advisors match their latest SCORECARDS row')
+if unevaluated:
+    emit('INFO', 'no SCORECARDS row yet: ' + ', '.join(unevaluated))
+PY_PACKAGE
+)"
+  while IFS=$'\t' read -r kind line; do
+    case "$kind" in
+      OK) ok "$line" ;;
+      BAD) bad "$line" ;;
+      WARN) warn "$line" ;;
+      INFO) printf '    %s\n' "$line" ;;
+      *) [ -n "$kind$line" ] && bad "package rules: $kind $line" ;;
+    esac
+  done <<<"$out"
+}
+
 # --- argument routing -------------------------------------------------------
 do_agents=1; do_skills=1; do_pack=0; filters=()
 for a in "$@"; do
@@ -717,6 +886,8 @@ if [ "$do_skills" = 1 ] && [ -z "$TARGET_DIR" ]; then
   check_advisor_contract
   check_interaction_pace
   check_adr_parity
+  printf '\n\033[1m• package rules\033[0m\n'
+  check_package_rules
 fi
 if [ "$do_pack" = 1 ]; then
   printf '\n\033[1m• package (apm)\033[0m\n'
