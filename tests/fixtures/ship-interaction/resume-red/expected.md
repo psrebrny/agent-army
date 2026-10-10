@@ -7,5 +7,6 @@ acceptance card as `task plan` (D19) with its RED evidence and scope; do not re-
 before the user's response; after it, continue to implementation and stop at task review. If rerunning, report its actual behavioral failure, not fabricated output.
 
 Legacy statuses (D14): this PR file keeps the 0.3.1 Polish values on purpose. Read Task 1.1 `w trakcie`
-as `in progress` and Task 1.2 `do zrobienia` as `open`; do not ask about them. The next write to a task
-uses the English value (Task 1.1 stays `in progress`); the other task is not rewritten until it is touched.
+as `in progress` and Task 1.2 `do zrobienia` as `open`; do not ask about them. Every status written from
+now on is English and follows the normal mapping (Task 1.1 becomes `in review` after GREEN). Rewriting an
+untouched task's legacy value to its English equivalent is fine; any other change to that task is not.
