@@ -546,26 +546,41 @@ def skill_digests(skills_root: Path, skill: str) -> dict[str, str]:
     return digests
 
 
-def recorded_digests(previous_inventory: dict[str, Any], skill: str) -> dict[str, str]:
-    """The digests the last bootstrap recorded for one skill, in skill_digests' shape."""
-    skills = previous_inventory.get("skills") if isinstance(previous_inventory.get("skills"), dict) else {}
-    templates = previous_inventory.get("templates") if isinstance(previous_inventory.get("templates"), dict) else {}
-    recorded = {skill: skills[skill]} if skill in skills else {}
-    if skill == "bootstrap":
-        recorded.update({name: digest for name, digest in templates.items() if name.startswith("bootstrap/baseline/")})
-    return recorded
+def known_package_digests() -> dict[str, set[str]]:
+    """File digests of earlier released packages (package-manifests/*.json), keyed by skill-relative path."""
+    known: dict[str, set[str]] = {}
+    for manifest in sorted((HERE / "package-manifests").glob("*.json")):
+        try:
+            files = json.loads(manifest.read_text(encoding="utf-8")).get("files", {})
+        except (OSError, ValueError):
+            continue
+        for rel, digest in files.items():
+            known.setdefault(rel, set()).add(digest)
+    return known
+
+
+def tree_digests(skill_dir: Path) -> dict[str, str] | None:
+    """Digest every regular file under a skill dir; None if it contains a symlink."""
+    digests: dict[str, str] = {}
+    for path in sorted(skill_dir.rglob("*")):
+        if path.is_symlink():
+            return None
+        if path.is_file():
+            digests[str(path.relative_to(skill_dir))] = sha256_file(path)
+    return digests
 
 
 def materialize_skills(
     root: Path, target: str, dry_run: bool, previous_inventory: dict[str, Any] | None = None
 ) -> tuple[dict[str, Path], list[str]]:
-    """Copy missing package skills and refresh unmodified older package copies.
+    """Copy missing package skills and refresh unmodified older package files.
 
-    Returns each planned or copied skill's source dir, and the skills kept because they
-    differ from both the running package and the recorded inventory (local changes).
+    A file in `.agents/skills` is overwritten only when its content equals that file in a known
+    released package (package-manifests) or is missing; nothing is ever deleted. A skill with any
+    file that matches neither the running package nor a known release (a local change), or with a
+    symlink, is kept whole and returned as a conflict.
     """
     destination = root / skills_dir(target)
-    previous_inventory = previous_inventory or {}
     added: dict[str, Path] = {}
     kept: list[str] = []
     # The running generator's own package is the newest source (for Claude, apm updates
@@ -576,23 +591,32 @@ def materialize_skills(
         and has_all_skills(package)
         and package.resolve() != destination.resolve()
     ):
+        known = known_package_digests()
         for skill in SKILLS:
             dst = destination / skill
-            if not dst.is_dir():
+            if not dst.exists() and not dst.is_symlink():
                 continue
-            current = skill_digests(destination, skill)
-            if current == skill_digests(package, skill):
-                continue
-            if current and current == recorded_digests(previous_inventory, skill):
-                # An unmodified copy of the previous package: refresh it to this version.
-                print(f"{'plan' if dry_run else 'refresh'} {dst.relative_to(ROOT)} (unmodified package copy)")
-                added[skill] = package / skill
-                if not dry_run:
-                    shutil.rmtree(dst)
-                    shutil.copytree(package / skill, dst)
-            else:
-                print(f"kept {dst.relative_to(ROOT)} (local changes; not refreshed)")
+            live = None if dst.is_symlink() or not dst.is_dir() else tree_digests(dst)
+            wanted = tree_digests(package / skill) or {}
+            if live is None:
+                print(f"kept {dst.relative_to(ROOT)} (symlink; not refreshed)")
                 kept.append(skill)
+                continue
+            writes = [rel for rel, digest in wanted.items() if live.get(rel) != digest]
+            if not writes:
+                continue
+            local = [rel for rel in writes if rel in live and live[rel] not in known.get(f"{skill}/{rel}", set())]
+            if local:
+                print(f"kept {dst.relative_to(ROOT)} (local changes in {', '.join(local[:3])}; not refreshed)")
+                kept.append(skill)
+                continue
+            print(f"{'plan' if dry_run else 'refresh'} {dst.relative_to(ROOT)} (unmodified package files: {len(writes)})")
+            added[skill] = package / skill
+            if not dry_run:
+                for rel in writes:
+                    target_file = dst / rel
+                    target_file.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(package / skill / rel, target_file)
     if is_agent_army_skills(destination) and has_all_skills(destination):
         return added, kept
     sources = [
@@ -675,7 +699,7 @@ def print_upgrade_review(
     if not has_inventory_delta(delta):
         print("  package delta: no changed live package material detected")
     if kept_skills:
-        print(f"  conflict: local changes kept, not refreshed to {PACKAGE_VERSION}: {', '.join(kept_skills)} (merge by hand or delete to refresh)")
+        print(f"  conflict: local changes kept, not refreshed to {PACKAGE_VERSION}: {', '.join(kept_skills)} (merge by hand, or move the dir away to receive the package copy)")
     for name in delta["templates"]["changed"]:
         role = re.fullmatch(r"bootstrap/baseline/core/agents/([a-z-]+)\.md", name)
         if role and role.group(1) in ROLES:
@@ -931,6 +955,7 @@ def main() -> int:
     except ValueError as exc:
         parser.error(str(exc))
     restage_only = False
+    profile_change_only = False
     if bootstrap_mode == "current":
         if needs_package_maintenance(previous, ROOT):
             bootstrap_mode = "incremental"
@@ -947,6 +972,7 @@ def main() -> int:
             return 0
         else:
             bootstrap_mode = "full"
+            profile_change_only = True
             print("Agent Army package is current; applying explicitly requested profile configuration changes.")
     if bootstrap_mode == "incremental" and not args.dry_run and args.upgrade_review_outcome is None:
         print(
@@ -1016,7 +1042,7 @@ def main() -> int:
         write_agents(ROOT, args.target, routing, args.dry_run, add_missing=False, reconcile=False)
     else:
         # A re-render after edited contracts stages them; it never adds a role the user did not choose.
-        write_agents(ROOT, args.target, routing, args.dry_run, add_missing=not restage_only)
+        write_agents(ROOT, args.target, routing, args.dry_run, add_missing=not (restage_only or profile_change_only))
     routing["effective_roles"] = effective_role_models(ROOT, args.target)
     if "army" in selections.values():
         write_runtime_sources(ROOT, args.target, selections["runtime_hooks"] == "army", args.dry_run)

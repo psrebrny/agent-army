@@ -317,6 +317,14 @@ cmp -s "$WORK/stores-before.json" "$UP031/.agent-army/stores.json" && ok "upgrad
 grep -q '"version": "0.4.0"' "$UP031/.agent-army/config.json" \
   && grep -A2 '"upgrade_review"' "$UP031/.agent-army/config.json" | grep -q '"status": "skipped"' \
   && ok "upgrade records 0.4.0 and the skipped review" || bad "upgrade version or skipped review not recorded"
+# Skip the review on a 0.3.1 profile without the planning roles, then change one setting explicitly.
+RC="$WORK/upgrade-031-rolechange"; cp -R "$WORK/upgrade-031-apply" "$RC"
+prepare_planning_role_upgrade "$RC"
+(cd "$RC" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --upgrade-review-outcome skipped --skip-apm >/dev/null 2>&1)
+(cd "$RC" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --ci external --skip-apm >/dev/null 2>&1)
+grep -A1 '"ci"' "$RC/.agent-army/config.json" | grep -q '"mode": "external"' \
+  && [ ! -f "$RC/.agent-army/agents/agent-army-planning-analyst.agent" ] \
+  && ok "an explicit profile change after a skipped review adds no role" || bad "explicit profile change: setting not applied or a skipped planning role added"
 before="$(tree_digest "$UP031")"
 (cd "$UP031" && python3 "$ROOT/.apm/skills/bootstrap/bootstrap.py" opencode --mode auto --skip-apm > "$WORK/upgrade-031-second.txt" 2>&1)
 [ "$before" = "$(tree_digest "$UP031")" ] && grep -q 'profile is current' "$WORK/upgrade-031-second.txt" \
@@ -337,6 +345,14 @@ if git -C "$ROOT" archive 1e751e6 .apm/skills 2>/dev/null | tar -x -C "$PKG031" 
   (cd "$C031" && python3 .agents/skills/bootstrap/bootstrap.py claude --skip-apm --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null 2>&1)
   grep -q '"version": "0.3.1"' "$C031/.agent-army/config.json" && ok "the real 0.3.1 generator wrote a 0.3.1 profile" || bad "0.3.1 profile not created"
   printf '\n# LOCAL-NEW-AGENT-NOTE\n' >> "$C031/.agents/skills/new-agent/SKILL.md"
+  printf 'team notes\n' > "$C031/.agents/skills/ship/team-notes.md"
+  python3 - "$PKG031/.apm/skills" "$ROOT/.apm/skills/bootstrap/package-manifests/0.3.1.json" <<'PY'
+import hashlib, json, pathlib, sys
+root = pathlib.Path(sys.argv[1]); manifest = json.loads(pathlib.Path(sys.argv[2]).read_text())['files']
+actual = {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest() for p in root.rglob('*') if p.is_file()}
+sys.exit(0 if actual == manifest else 1)
+PY
+  [ $? -eq 0 ] && ok "package-manifests/0.3.1.json matches the 0.3.1 release" || bad "0.3.1 manifest differs from git archive 1e751e6"
   (cd "$C031" && python3 .claude/skills/bootstrap/bootstrap.py claude --mode auto --dry-run --skip-apm > "$WORK/claude-031-plan.txt" 2>&1)
   grep -q '0.3.1 -> 0.4.0' "$WORK/claude-031-plan.txt" && ok "the loaded 0.4.0 generator plans 0.3.1 -> 0.4.0" || bad "no 0.3.1 -> 0.4.0 plan from .claude/skills"
   grep -Eq 'changed skills: (.*, )?bootstrap(,|$)' "$WORK/claude-031-plan.txt" && grep -Eq 'changed skills: (.*, )?ship(,|$)' "$WORK/claude-031-plan.txt" \
@@ -349,12 +365,20 @@ if git -C "$ROOT" archive 1e751e6 .apm/skills 2>/dev/null | tar -x -C "$PKG031" 
     && cmp -s "$C031/.agents/skills/ship/SKILL.md" "$ROOT/.apm/skills/ship/SKILL.md" \
     && ok "unmodified 0.3.1 copies in .agents/skills are refreshed to 0.4.0" || bad "stale 0.3.1 copies left in .agents/skills"
   grep -q 'LOCAL-NEW-AGENT-NOTE' "$C031/.agents/skills/new-agent/SKILL.md" && ok "the locally changed skill is kept" || bad "a locally changed skill was overwritten"
+  [ -f "$C031/.agents/skills/ship/team-notes.md" ] && ok "a user file inside a refreshed skill survives (nothing is deleted)" || bad "refresh deleted a user file"
   all_skills_present "$C031" && ok "the 14 product skills are added to .agents/skills" || bad "product skills missing in .agents/skills"
   before="$(tree_digest "$C031")"
   (cd "$C031" && python3 .agents/skills/bootstrap/bootstrap.py claude --mode auto --skip-apm > "$WORK/claude-031-next.txt" 2>&1)
   [ "$before" = "$(tree_digest "$C031")" ] && grep -q 'profile is current' "$WORK/claude-031-next.txt" \
     && ok "the documented .agents/skills generator then sees a current profile (no downgrade refusal, no writes)" \
     || bad "follow-up run from .agents/skills was not a no-op: $(head -1 "$WORK/claude-031-next.txt")"
+  # A newer release must still keep the conflict: the recorded inventory is not proof of a package copy.
+  C041="$WORK/claude-041"; cp -R "$C031" "$C041"
+  sed -i.bak 's/^PACKAGE_VERSION = "0.4.0"/PACKAGE_VERSION = "0.4.1"/' "$C041/.claude/skills/bootstrap/bootstrap.py"; rm -f "$C041/.claude/skills/bootstrap/bootstrap.py.bak"
+  printf '\n# 0.4.1 change\n' >> "$C041/.claude/skills/new-agent/SKILL.md"
+  (cd "$C041" && python3 .claude/skills/bootstrap/bootstrap.py claude --mode auto --upgrade-review-outcome skipped --skip-apm > "$WORK/claude-041-up.txt" 2>&1)
+  grep -q 'LOCAL-NEW-AGENT-NOTE' "$C041/.agents/skills/new-agent/SKILL.md" && grep -q 'conflict: local changes kept.*new-agent' "$WORK/claude-041-up.txt" \
+    && ok "the next release still keeps and reports the local change" || bad "the next release overwrote a kept local change"
 else
   bad "cannot read the 0.3.1 package (git archive 1e751e6); run smoke from a full clone"
 fi

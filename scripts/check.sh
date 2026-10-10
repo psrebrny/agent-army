@@ -733,11 +733,11 @@ for f in files:
                     continue  # flags, local paths and placeholders are not packages
                 token = token.split('#')[0]
                 if '://' in token or token.startswith('git@'):
-                    # https://host/owner/repo(.git) and git@host:owner/repo(.git) name owner/repo
-                    pkg = re.sub(r'\.git$', '', re.sub(r'^(https?://[^/]+/|git@[^:]+:)', '', token))
+                    # https://, ssh://, git+https:// and git@host: forms all name owner/repo
+                    pkg = re.sub(r'\.git$', '', re.sub(r'^([a-z+]+://([^@/]+@)?[^/]+/|git@[^:]+:)', '', token))
                 else:
                     pkg = token.split('@')[0]
-                if re.fullmatch(r'[A-Za-z0-9_][\w.-]*/[\w./-]+', pkg) and pkg != own:
+                if re.fullmatch(r'[A-Za-z0-9_][\w.-]*/[\w./-]+', pkg) and pkg != own and not pkg.startswith(own + '/'):
                     hits.append(f'{where} ({pkg})')
 if hits:
     emit('BAD', 'third-party install guidance: ' + ', '.join(hits))
@@ -779,8 +779,22 @@ def description(path):
         data = yaml.safe_load(frontmatter(path)) or {}
         return str(data.get('description') or '').strip()
     except Exception:
-        m = re.search(r'^description:\s*(.*)$', frontmatter(path), re.M)
-        return m.group(1).strip().strip('"\'') if m else ''
+        # Without PyYAML: a block scalar (`>-`, `|`) continues on the indented lines below.
+        lines = frontmatter(path).splitlines()
+        for i, line in enumerate(lines):
+            m = re.match(r'description:\s*(.*)$', line)
+            if not m:
+                continue
+            value = m.group(1).strip()
+            if re.fullmatch(r'[>|][+-]?', value):
+                body = []
+                for nxt in lines[i + 1:]:
+                    if nxt and not nxt[0].isspace():
+                        break
+                    body.append(nxt.strip())
+                return ' '.join(b for b in body if b)
+            return value.strip('"\'')
+        return ''
 
 # (d) description length
 long = []
