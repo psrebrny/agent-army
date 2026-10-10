@@ -29,8 +29,10 @@ verified, nobody interprets the data, you included.
    schema as an assertion the `/ship` tester can write. You never write the code.
 7. **Collection verified**: a manual trial run, payment reconciliation, no duplicates. Until all pass,
    `Collection status: unverified`.
-8. **Reads** (post-launch): from dated exports without personal data; compare with GTM predictions and
-   validation thresholds; at low volume use absolute numbers and weekly cohorts, no significance tests,
+8. **Reads** (post-launch): from dated exports without personal data. Count from the file before you
+   state any number: quote the counts per period and segment with the file and date they came from,
+   and never estimate a figure the export contains. Compare with GTM predictions and validation
+   thresholds; at low volume use absolute numbers and weekly cohorts, no significance tests,
    and say "not enough signal". Route the finding to the skill the data points to.
 
 ## Writes
