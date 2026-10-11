@@ -92,6 +92,9 @@ DEFAULT_MODEL_TIERS = {
 ROLE_MODEL_MARKER = "# agent-army-role-profile:"
 
 
+ADVISOR_CONTRACT = "product/advisor-contract.md"
+
+
 def version_key(value: str) -> tuple[int, int, int]:
     """Compare the package's stable semver releases without extra dependencies."""
     match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", value)
@@ -606,6 +609,8 @@ def skill_digests(skills_root: Path, skill: str) -> dict[str, str]:
             for path in sorted(baseline.rglob("*")):
                 if path.is_file() and path.suffix in {".md", ".py", ".yml", ".yaml"}:
                     digests[str(path.relative_to(skills_root))] = sha256_file(path)
+    if skill == "product" and (skills_root / ADVISOR_CONTRACT).is_file():
+        digests[ADVISOR_CONTRACT] = sha256_file(skills_root / ADVISOR_CONTRACT)
     return digests
 
 
@@ -880,6 +885,9 @@ def package_inventory(root: Path, target: str) -> dict[str, dict[str, str]]:
         for skill in SKILLS
         if (skills_root / skill / "SKILL.md").is_file()
     }
+    # The shared advisor contract changes every product skill's behavior, so it is reviewed too.
+    if (skills_root / ADVISOR_CONTRACT).is_file():
+        skills[ADVISOR_CONTRACT] = sha256_file(skills_root / ADVISOR_CONTRACT)
     baseline = skills_root / "bootstrap/baseline"
     templates: dict[str, str] = {}
     if baseline.is_dir():
@@ -1162,7 +1170,11 @@ def write_degraded_adapters(
 def update_gitignore(root: Path, target: str, dry_run: bool) -> None:
     path = root / ".gitignore"
     existing = path.read_text(encoding="utf-8") if path.exists() else ""
-    entries = [f"{skills_dir(target)}/", ".agent-army/state.json"]
+    # Only the shared .agents/skills copy is ignored; a tool's own skill dir (.claude/skills) also holds
+    # the user's skills, so ignoring it would hide them.
+    entries = [".agent-army/state.json"]
+    if skills_dir(target) == ".agents/skills":
+        entries.insert(0, ".agents/skills/")
     if target in NATIVE_AGENT_TARGETS:
         entries.insert(1, f"{APM_AGENT_STAGING_DIR}/")
     missing = [entry for entry in entries if entry not in existing.splitlines()]

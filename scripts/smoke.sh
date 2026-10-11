@@ -424,6 +424,10 @@ fi
 printf '\n\033[1mGATE 1.75 · one copy of the skills\033[0m\n'
 [ ! -e "$WORK/claude/.agents/skills" ] && all_skills_present "$WORK/claude" claude && [ "$(skill_copies "$WORK/claude")" = 1 ] \
   && ok "fresh Claude bootstrap: one copy in .claude/skills, no .agents/skills" || bad "fresh Claude bootstrap made a second copy or missed .claude/skills"
+! grep -qx '.claude/skills/' "$WORK/claude/.gitignore" 2>/dev/null \
+  && ok "Claude bootstrap leaves .claude/skills out of .gitignore (the user's own skills live there)" || bad "Claude bootstrap ignores .claude/skills"
+grep -q '"product/advisor-contract.md"' "$WORK/claude/.agent-army/config.json" \
+  && ok "the package inventory tracks the shared advisor contract" || bad "advisor contract missing from the package inventory"
 MIGC="$WORK/cache-migration-claude"; init_repo "$MIGC"
 mkdir -p "$MIGC/apm_modules/psrebrny/agent-army/.apm"
 cp -R "$ROOT/.apm/skills" "$MIGC/apm_modules/psrebrny/agent-army/.apm/"
