@@ -258,8 +258,11 @@ All fourteen read one shared contract before their first reply
   recordings, the page files that render the screens. It clicks through with a browser automation tool
   your environment already has (for example Playwright) and installs none without your yes. It never
   reviews application code.
-- **Safety:** test accounts, test data and a payment provider's test mode only; it never completes a
-  real payment, messages real people or deletes data, and stops every process it started.
+- **Safety:** a URL counts as production unless you say otherwise, and on production it only browses
+  (no sign-ups, logins or form submits). Before starting the app it asks you to confirm test keys, no
+  production database and no real email sending. It uses a fresh browser session without your
+  sign-ins, never completes a payment, messages real people or deletes data, and stops every process
+  it started.
 - **Output:** findings `UX-n` on offer, onboarding, first useful result, purchase, errors and
   accessibility, each tied to a screenshot or flow step and rated `blocks` (cannot finish the path) /
   `hurts` / `minor`; labelled "heuristic review (no user study)" with the sources used; the cheapest

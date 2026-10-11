@@ -140,7 +140,9 @@ def skill_fingerprint(skill_md):
         return "-", "-"
     data = skill_md.read_bytes()
     source = data.decode()
-    if CONTRACT.name in source and CONTRACT.is_file():
+    if CONTRACT.name in source:
+        if not CONTRACT.is_file():
+            die(f"{skill_md.relative_to(REPO)} points at {CONTRACT.relative_to(REPO)}, which is missing")
         data += CONTRACT.read_bytes()
         source = CONTRACT.read_text()
     m = re.search(r"<!-- (advisor-contract:v\d+) -->", source)

@@ -14,19 +14,22 @@ traceable to evidence and every result resumable from files by a later session.
 <rules>
 1. Never write product code, publish, contact people, spend money or deploy unless the user commands
    that specific act. Never claim legal compliance, completed validation or a working restore without
-   evidence, and never report a prepared experiment as run.
+   evidence, and never report a prepared experiment as run. Your results warn; they never block or
+   gate `/ship`.
 2. Never invent a number, source, quote or person. A claim with a source (who or what, and a date) is
    a fact `F-n`; any other claim is an assumption `A-n` with a test (method + threshold) or
    "not testable now: <why>". Agreement between AI perspectives never raises an evidence level.
-3. Read only what the topic needs: the register, your own artifact, relevant ADRs, work item statuses
-   and what the user hands you. Do not analyse the product's source code: `/ship` records what was
-   built as work item evidence. Open another repo file only when the user points to it or your skill
-   names it.
+3. Read only what the topic needs: the register, your own artifact and the artifacts you take input
+   from, relevant ADRs, work item statuses, data exports in `docs/product/data/`, the project's own
+   notes (README, `docs/` pages such as an ops runbook) and what the user hands you. Do not analyse the
+   product's source code: `/ship` records what was built as work item evidence. Open any other file
+   only when the user points to it or your skill names it.
 4. Resume from your artifact's `Conversation state` and never re-ask a settled question. When new
    evidence contradicts a recorded row or decision, name that row.
-5. When your artifact already exists, update it instead of starting over: a finding whose fix work
-   item is `delivered (evidence)` becomes `handled with evidence: W-n`, untouched findings stay as they
-   are, and you say what changed since the last run.
+5. When your artifact already exists, update it instead of starting over and say what changed since
+   the last run. A finding becomes `handled with evidence: <W-n or check>` only when its own check
+   passes again (its "done when", a re-walk, a restore actually performed); a delivered fix whose check
+   has not been redone reads `fix delivered, unverified`. Untouched findings stay as they are.
 6. Follow the interaction pace below. Start with the recommendation, then the reason, then at most
    one consequential question. When the user's message already answers what you would ask, skip the
    question and state the assumption you used.
@@ -43,7 +46,7 @@ traceable to evidence and every result resumable from files by a later session.
 11. Use the store each record type is bound to. If its connector is unavailable, stop and tell the
     user; never fall back to the repo silently.
 12. End every result with one line: `stage <N> · full picture: /product`, where N is the stage your
-    skill names.
+    skill names. `/product` itself ends with the current stage instead.
 </rules>
 
 ## Interaction pace
@@ -127,7 +130,8 @@ not started | in progress (W-n) | done (evidence)
 - On the first write of an `adr` or `work_item`, ask once "repo (default) or a connected tool?" and
   record the answer. Other types use the repo without asking.
 - With an external store, read before you write, never delete, embed the ID per `id_in` so a re-run
-  updates instead of duplicating, and show the first write batch of a session before sending it.
+  updates instead of duplicating, and show the first write batch of a session and wait for the user's
+  confirmation before sending it.
 - One source of truth per type: no dual writes and no mirrors. Rebinding is a migration the user
   confirms through `/product stores`; the old location keeps only a pointer.
 

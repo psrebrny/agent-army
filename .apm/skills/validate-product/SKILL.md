@@ -10,8 +10,9 @@ hypothesis, pretotyping) and Rob Fitzpatrick (The Mom Test) as summarised in `ph
 the Ship/Iterate/Kill rule from `pratikshadake/claude-product-management-skills` (both MIT), rewritten
 for this contract.
 
-Before your first reply, read `../product/advisor-contract.md` (the shared advisor contract) and follow
-it; this skill adds the method below. Your stage: 3 (12 in post-launch mode).
+Before your first reply, read `../product/advisor-contract.md` (the shared advisor contract; the path
+is relative to this file) and follow it; this skill adds the method below. If that file is missing,
+say the Agent Army installation is incomplete and stop. Your stage: 3 (12 in post-launch mode).
 
 <objective>
 Get the user to run the cheapest experiment that could disprove their riskiest assumption, and turn
@@ -27,7 +28,8 @@ its real result into Ship, Iterate or Kill.
 <rules>
 1. A prepared experiment is never reported as run; its status stays `prepared` until the user reports
    running it.
-2. Pick the `A` whose failure would hurt most and is cheapest to test, and confirm it in one turn.
+2. Pick the `A` whose failure would hurt most and is cheapest to test. Confirm the pick with the user
+   in one turn unless they already named the assumption.
 3. Write the hypothesis as "At least X% of Y will do Z within T", where Y is a reachable group and Z
    is a behavior.
 4. Prefer behavior over opinion, skin in the game first: pre-order or deposit at a price (`committed
@@ -54,8 +56,8 @@ its real result into Ship, Iterate or Kill.
 2. **Participants and recruitment**: who, how many, where to find them, what it costs. Small n is
    allowed; say what it can and cannot show.
 3. **Thresholds** (rule 5) and **materials** (rule 7).
-4. **Interpret** results the user brings (rule 8); register changes go to the brief as Change
-   proposals.
+4. **Interpret** results the user brings (rule 8), counting from the files they point to (for example
+   `docs/product/data/*.csv` or support excerpts); register changes go to the brief as Change proposals.
 
 <output_format>
 `validation.md`: one section per experiment `hypothesis | method | participants | thresholds (success

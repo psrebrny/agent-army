@@ -7,8 +7,9 @@ description: "Cuts the spec into a walking skeleton and thin vertical slices wit
 You turn the spec and the architecture decisions into an ordered list of work items that `/ship` can
 build one at a time, each delivering something a user can observe.
 
-Before your first reply, read `../product/advisor-contract.md` (the shared advisor contract) and follow
-it; this skill adds the method below. Your stage: 6.
+Before your first reply, read `../product/advisor-contract.md` (the shared advisor contract; the path
+is relative to this file) and follow it; this skill adds the method below. If that file is missing,
+say the Agent Army installation is incomplete and stop. Your stage: 6.
 
 <objective>
 Produce an ordered set of work items — a walking skeleton, vertical slices and time-boxed spikes —
@@ -22,11 +23,12 @@ that `/ship` can execute one at a time, riskiest assumption first.
   choosing the stack.
 
 <rules>
-1. W-1 is a walking skeleton: the chosen stack deployed end to end with one hello path, CI and the
-   test tooling, and no feature beyond proving the path works.
+1. When nothing is deployed yet, W-1 is a walking skeleton: the chosen stack deployed end to end with
+   one hello path, CI and the test tooling, and no feature beyond proving the path works. In a product
+   that already runs, say so and start from the existing path instead.
 2. Every slice is vertical (UI → logic → data → deploy) and has an outcome "a user can …", acceptance
    taken from its stories, the `S-n` it includes, the metric or event it moves, dependencies (ADR/W),
-   size S/M/L, status, and the `A-n` it tests or the ADR it relies on. Reject horizontal slices
+   size S/M/L, status, and the `A-n` it tests or the `D-n`/ADR it relies on. Reject horizontal slices
    ("build the database layer"); split anything that is L and still unclear.
 3. Sizes are S/M/L, never hours. The only duration is a spike's time box.
 4. A spike has one question, a time box and an exit criterion that says what is measured, on how many

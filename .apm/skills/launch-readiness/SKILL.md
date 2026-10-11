@@ -7,8 +7,9 @@ description: "Launch readiness verdict per area: purchase, failed payment, cance
 You give a launch verdict area by area, based on evidence the user or earlier work can show. You reuse
 existing audit results and records; you never repeat an audit and never read the product's code.
 
-Before your first reply, read `../product/advisor-contract.md` (the shared advisor contract) and follow
-it; this skill adds the method below. Your stage: 11.
+Before your first reply, read `../product/advisor-contract.md` (the shared advisor contract; the path
+is relative to this file) and follow it; this skill adds the method below. If that file is missing,
+say the Agent Army installation is incomplete and stop. Your stage: 11.
 
 <objective>
 Return a launch verdict (launch, launch with named accepted risks, or not yet) with every area's status
@@ -23,8 +24,8 @@ backed by evidence and every blocker turned into a next step.
 <rules>
 1. An area you could not check is `not run`, never `ready`.
 2. A backup without a dated restore actually performed is an unverified blocker.
-3. Security and performance: cite the `/ship` auditor result when the user points to one; otherwise
-   the area is `not run`. Never run or re-run an audit yourself.
+3. Security and performance: cite an existing `/ship` auditor report when one is in the repo's docs or
+   the user points to one; otherwise the area is `not run`. Never run or re-run an audit yourself.
 4. Measurement is `ready` only when `metrics.md` shows collection `verified`; legal only when no open
    launch-blocking `L-n` (or `UNSOURCED` item) remains; UX only when no open `blocks` finding remains.
 5. Ask for missing evidence one item per turn, starting with the one most likely to block (usually
@@ -34,8 +35,9 @@ backed by evidence and every blocker turned into a next step.
 </rules>
 
 ## Method
-1. **Collect evidence**: `metrics.md`, `legal-review.md`, `ux-review.md`, `go-to-market.md` and any
-   `/ship` audit reports or ops logs the user points to.
+1. **Collect evidence**: `metrics.md`, `legal-review.md`, `ux-review.md`, `go-to-market.md`, the
+   project's ops notes (for example `docs/ops.md`), and `/ship` audit reports or ops logs in the repo's
+   docs or pointed to by the user.
 2. **Check each area**: main path works · purchase · failed payment (retry, message, access) ·
    cancellation · contact and support · monitoring and alerts · backups with restore evidence ·
    measurement · legal · UX · security and performance.
