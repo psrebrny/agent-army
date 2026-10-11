@@ -216,6 +216,21 @@ def judge(scenario, bundles, base, model_args):
         result = None
     if not isinstance(result, dict):
         die(f"judge returned no JSON object; raw reply in {jdir}/judge-output.txt")
+    # The judge sometimes closes the bundles array after the first entry and appends the rest
+    # (`]},{"id": …}]}`). Recover every complete bundle object verbatim; nothing is inferred.
+    found = {b.get("id"): b for b in result.get("bundles", []) if isinstance(b, dict)}
+    if not set(bundles) <= set(found):
+        decoder = json.JSONDecoder()
+        for m in re.finditer(r'\{\s*"id"\s*:', text):
+            try:
+                obj = decoder.raw_decode(text[m.start():])[0]
+            except ValueError:
+                continue
+            if isinstance(obj, dict) and obj.get("id") in bundles and "scores" in obj:
+                found.setdefault(obj["id"], obj)
+        if set(bundles) <= set(found):
+            print("  note: judge JSON was malformed; bundles recovered verbatim from its reply")
+            result["bundles"] = [found[bid] for bid in bundles]
     return result, jdir, res.get("total_cost_usd") or 0
 
 
