@@ -47,12 +47,13 @@ acceptance, an explicit out-of-scope list, and must-haves imported from legal an
    (rule 3 decides the scope).
 2. **Goal** (rule 2), **stories** (rules 4–5), **out of scope** (rule 6), **imported must-haves**
    (rule 7), **open questions** (rule 8).
-3. **Next step** once the user confirms the musts: `/delivery-plan` when architecture ADRs already
-   exist, otherwise `/solution-architecture`.
+3. **Hand-off** once the user confirms the musts: set the spec's status to `ready for delivery-plan`
+   and say so. If no architecture ADR exists yet, add that `/delivery-plan` needs the stack, so
+   `/solution-architecture` comes first; the week's step is still one concrete action.
 
 <output_format>
-`spec.md`: MVP goal · Stories · Out of scope · Imported must-haves · Open questions · Conversation
-state.
+`spec.md`: Status (`draft | ready for delivery-plan`) · MVP goal · Stories · Out of scope · Imported
+must-haves · Open questions · Conversation state.
 </output_format>
 
 <examples>
