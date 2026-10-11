@@ -116,6 +116,10 @@ def assemble(scenario, arm, advisor, reference_dir, base):
     skills = scratch / ".claude" / "skills"
     if arm == "N":
         shutil.copytree(SKILLS / advisor, skills / advisor)
+        # Advisors read the shared contract by relative path (../product/advisor-contract.md).
+        if CONTRACT.is_file() and not (skills / "product" / CONTRACT.name).exists():
+            (skills / "product").mkdir(parents=True, exist_ok=True)
+            shutil.copy2(CONTRACT, skills / "product" / CONTRACT.name)
     elif arm == "P":
         shutil.copytree(reference_dir, skills, dirs_exist_ok=True,
                         ignore=shutil.ignore_patterns(".git"))
@@ -124,6 +128,23 @@ def assemble(scenario, arm, advisor, reference_dir, base):
     if leaked:
         die(f"oracle or persona leaked into the actor scratch: {leaked}")
     return scratch
+
+
+CONTRACT = SKILLS / "product" / "advisor-contract.md"
+
+
+def skill_fingerprint(skill_md):
+    """(sha256[:12], contract tag) of what the advisor actually reads: its SKILL.md plus the shared
+    contract when the skill points at it. `scripts/check.sh` computes the same value for staleness."""
+    if not skill_md.is_file():
+        return "-", "-"
+    data = skill_md.read_bytes()
+    source = data.decode()
+    if CONTRACT.name in source and CONTRACT.is_file():
+        data += CONTRACT.read_bytes()
+        source = CONTRACT.read_text()
+    m = re.search(r"<!-- (advisor-contract:v\d+) -->", source)
+    return hashlib.sha256(data).hexdigest()[:12], (m.group(1) if m else "-")
 
 
 def converse(scratch, opening, persona, actor_args, persona_dir, label):
@@ -235,11 +256,7 @@ def main():
     skill_md = SKILLS / a.advisor / "SKILL.md"
     if "N" in arms and not skill_md.is_file():
         die(f"arm N needs {skill_md.relative_to(REPO)}")
-    sha = hashlib.sha256(skill_md.read_bytes()).hexdigest()[:12] if skill_md.is_file() else "-"
-    tag = "-"
-    if skill_md.is_file():
-        m = re.search(r"<!-- (advisor-contract:v\d+) -->", skill_md.read_text())
-        tag = m.group(1) if m else "-"
+    sha, tag = skill_fingerprint(skill_md)
 
     base = Path(tempfile.mkdtemp(prefix="advisor-eval-"))
     if REPO in base.parents:

@@ -83,7 +83,7 @@ sending it. If the connector is unavailable it stops and tells you; it never fal
 | `/delivery-plan` | advisor | walking skeleton, vertical slices, spikes, in risk order | work items (`delivery-plan.md` or tracker) |
 | `/go-to-market` | advisor | audience, offer, channels as written bets with budget caps | `go-to-market.md` (predictions, drafts) |
 | `/product-metrics` | advisor | decision questions, funnel, events, collection checks, data reads | `metrics.md` |
-| `/ux-review` | advisor | heuristic review of the paths that matter | `ux-review.md` |
+| `/ux-review` | advisor | heuristic review of the paths that matter, clicked through in the running app when possible | `ux-review.md` |
 | `/legal-review` | advisor | applicability, privacy, terms, consumer rights, VAT/OSS, invoicing | `legal-review.md` |
 | `/launch-readiness` | advisor | launch verdict per area with evidence | `launch-readiness.md` |
 
@@ -110,8 +110,9 @@ are roles that `/ship` runs, not skills you call.
 
 ## Product skills in detail
 
-All fourteen share one contract (`advisor-contract:v1`, embedded identically in each skill), so they
-behave the same way where it matters:
+All fourteen read one shared contract before their first reply
+(`.agents/skills/product/advisor-contract.md`, tag `advisor-contract:v2`; on Claude it sits under
+`.claude/skills/product/`), so they behave the same way where it matters:
 
 - **Small steps together.** Every turn opens with `step X of ~Y`, shows one piece and asks at most one
   question, recommendation first. Long content goes into the file; the chat names the part to check.
@@ -120,7 +121,13 @@ behave the same way where it matters:
   `behavior` > `stated intent` > `AI opinion / third-party data`. AI perspectives agreeing never
   raises the level.
 - **Resume, don't repeat.** Each artifact keeps a `Conversation state`; a new session continues from
-  it and never re-asks a settled question.
+  it and never re-asks a settled question. Running a skill again after fixes updates its file instead
+  of starting over: a finding whose fix work item is `delivered` becomes `handled with evidence: W-n`.
+- **Records, not code.** Product skills read the register, their own artifact, ADRs, work item
+  statuses and what you hand them; they do not analyse your source code. What was built reaches them
+  as work item evidence written by `/ship`.
+- **Findings stay in the artifact, decisions go to ADRs.** Review findings change status with every
+  fix, so they live in the skill's own file; an ADR is written only when a decision is made.
 - **Write after a finding**, in place; no transcripts, empty files or placeholders. Only
   `product-strategy` edits the brief; the others append `proposed` rows under its Change proposals.
 - **Results** end with Conclusion (conditional) · Findings · What holds · Not assessed · Next step
@@ -243,14 +250,24 @@ behave the same way where it matters:
   an assertion the tester can write. Until `Collection status` is `verified`, nobody interprets the data.
 - **Example:** `/product-metrics "What should I track in my habit-tracker app before launch?"`
 
-### `/ux-review` — evidence-tied findings
-- **When:** before launch, after weak activation, when you share screens or a URL.
-- **Reads:** the brief, `metrics.md`, and whatever you can show (screenshots, URL, repo files).
+### `/ux-review` — walk the paths that matter
+- **When:** before launch, after weak activation, when you share a URL, screenshots or a way to start
+  the app.
+- **Reads:** the brief and `metrics.md`, then the product itself, in this order: a URL you give, the
+  app started locally (it proposes the start command and waits for your go-ahead), screenshots or
+  recordings, the page files that render the screens. It clicks through with a browser automation tool
+  your environment already has (for example Playwright) and installs none without your yes. It never
+  reviews application code.
+- **Safety:** test accounts, test data and a payment provider's test mode only; it never completes a
+  real payment, messages real people or deletes data, and stops every process it started.
 - **Output:** findings `UX-n` on offer, onboarding, first useful result, purchase, errors and
-  accessibility, each tied to a screen, flow step or file and rated blocks / hurts / minor; labelled
-  "heuristic review (no user study)" unless you supplied session evidence; the cheapest real check.
-- **Writes:** `ux-review.md`; at most the top five fixes as `fix` work items with their finding IDs.
-- **Example:** `/ux-review "Review the signup flow of my app; screenshots are in docs/product/screens/."`
+  accessibility, each tied to a screenshot or flow step and rated `blocks` (cannot finish the path) /
+  `hurts` / `minor`; labelled "heuristic review (no user study)" with the sources used; the cheapest
+  real check.
+- **Writes:** `ux-review.md` and the screenshots its findings cite (`docs/product/screens/ux-<date>/`);
+  at most the top five fixes as `fix` work items with their finding IDs. A re-run walks again only the
+  paths whose findings changed.
+- **Example:** `/ux-review "Review the signup flow; the app runs with npm run dev."`
 
 ### `/legal-review` — applicability and the questions for a professional
 - **When:** before launch, before collecting personal data or payments, when selling across borders.
@@ -295,7 +312,7 @@ it lives in (or asks you to, when that store's connector is unavailable), and `/
 | `product` | skips, bindings | always; read-only map + one recommendation | — (may recommend `/ship W-n` for a `ready` item) |
 | `go-to-market` | `go-to-market.md` + drafts | messages, prediction register, budget caps | landing or pricing page changes |
 | `product-metrics` | `metrics.md` | questions, funnel, event schema, privacy, data reads | **instrumentation always**: architect gets `metrics.md`, tester asserts event names and schemas |
-| `ux-review` | `ux-review.md` | heuristic review, prioritised findings | fixes as work items with finding IDs |
+| `ux-review` | `ux-review.md` | heuristic review in the running app or from screenshots, prioritised findings | fixes as work items with finding IDs |
 | `legal-review` | `legal-review.md` | applicability, dated sources, lawyer and accountant questions | consent banner, data deletion, terms pages |
 | `launch-readiness` | `launch-readiness.md` | readiness verdict per area | code blockers; reuses `/ship` audit evidence, never re-runs audits |
 

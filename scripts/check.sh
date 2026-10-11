@@ -530,60 +530,74 @@ PRODUCT_SKILLS="product-strategy product-red-team market-research business-case 
 product-spec solution-architecture delivery-plan go-to-market product-metrics ux-review legal-review \
 launch-readiness product"
 
-# Every copy of the advisor contract is byte-identical to the authoritative one in
-# product-strategy; every present product skill carries it; its stores.json example parses
-# and never allows `delete`. Block size is printed for information only (D17).
+# One shared advisor contract lives in product/advisor-contract.md (APM installs only skill
+# folders, so it sits inside the /product skill). Every product skill points at it by relative path,
+# names its stage, and embeds no copy; the stores.json example parses and never allows `delete`.
+# Size is printed for information only (D17).
 check_advisor_contract() {
   local out
   if out="$(python3 - "$SKILLS_DIR" $PRODUCT_SKILLS 2>&1 <<'PY_ADVISOR'
 import json, pathlib, re, sys
 skills = pathlib.Path(sys.argv[1]); product = sys.argv[2:]
-OPEN, CLOSE = '<!-- advisor-contract:v1 -->', '<!-- /advisor-contract:v1 -->'
-errors, blocks = [], {}
-for f in sorted(skills.glob('*/SKILL.md')):
-    text, name = f.read_text(), f.parent.name
-    if OPEN not in text:
-        if name in product:
-            errors.append(f'{name}: product skill without the advisor-contract:v1 block')
+contract = skills / 'product' / 'advisor-contract.md'
+POINTER = '../product/advisor-contract.md'
+errors, count = [], 0
+if not contract.is_file():
+    errors.append('product/advisor-contract.md is missing')
+else:
+    ref = contract.read_text()
+    tags = re.findall(r'<!-- (advisor-contract:v\d+) -->', ref)
+    if len(tags) != 1 or f'<!-- /{tags[0]} -->' not in ref:
+        errors.append('advisor-contract.md needs exactly one opening and one closing advisor-contract:vN tag')
+    print(f'SIZE {ref.count(chr(10))} lines, ~{len(ref) // 4} tokens')
+    for section in ('<objective>', '<rules>', '<output_format>', '<escalation>'):
+        if section not in ref:
+            errors.append(f'advisor-contract.md has no {section} section')
+    rules = re.search(r'<rules>(.*?)</rules>', ref, re.S)
+    if rules and len(re.findall(r'^\d+\. ', rules.group(1), re.M)) > 12:
+        errors.append('advisor-contract.md has more than 12 rules')
+    stores = [f for f in re.findall(r'```json\n(.*?)```', ref, re.S) if '"types"' in f]
+    if not stores:
+        errors.append('contract has no ```json stores.json example')
+    for raw in stores:
+        try:
+            doc = json.loads(raw)
+        except ValueError as exc:
+            errors.append(f'stores.json example does not parse: {exc}')
+            continue
+        if doc.get('version') != 1 or not isinstance(doc.get('types'), dict):
+            errors.append('stores.json example needs "version": 1 and a "types" object')
+            continue
+        for t, b in doc['types'].items():
+            if 'delete' in b.get('allowed', []):
+                errors.append(f'stores.json example allows delete for {t}')
+for name in product:
+    f = skills / name / 'SKILL.md'
+    if not f.is_file():
         continue
-    if text.count(OPEN) != 1 or text.count(CLOSE) != 1 or text.index(CLOSE) < text.index(OPEN):
-        errors.append(f'{name}: needs exactly one opening and one closing advisor-contract:v1 tag')
-        continue
-    blocks[name] = text[text.index(OPEN):text.index(CLOSE) + len(CLOSE)]
-if blocks:
-    ref = blocks.get('product-strategy')
-    if ref is None:
-        errors.append('product-strategy (authoritative copy) has no advisor-contract:v1 block')
-    else:
-        # Size is reported, never limited (D17): cost and attention are judged by advisor-eval.
-        print(f'SIZE {ref.count(chr(10)) - 1} lines, ~{len(ref) // 4} tokens')
-        for name, block in blocks.items():
-            if block != ref:
-                errors.append(f'{name}: advisor-contract:v1 block differs from product-strategy')
-        fences = re.findall(r'```json\n(.*?)```', ref, re.S)
-        stores = [f for f in fences if '"types"' in f]
-        if not stores:
-            errors.append('contract has no ```json stores.json example')
-        for raw in stores:
-            try:
-                doc = json.loads(raw)
-            except ValueError as exc:
-                errors.append(f'stores.json example does not parse: {exc}')
-                continue
-            if doc.get('version') != 1 or not isinstance(doc.get('types'), dict):
-                errors.append('stores.json example needs "version": 1 and a "types" object')
-                continue
-            for t, b in doc['types'].items():
-                if 'delete' in b.get('allowed', []):
-                    errors.append(f'stores.json example allows delete for {t}')
+    count += 1
+    text = f.read_text()
+    if POINTER not in text:
+        errors.append(f'{name}: does not point at {POINTER}')
+    if re.search(r'<!-- advisor-contract:v\d+ -->', text):
+        errors.append(f'{name}: embeds a copy of the contract; point at the shared file instead')
+    if not re.search(r'Your stage: (\d+|all)', text):
+        errors.append(f'{name}: names no stage ("Your stage: N")')
+    rules = re.search(r'<rules>(.*?)</rules>', text, re.S)
+    if not rules:
+        errors.append(f'{name}: no <rules> section')
+    elif len(re.findall(r'^\d+\. ', rules.group(1), re.M)) > 12:
+        errors.append(f'{name}: more than 12 rules')
+    if '<objective>' not in text:
+        errors.append(f'{name}: no <objective> section')
 for e in errors:
     print(e)
-print(f'COUNT {len(blocks)}')
+print(f'COUNT {count}')
 sys.exit(1 if errors else 0)
 PY_ADVISOR
 )"; then
-    ok "advisor contract identical in ${out##*COUNT } present advisor skills"
-    case "$out" in *SIZE*) local size="${out#*SIZE }"; printf '    contract block: %s\n' "${size%%$'\n'*}" ;; esac
+    ok "advisor contract shared by ${out##*COUNT } product skills (pointer, stage, objective, ≤ 12 rules)"
+    case "$out" in *SIZE*) local size="${out#*SIZE }"; printf '    contract file: %s\n' "${size%%$'\n'*}" ;; esac
   else
     while IFS= read -r line; do
       case "$line" in COUNT*|SIZE*) ;; *) bad "$line" ;; esac
@@ -599,7 +613,7 @@ check_interaction_pace() {
 import pathlib, sys
 root = pathlib.Path(sys.argv[1])
 OPEN, CLOSE = '<!-- interaction-pace:v1 -->', '<!-- /interaction-pace:v1 -->'
-files = ['.apm/skills/product-strategy/SKILL.md', '.apm/skills/ship/SKILL.md',
+files = ['.apm/skills/product/advisor-contract.md', '.apm/skills/ship/SKILL.md',
          '.apm/skills/bootstrap/baseline/AGENTS.md']
 copies, errors = {}, []
 for rel in files:
@@ -639,7 +653,7 @@ check_adr_parity() {
 import pathlib, re, sys
 root = pathlib.Path(sys.argv[1])
 srcs = {'docs-writer': '.apm/skills/bootstrap/baseline/core/agents/docs-writer.md',
-        'advisor contract': '.apm/skills/product-strategy/SKILL.md'}
+        'advisor contract': '.apm/skills/product/advisor-contract.md'}
 def template(rel):
     blocks = [b for b in re.findall(r'```md\n(.*?)```', (root / rel).read_text(), re.S)
               if b.startswith('# ADR-NNN')]
@@ -816,7 +830,7 @@ else:
 
 # (e) relative links resolve
 broken, checked = [], 0
-docs = [apm / 'README.md'] + [apm / 'skills' / n / 'SKILL.md' for n in product]
+docs = [apm / 'README.md', apm / 'skills' / 'product' / 'advisor-contract.md'] + [apm / 'skills' / n / 'SKILL.md' for n in product]
 for f in docs:
     if not f.is_file():
         continue
@@ -846,8 +860,13 @@ for name in product:
     f = apm / 'skills' / name / 'SKILL.md'
     if not f.is_file():
         continue
-    data = f.read_bytes()
-    m = re.search(r'<!-- (advisor-contract:v\d+) -->', data.decode())
+    # Same fingerprint as advisor-eval/run.py: SKILL.md plus the shared contract it points at.
+    data, source = f.read_bytes(), f.read_text()
+    contract = apm / 'skills' / 'product' / 'advisor-contract.md'
+    if contract.name in source and contract.is_file():
+        data += contract.read_bytes()
+        source = contract.read_text()
+    m = re.search(r'<!-- (advisor-contract:v\d+) -->', source)
     tag = m.group(1) if m else '-'
     if name not in latest:
         unevaluated.append(name)

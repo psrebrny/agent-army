@@ -42,6 +42,8 @@ python3 .claude/skills/advisor-eval/run.py <advisor> [--scenario S1 S3] [--arms 
 5. **Row.** `run.py` adds `cost` from the actor sessions' own reports, applies the decision rule and
    appends one row to `tests/fixtures/advisors/SCORECARDS.md`:
    `date | advisor | contract tag | SKILL.md sha256[:12] | arms | scenario | 9 scores per arm | verdict | note`.
+   For a product skill the hash covers its `SKILL.md` plus the shared `product/advisor-contract.md`
+   (rows before contract v2 hash `SKILL.md` alone); arm N gets the contract copied into its scratch.
 
 Transcripts stay in the printed scratch dir. Only the ledger row is committed, and only after the user
 approves the commit.

@@ -50,7 +50,7 @@ No model-evaluation runs are checked in with these fixtures.
 ## Advisor evaluation
 
 The fourteen product skills are prose, so `check.sh` can only prove their structure (frontmatter,
-examples, the identical `advisor-contract:v1` block, links, description length). Their behavior is
+the pointer to the shared `product/advisor-contract.md`, a stage, an objective, at most 12 rules, links, description length). Their behavior is
 measured by `advisor-eval`, a maintainer tool in `.claude/skills/advisor-eval/` that is never shipped.
 Each run calls models and costs money (observed: roughly $1–9 per advisor × scenario, both arms plus the persona and judge), so it is not part of
 `check.sh` or `smoke.sh`.
@@ -78,7 +78,8 @@ Each run calls models and costs money (observed: roughly $1–9 per advisor × s
   **Scorecards only, no transcripts:** transcripts stay in the printed scratch dir and are never
   committed; a row is committed only with the maintainer's approval.
 - **Staleness warning:** `check.sh` warns `advisor changed since last eval` when a product skill's
-  `SKILL.md` hash or contract tag differs from its latest row, and lists skills with no row yet. Any
+  fingerprint (sha256 of its `SKILL.md` plus the shared `product/advisor-contract.md`) or contract tag
+  differs from its latest row, and lists skills with no row yet. Any
   change to a product skill or to the contract means re-running `advisor-eval` for the affected
   advisors before a release.
 - **Limits:** one synthetic product per scenario, the maintainer knows the arms, and the actor's
