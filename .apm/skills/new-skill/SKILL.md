@@ -17,9 +17,9 @@ with an APM-managed core skill or an existing local skill.
 
 ## 2 · Author the local source
 
-The source is `.apm/skills/<name>/SKILL.md`, never `.agents/skills/` or a target-native rendered
-directory. Keep the frontmatter discriminating (`name`, `description` with “Use when…”), then include
-only the purpose, workflow, safety/scope boundaries, output contract and realistic prompt examples the
+The source is `.apm/skills/<name>/SKILL.md`, never an installed skill directory (`.agents/skills/`,
+`.claude/skills/`) or another target-native rendered directory. Keep the frontmatter discriminating
+(`name`, `description` with “Use when…”), then include only the purpose, workflow, safety/scope boundaries, output contract and realistic prompt examples the
 workflow actually needs. Put substantial conditional detail in a referenced file only when it saves
 every invocation from loading irrelevant instructions.
 
@@ -36,7 +36,8 @@ Ensure the project has an APM manifest. Render through APM:
 apm install --frozen --target <target>
 ```
 
-Confirm the rendered skill exists in `.agents/skills/<name>/SKILL.md`, the wrapper points to that path,
+Confirm the rendered skill exists in `.agents/skills/<name>/SKILL.md` (on Claude, `.claude/skills/<name>/SKILL.md`,
+where no wrapper is needed), the wrapper points to that path,
 and the active target can discover or invoke it. Run the repository's relevant structural checks when
 available. Report the source path, rendered path, invocation, ownership boundary and any intentionally
 absent automation.

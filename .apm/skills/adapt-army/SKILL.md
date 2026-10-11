@@ -25,9 +25,9 @@ Do not repeatedly raise a declined proposal unless new, material evidence change
 
 ## 2 · Inspect, then route to the smallest correct owner
 
-Before proposing a change, read the live relevant `.agents/skills/<skill>/SKILL.md` files, applicable root
-and nested `AGENTS.md` files, and local `.agent-army/agents` sources. Do not use `.opencode/skills` or
-`apm_modules` as instruction sources. Choose the narrowest owner and explain why it wins over alternatives:
+Before proposing a change, read the live relevant `.agents/skills/<skill>/SKILL.md` files (on Claude the one
+installed copy is `.claude/skills/<skill>/SKILL.md`), applicable root and nested `AGENTS.md` files, and
+local `.agent-army/agents` sources. Do not use `.opencode/skills` or `apm_modules` as instruction sources. Choose the narrowest owner and explain why it wins over alternatives:
 
 | Signal | Owner |
 |---|---|
@@ -40,8 +40,8 @@ and nested `AGENTS.md` files, and local `.agent-army/agents` sources. Do not use
 
 Creating a new agent is justified only when no existing role can own the responsibility without losing
 single-purpose scope. Creating a new skill is justified only when the user needs a distinct reusable
-workflow, not merely a longer existing prompt. Core skills under `.agents/skills/` are APM-managed: never
-edit them in a target repository.
+workflow, not merely a longer existing prompt. Core skills under `.agents/skills/` (on Claude, `.claude/skills/`) are
+APM-managed: never edit them in a target repository.
 
 ## 3 · Persist the proposal locally and ask
 
@@ -96,7 +96,7 @@ decision progresses.
 **EX 1 — task correction plus durable workflow lesson.** USER: “You started coding before I accepted the
 test interpretation. Fix this task, and this must not happen again.” → Repair the task through TDD, then
 read the live `ship` skill and route the durable local rule to `AGENTS.md` and, if necessary, the owning
-local role source. Do not edit `.agents/skills/ship`.
+local role source. Do not edit the installed `ship` skill.
 
 **EX 2 — existing agent, not a new one.** USER: “Reviewer should reject endpoints that expose internal
 database IDs.” → Route to `code-reviewer` and `AGENTS.md`; explain that this is a checklist addition, not

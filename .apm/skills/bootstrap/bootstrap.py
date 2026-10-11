@@ -22,6 +22,10 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 BASE = HERE / "baseline"
+TOOLS_DIR = BASE / "tools"
+# The neutral skill location. Most targets install there; for a target whose descriptor names
+# another place (Claude: .claude/skills), an earlier bootstrap left a second copy here.
+SHARED_SKILLS_DIR = ".agents/skills"
 ROLES = (
     "architect",
     "coder",
@@ -100,19 +104,61 @@ def owns_marker(text: str) -> bool:
     return OWNERSHIP_MARKER in text
 
 
-def feedback_router_block() -> str:
-    """A small, explicitly-owned extension safe to add to specialized AGENTS.md files."""
+def descriptor_dir(tool: str, key: str) -> str | None:
+    """Read `dirs.<key>` from tools/<tool>.yml.
+
+    The descriptors are flat two-level YAML, so a line parser is enough and PyYAML is not
+    needed. check.sh compares the result with a real YAML parse of every descriptor.
+    """
+    try:
+        lines = (TOOLS_DIR / f"{tool}.yml").read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return None
+    in_dirs = False
+    for line in lines:
+        content = line.split("#", 1)[0].rstrip()
+        if not content.strip():
+            continue
+        if not content[0].isspace():
+            in_dirs = content == "dirs:"
+            continue
+        match = re.fullmatch(r"\s+" + re.escape(key) + r":\s*(\S+)", content) if in_dirs else None
+        if match:
+            return match.group(1).strip("'\"")
+    return None
+
+
+_SKILLS_DIRS: dict[str, str] = {}
+
+
+def skills_dir(target: str) -> str:
+    """Return where APM installs the skills for this target, the one copy: descriptor `dirs.skills`."""
+    if target not in _SKILLS_DIRS:
+        value = descriptor_dir(target, "skills") or descriptor_dir("_default", "skills")
+        parts = value.split("/") if value else []
+        if not parts or any(part in {".", ".."} or not re.fullmatch(r"[A-Za-z0-9._-]+", part) for part in parts):
+            raise RuntimeError(f"tools/{target}.yml has no valid relative dirs.skills ({value!r})")
+        _SKILLS_DIRS[target] = value
+    return _SKILLS_DIRS[target]
+
+
+def feedback_router_block(target_skills_dir: str = SHARED_SKILLS_DIR) -> str:
+    """A small, explicitly-owned extension safe to add to specialized AGENTS.md files.
+
+    For the shared location this is byte-for-byte the block 0.3.1 and 0.4.0 wrote for every target.
+    """
+    managed = "APM-managed and shared across tools" if target_skills_dir == SHARED_SKILLS_DIR else "APM-managed"
     return """\n""" + MANAGED_ROUTER_START + """
 ## Keeping Agent Army current
 
 When the user corrects an agent, identifies a repeatable weakness, asks for a better workflow, or
 needs a missing specialist, first fix the current task inside its approved scope. Then classify the
-lesson with `.agents/skills/adapt-army/SKILL.md`: task-local correction, repo convention, existing
+lesson with `""" + target_skills_dir + """/adapt-army/SKILL.md`: task-local correction, repo convention, existing
 agent, existing skill, deterministic control, new agent, or new skill. Never modify the Army
 silently. Show an **Army Improvement Proposal** with the evidence, recommended target, write scope,
 verification and one approval question. Durable proposals and decisions live locally in
 `.agent-army/state.json`; do not store raw user text, secrets, blueprint paths or `design-docs` references
-there. Core skills in `.agents/skills/` are APM-managed and shared across tools. Before a durable proposal,
+there. Core skills in `""" + target_skills_dir + """/` are """ + managed + """. Before a durable proposal,
 read the live skill, applicable `AGENTS.md` and local `.agent-army/agents` sources. Put a repo law in `AGENTS.md`,
 a role responsibility in `.agent-army/agents`, and a separate user-invoked workflow in a new `.apm/skills` skill;
 never edit a package-managed core skill in a target repository. After `apm update`, run `/bootstrap` to
@@ -120,32 +166,52 @@ review new package skills and templates before choosing any local specialization
 """ + MANAGED_ROUTER_END + """\n"""
 
 
-def managed_router_status(path: Path) -> str:
-    """Return append, current or conflict without touching user-authored AGENTS content."""
+def managed_router_span(text: str) -> tuple[int, int] | None:
+    start = text.find(MANAGED_ROUTER_START)
+    end = text.find(MANAGED_ROUTER_END)
+    if start == -1 or end == -1 or end < start:
+        return None
+    return start, end + len(MANAGED_ROUTER_END)
+
+
+def managed_router_status(path: Path, target: str) -> str:
+    """Return append, current, replace or conflict without touching user-authored AGENTS content.
+
+    `replace` means the block is one this generator wrote for another skill location (e.g. the
+    `.agents/skills` block an earlier bootstrap wrote for Claude): unedited, so safe to update.
+    """
     if not path.exists():
         return "append"
     text = path.read_text(encoding="utf-8")
-    start = text.find(MANAGED_ROUTER_START)
-    end = text.find(MANAGED_ROUTER_END)
-    if start == -1 and end == -1:
+    if MANAGED_ROUTER_START not in text and MANAGED_ROUTER_END not in text:
         return "append"
-    if start == -1 or end == -1 or end < start:
+    span = managed_router_span(text)
+    if span is None:
         return "conflict"
-    current = text[start:end + len(MANAGED_ROUTER_END)].strip()
-    expected = feedback_router_block().strip()
-    return "current" if current == expected else "conflict"
+    current = text[span[0]:span[1]].strip()
+    if current == feedback_router_block(skills_dir(target)).strip():
+        return "current"
+    known = {feedback_router_block(SHARED_SKILLS_DIR).strip()}
+    known |= {feedback_router_block(skills_dir(other)).strip() for other in ALL_TARGETS}
+    return "replace" if current in known else "conflict"
 
 
-def ensure_feedback_router(root: Path, dry_run: bool) -> list[str]:
+def ensure_feedback_router(root: Path, target: str, dry_run: bool) -> list[str]:
     path = root / "AGENTS.md"
-    status = managed_router_status(path)
+    status = managed_router_status(path, target)
     if status == "conflict":
         return [str(path.relative_to(root)) + " has a modified Agent Army feedback-router block"]
     if status == "current":
         print(f"kept {path.relative_to(root)} (feedback-router already current)")
         return []
+    block = feedback_router_block(skills_dir(target))
     existing = path.read_text(encoding="utf-8") if path.exists() else "# AGENTS.md\n"
-    write_text(path, existing.rstrip() + "\n" + feedback_router_block(), dry_run)
+    span = managed_router_span(existing) if status == "replace" else None
+    if span:
+        # An unedited block for another skill location: update it in place.
+        write_text(path, existing[:span[0]] + block.strip() + existing[span[1]:], dry_run)
+    else:
+        write_text(path, existing.rstrip() + "\n" + block, dry_run)
     return []
 
 
@@ -498,11 +564,6 @@ def default_quality(root: Path) -> dict[str, Any]:
     return quality
 
 
-def skills_dir(target: str) -> str:
-    """Return the installed skill location for the selected target."""
-    return ".agents/skills"
-
-
 def is_agent_army_skills(path: Path) -> bool:
     """Recognise any Agent Army install, including a 0.3.1 one without product skills."""
     return all((path / skill / "SKILL.md").is_file() for skill in CORE_SKILLS) and (path / "bootstrap/bootstrap.py").is_file()
@@ -575,18 +636,19 @@ def tree_digests(skill_dir: Path) -> dict[str, str] | None:
 def materialize_skills(
     root: Path, target: str, dry_run: bool, previous_inventory: dict[str, Any] | None = None
 ) -> tuple[dict[str, Path], list[str]]:
-    """Copy missing package skills and refresh unmodified older package files.
+    """Fill and refresh the one skills copy at skills_dir(target); never create a second one.
 
-    A file in `.agents/skills` is overwritten only when its content equals that file in a known
-    released package (package-manifests) or is missing; nothing is ever deleted. A skill with any
-    file that matches neither the running package nor a known release (a local change), or with a
-    symlink, is kept whole and returned as a conflict.
+    Missing skills are copied in from a package source (e.g. when this generator runs from an
+    apm_modules cache). A file there is overwritten only when its content equals that file in a
+    known released package (package-manifests) or is missing; nothing is ever deleted. A skill with
+    any file that matches neither the running package nor a known release (a local change), or with
+    a symlink, is kept whole and returned as a conflict.
     """
     destination = root / skills_dir(target)
     added: dict[str, Path] = {}
     kept: list[str] = []
-    # The running generator's own package is the newest source (for Claude, apm updates
-    # .claude/skills while .agents/skills keeps the copy the previous bootstrap made).
+    # The running generator's own package is the newest source when it runs from elsewhere
+    # (an apm_modules cache) than the installed copy.
     package = HERE.parent
     if (
         is_agent_army_skills(destination)
@@ -652,13 +714,165 @@ def materialize_skills(
     return added, kept
 
 
+def _raise(error: OSError) -> None:
+    raise error
+
+
+def plain_copy_digests(skill_dir: Path) -> dict[str, str] | None:
+    """Digest every file under a dir; None unless all are plain, single-link, readable files.
+
+    A symlink anywhere, a special file, a hard-linked file (st_nlink > 1) or an unreadable entry
+    means the dir is not a plain package copy: its content may be reachable elsewhere.
+    """
+    digests: dict[str, str] = {}
+    try:
+        for current, dirnames, filenames in os.walk(skill_dir, onerror=_raise):
+            for name in dirnames + filenames:
+                path = Path(current) / name
+                info = path.lstat()
+                if stat.S_ISDIR(info.st_mode):
+                    continue
+                if not stat.S_ISREG(info.st_mode) or info.st_nlink > 1:
+                    return None
+                digests[str(path.relative_to(skill_dir))] = sha256_file(path)
+    except OSError:
+        return None
+    return digests
+
+
+def links_into(directory: Path, other: Path) -> bool:
+    """True when anything under `directory` (or itself) resolves into `other`."""
+    target = other.resolve()
+    paths = [directory]
+    for current, dirnames, filenames in os.walk(directory):
+        paths.extend(Path(current) / name for name in dirnames + filenames)
+    for path in paths:
+        resolved = path.resolve()
+        if resolved == target or target in resolved.parents:
+            return True
+    return False
+
+
+def classify_stale_shared_skills(
+    root: Path, target: str, planned: dict[str, Path] | None = None
+) -> tuple[dict[str, dict[str, str]], list[tuple[str, str]]]:
+    """Find the `.agents/skills` copies an earlier bootstrap made for a target that installs elsewhere.
+
+    Returns ({removable skill: its file digests}, [(kept skill, reason)]). A skill dir is removable
+    only when it is a real directory (no symlink, no hard-linked or special file anywhere) whose every
+    file equals that file in the running package or in a known release (package-manifests), and the
+    target's own copy of that skill exists (or is about to be copied, in a dry run) without linking
+    into it. Names outside the package are the user's own skills and are never considered. Nothing
+    is considered for a target whose skills_dir is the shared location itself.
+    """
+    live = root / skills_dir(target)
+    shared = root / SHARED_SKILLS_DIR
+    if Path(skills_dir(target)) == Path(SHARED_SKILLS_DIR):
+        return {}, []
+    if not shared.exists() and not shared.is_symlink():
+        return {}, []
+    if shared.is_symlink() or not shared.is_dir() or shared.resolve() != root.resolve() / SHARED_SKILLS_DIR:
+        return {}, [(SHARED_SKILLS_DIR, "a symlink, behind a symlink or not a directory")]
+    if shared.resolve() in {live.resolve(), HERE.parent.resolve()}:
+        # It is the installed copy behind a link, or the package this generator runs from.
+        return {}, [(SHARED_SKILLS_DIR, f"in use as {skills_dir(target)} or by the running bootstrap")]
+    known = known_package_digests()
+    removable: dict[str, dict[str, str]] = {}
+    kept: list[tuple[str, str]] = []
+    for entry in sorted(shared.iterdir()):
+        skill = entry.name
+        if skill not in SKILLS:
+            continue
+        installed = live / skill
+        if entry.is_symlink():
+            kept.append((skill, "symlink"))
+            continue
+        if not entry.is_dir():
+            kept.append((skill, "not a directory"))
+            continue
+        if not (installed / "SKILL.md").is_file() and skill not in (planned or {}):
+            kept.append((skill, f"no installed copy in {skills_dir(target)}"))
+            continue
+        if installed.exists() and links_into(installed, entry):
+            kept.append((skill, f"{skills_dir(target)}/{skill} links into it"))
+            continue
+        files = plain_copy_digests(entry)
+        if files is None:
+            kept.append((skill, "contains a symlink, hard link or special file"))
+            continue
+        if "SKILL.md" not in files:
+            kept.append((skill, "not an Agent Army copy"))
+            continue
+        package = HERE.parent / skill
+        local = [
+            rel
+            for rel, digest in files.items()
+            if digest not in known.get(f"{skill}/{rel}", set())
+            and not ((package / rel).is_file() and sha256_file(package / rel) == digest)
+        ]
+        if local:
+            kept.append((skill, f"local changes in {', '.join(local[:3])}"))
+            continue
+        removable[skill] = files
+    return removable, kept
+
+
+def remove_verified_copy(skill_dir: Path, files: dict[str, str]) -> bool:
+    """Unlink only the verified files (re-checked first), then the emptied dirs; never rmtree."""
+    try:
+        for rel, digest in files.items():
+            path = skill_dir / rel
+            info = path.lstat()
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink > 1 or sha256_file(path) != digest:
+                return False
+        for rel in files:
+            (skill_dir / rel).unlink()
+        for current, _dirs, _files in os.walk(skill_dir, topdown=False, onerror=_raise):
+            os.rmdir(current)  # fails, and keeps the dir, if anything new appeared in it
+    except OSError:
+        return False
+    return True
+
+
+def remove_stale_shared_skills(
+    root: Path, target: str, dry_run: bool, planned: dict[str, Path] | None = None
+) -> list[str]:
+    """Remove the unmodified second copy an earlier bootstrap left in `.agents/skills`.
+
+    Returns the kept skill names, for the upgrade review's conflict line. `.agents/skills` itself
+    goes only when it ends up empty.
+    """
+    removable, kept = classify_stale_shared_skills(root, target, planned)
+    shared = root / SHARED_SKILLS_DIR
+    live = skills_dir(target)
+    for name, reason in kept:
+        shown = name if name == SHARED_SKILLS_DIR else f"{SHARED_SKILLS_DIR}/{name}"
+        print(f"kept {shown} ({reason}; stale copy not removed, {live} is the installed copy)")
+    names = [name for name, _reason in kept]
+    for skill, files in removable.items():
+        print(f"{'plan remove' if dry_run else 'remove'} {SHARED_SKILLS_DIR}/{skill} (unmodified package copy; the one copy is {live}/{skill})")
+        if not dry_run and not remove_verified_copy(shared / skill, files):
+            print(f"kept {SHARED_SKILLS_DIR}/{skill} (changed during removal; stale copy not fully removed)")
+            names.append(skill)
+    if removable and shared.is_dir() and not shared.is_symlink():
+        left = [entry.name for entry in shared.iterdir() if not (dry_run and entry.name in removable)]
+        if not left:
+            print(f"{'plan remove' if dry_run else 'remove'} {SHARED_SKILLS_DIR} (empty)")
+            if not dry_run:
+                try:
+                    shared.rmdir()  # never rmtree: fails, and keeps it, if anything appeared
+                except OSError:
+                    print(f"kept {SHARED_SKILLS_DIR} (no longer empty)")
+    return names
+
+
 def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def package_inventory(root: Path) -> dict[str, dict[str, str]]:
-    """Hash only live, shared package materials; never inspect cache content for review."""
-    skills_root = root / ".agents/skills"
+def package_inventory(root: Path, target: str) -> dict[str, dict[str, str]]:
+    """Hash only the live installed package materials; never inspect cache content for review."""
+    skills_root = root / skills_dir(target)
     if not skills_root.is_dir():
         return {"skills": {}, "templates": {}}
     skills = {
@@ -695,9 +909,11 @@ def has_inventory_delta(delta: dict[str, dict[str, list[str]]]) -> bool:
 
 def print_upgrade_review(
     root: Path,
+    target: str,
     from_version: str | None,
     delta: dict[str, dict[str, list[str]]],
     kept_skills: list[str] | None = None,
+    stale_kept: list[str] | None = None,
 ) -> None:
     """Print the deterministic portion of the user-facing upgrade review card."""
     print("\nIncremental Upgrade Review")
@@ -711,12 +927,18 @@ def print_upgrade_review(
         print("  package delta: no changed live package material detected")
     if kept_skills:
         print(f"  conflict: local changes kept, not refreshed to {PACKAGE_VERSION}: {', '.join(kept_skills)} (merge by hand, or move the dir away to receive the package copy)")
+    if stale_kept:
+        print(
+            f"  conflict: stale {SHARED_SKILLS_DIR} copies kept (not identical to a package release; "
+            f"{skills_dir(target)} is the one installed copy): {', '.join(stale_kept)} "
+            "(move any local change into a repo-local skill or AGENTS.md, then delete the dir)"
+        )
     for name in delta["templates"]["changed"]:
         role = re.fullmatch(r"bootstrap/baseline/core/agents/([a-z-]+)\.md", name)
         if role and role.group(1) in ROLES:
             local = f"{LOCAL_AGENT_SOURCE_DIR}/agent-army-{role.group(1)}{LOCAL_AGENT_SUFFIX}"
             print(f"  recommended local diff: {name} -> {local} (merge into the specialization, never replace it)")
-    print("  inspect before recommending a local diff: .agents/skills, AGENTS.md, .agent-army/agents")
+    print(f"  inspect before recommending a local diff: {skills_dir(target)}, AGENTS.md, .agent-army/agents")
     print("  decision: apply selected | apply all | show details | skip")
 
 
@@ -790,10 +1012,10 @@ def has_explicit_profile_change(args: argparse.Namespace) -> bool:
 
 def apply_incremental_changes(root: Path, target: str, dry_run: bool) -> list[str]:
     """Apply idempotent, package-owned fragments without version-specific routes."""
-    return ensure_feedback_router(root, dry_run) + migrate_legacy_artifacts(root, target, dry_run)
+    return ensure_feedback_router(root, target, dry_run) + migrate_legacy_artifacts(root, target, dry_run)
 
 
-def needs_package_maintenance(previous: dict[str, Any], root: Path) -> bool:
+def needs_package_maintenance(previous: dict[str, Any], root: Path, target: str) -> bool:
     """Detect incomplete state or changed live package material on every update."""
     package = previous.get("package") if isinstance(previous.get("package"), dict) else {}
     # A pre-0.3 install kept permanent *.agent.md sources here; temporary staging for a
@@ -807,10 +1029,12 @@ def needs_package_maintenance(previous: dict[str, Any], root: Path) -> bool:
     )
     return (
         not isinstance(package.get("inventory"), dict)
-        or has_inventory_delta(inventory_delta(package, package_inventory(root)))
-        or managed_router_status(root / "AGENTS.md") != "current"
+        or has_inventory_delta(inventory_delta(package, package_inventory(root, target)))
+        or managed_router_status(root / "AGENTS.md", target) != "current"
         or legacy_agents
         or legacy_native_agents
+        # Only a removable stale copy; a kept conflict alone does not reopen the review.
+        or bool(classify_stale_shared_skills(root, target)[0])
     )
 
 
@@ -1004,7 +1228,7 @@ def main() -> int:
     restage_only = False
     profile_change_only = False
     if bootstrap_mode == "current":
-        if needs_package_maintenance(previous, ROOT):
+        if needs_package_maintenance(previous, ROOT, args.target):
             bootstrap_mode = "incremental"
             print("Agent Army package is current; applying the pending shared-skills correction and upgrade review.")
         elif agent_sources_need_staging(ROOT, args.target, previous):
@@ -1055,9 +1279,10 @@ def main() -> int:
             return 2
         # The managed router block belongs to every profile; without it each later run would
         # report a pending correction. A block the user edited is left alone.
-        if managed_router_status(ROOT / "AGENTS.md") == "append":
-            ensure_feedback_router(ROOT, args.dry_run)
-        elif managed_router_status(ROOT / "AGENTS.md") == "conflict":
+        router = managed_router_status(ROOT / "AGENTS.md", args.target)
+        if router in {"append", "replace"}:
+            ensure_feedback_router(ROOT, args.target, args.dry_run)
+        elif router == "conflict":
             print("note AGENTS.md: the Agent Army feedback-router block was edited; kept as is")
     try:
         routing = model_routing(args.target, previous, args)
@@ -1080,7 +1305,10 @@ def main() -> int:
     previous_package = previous.get("package") if isinstance(previous.get("package"), dict) else {}
     previous_inventory = previous_package.get("inventory") if isinstance(previous_package.get("inventory"), dict) else {}
     planned_skills, kept_skills = materialize_skills(ROOT, args.target, args.dry_run, previous_inventory)
-    inventory = package_inventory(ROOT)
+    # The one copy is where APM installed the skills; drop the unmodified second copy an earlier
+    # bootstrap made in .agents/skills (only for targets that install elsewhere, e.g. Claude).
+    stale_kept = remove_stale_shared_skills(ROOT, args.target, args.dry_run, planned_skills)
+    inventory = package_inventory(ROOT, args.target)
     if args.dry_run:
         # Preview the review the real run will show once skills are copied or refreshed.
         for skill, src in planned_skills.items():
@@ -1088,7 +1316,7 @@ def main() -> int:
                 inventory["templates" if "/" in name else "skills"][name] = digest
     delta = inventory_delta(previous_package, inventory)
     if bootstrap_mode == "incremental":
-        print_upgrade_review(ROOT, from_version, delta, kept_skills)
+        print_upgrade_review(ROOT, args.target, from_version, delta, kept_skills, stale_kept)
     if bootstrap_mode == "incremental" and args.upgrade_review_outcome == "skipped":
         print("preserve: local role contracts and model routing (Incremental Upgrade Review skipped)")
         # Stage the existing contracts so APM's frozen pass keeps their native output; add none.

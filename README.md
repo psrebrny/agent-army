@@ -169,11 +169,14 @@ apm update psrebrny/agent-army --target opencode
 
 Then run `/bootstrap`. It detects an older profile or changed live package materials, previews a narrow
 incremental migration and shows an **Incremental Upgrade Review** before any local specialization changes.
-The review compares shared `.agents/skills` and baseline-template hashes with the local inventory, then
-asks whether to apply selected recommendations, apply all, inspect details or skip. The migration preserves
+The review compares the installed skills (`.claude/skills` on Claude, `.agents/skills` elsewhere) and
+baseline-template hashes with the local inventory, then asks whether to apply selected recommendations, apply all, inspect details or skip. The migration preserves
 repo-specialized `.agent-army/agents`, model routing, quality policy and external controls; it updates only marked
 Agent Army fragments. A manually edited marked fragment is reported as a conflict, never overwritten. Use
 `/bootstrap --mode full` only when you want to intentionally re-specialize the team or change target.
+The skills keep one copy, where APM installed them. On Claude, bootstrap 0.3.1 and 0.4.0 also copied them to
+`.agents/skills`; `/bootstrap` removes that copy where every file is identical to a package release and
+reports anything else there (a local change, a link) as a conflict.
 
 ## Keeping the team current
 

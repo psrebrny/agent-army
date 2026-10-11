@@ -25,6 +25,10 @@ v0.3.1 generator, incremental migration safety, and the absence of shell-sourced
 - every adapter declares conservative `model_control`; confirmed native model fields can route static role models, while unsupported fields, missing exact IDs and effort selectors degrade to inheritance rather than guessed settings;
 - native/degraded APM rendering preserves the delegation contract, Execution State/Execution Profile and Handoff text;
 - a failing `{cwd, argv}` command fails verification;
+- the skills keep one installed copy: `.claude/skills` on Claude (no `.agents/skills`), `.agents/skills`
+  elsewhere; a stale Claude `.agents/skills` copy from bootstrap 0.3.1/0.4.0 is removed only where every
+  file is identical to a package release, while a changed file, symlink or hard link keeps its skill dir
+  and is reported as a conflict;
 - legacy v0.2 profiles preview and apply an idempotent incremental migration without overwriting
   specialized agents, local overlays or user-edited managed blocks;
 - APM renders the expected native output for Claude, Codex, Cursor and Copilot,

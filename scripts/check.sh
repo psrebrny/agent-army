@@ -302,6 +302,21 @@ PY
       MODEL_CONTROL_INVALID*) bad "$name: invalid model_control value(s): ${RC#MODEL_CONTROL_INVALID }" ;;
     esac
   done
+  # bootstrap.py reads dirs.skills with a dependency-free line parser; it must agree with YAML.
+  RC="$(PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/.apm/skills/bootstrap/bootstrap.py" "$TOOLS_DIR" <<'PY'
+import importlib.util, pathlib, sys, yaml
+spec = importlib.util.spec_from_file_location("agent_army_bootstrap", sys.argv[1])
+module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+wrong = []
+for f in sorted(pathlib.Path(sys.argv[2]).glob("*.yml")):
+    want = (yaml.safe_load(f.read_text()).get("dirs") or {}).get("skills")
+    got = module.skills_dir(f.stem)
+    if got != want:
+        wrong.append(f"{f.stem}: {got} != {want}")
+print("WRONG " + "; ".join(wrong) if wrong else "OK")
+PY
+)"
+  [ "$RC" = OK ] && ok "bootstrap.py skills_dir() matches dirs.skills in every descriptor" || bad "bootstrap.py skills_dir() disagrees with descriptors: ${RC#WRONG }"
 }
 
 check_tool_packaging() {

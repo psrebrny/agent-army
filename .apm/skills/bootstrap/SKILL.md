@@ -28,8 +28,8 @@ target change requires `--mode full`; and a newer local profile is never downgra
 migration, show the exact version transition, managed paths, preserved local sources and any conflict,
 then get one explicit “apply migration” confirmation before rerunning without `--dry-run`.
 
-Incremental mode first shows an **Incremental Upgrade Review**. Read the live shared skills under
-`.agents/skills`, the current root `AGENTS.md`, and local `.agent-army/agents`; use the deterministic package
+Incremental mode first shows an **Incremental Upgrade Review**. Read the live installed skills under
+`$SKILLS_DIR` (Step 0), the current root `AGENTS.md`, and local `.agent-army/agents`; use the deterministic package
 inventory as the delta, then recommend only concrete local improvements. The card
 lists new package capabilities, possibly affected local paths, a recommended diff, reason, test and the
 choices `apply selected`, `apply all`, `show details` or `skip`. Do not modify local specialization until
@@ -65,21 +65,22 @@ never erase feedback or upgrade state.
 
 ## Step 0 — target and ownership (mechanical, explicit)
 
-Every normal skill invocation uses the shared installed directory:
+There is one copy of the skills: the directory APM installed them to (the target's `dirs.skills` in
+`baseline/tools/<target>.yml`). Every normal skill invocation uses it:
 
 ```bash
-SKILLS_DIR=".agents/skills"
+SKILLS_DIR="<.claude/skills on Claude; .agents/skills on every other target>"
 BOOTSTRAP_DIR="<directory of the SKILL.md you are following, e.g. .claude/skills/bootstrap>"
 ```
 
-Run the program next to the SKILL.md the tool loaded (`$BOOTSTRAP_DIR`), not a copy elsewhere. A tool-native
-install (for Claude, `.claude/skills`) can be newer than the shared `.agents/skills` copy the previous
-bootstrap made; the program refreshes unmodified older copies there itself and reports locally changed ones
-as conflicts on the upgrade card.
+Run the program next to the SKILL.md the tool loaded (`$BOOTSTRAP_DIR`), not a copy elsewhere. Bootstrap
+0.3.1 and 0.4.0 also copied the skills into `.agents/skills` on Claude. The program removes such a stale copy
+only where every file is identical to a package release (and nothing is a link), and reports any other
+skill dir there as a conflict on the upgrade card. Never follow or edit that stale copy.
 
 If this directory is missing, stop and ask the user to repair the installation with `apm install` or
 `apm update`. Do not read `.opencode/skills` or `apm_modules` as instructions. The deterministic bootstrap
-program may use those locations only as a mechanical recovery source to restore a missing shared directory;
+program may use those locations only as a mechanical recovery source to restore a missing installed directory;
 they are never a source of workflow guidance or of the upgrade review.
 
 Run the detector; do not infer the active tool from a directory listing:
@@ -135,7 +136,7 @@ It creates one canonical local role-contract set in `.agent-army/agents/*.agent`
 primitives in `.apm/hooks`, and `.agent-army/config.json`. OpenCode deliberately does not receive
 APM agent staging or `.opencode/agents` output in this profile; `/ship` reads the role contracts
 and executes them in the main thread. Other targets may still use their native APM adapter.
-All tools can use the same `.agents/skills` directory.
+The skills stay where APM installed them (`$SKILLS_DIR`); bootstrap makes no second copy.
 
 Read the status before continuing:
 
