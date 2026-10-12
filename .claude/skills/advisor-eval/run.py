@@ -54,7 +54,8 @@ def claude(args, cwd, prompt, whole_turn=False):
     (an answer, then a file write) reaches the persona and the judge as the user would see it.
     """
     fmt = ["--output-format", "stream-json", "--verbose"] if whole_turn else ["--output-format", "json"]
-    cmd = ["claude", "-p", *fmt, "--strict-mcp-config", "--setting-sources", "project", *args, prompt]
+    # `--` ends the options: --allowedTools takes several values and would swallow the prompt.
+    cmd = ["claude", "-p", *fmt, "--strict-mcp-config", "--setting-sources", "project", *args, "--", prompt]
     out = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, env=CHILD_ENV,
                          stdin=subprocess.DEVNULL)
     if whole_turn:
@@ -287,6 +288,10 @@ def main():
         web = (scenario / "web-on").exists() if a.web == "scenario" else a.web == "on"
         actor_args = [*model_args, "--tools", ACTOR_TOOLS + ("," + WEB_TOOLS if web else ""),
                       "--permission-mode", "acceptEdits"]
+        if web:
+            # `--tools` only makes the tools available; `acceptEdits` does not approve them, so
+            # without this every WebSearch/WebFetch call is refused ("requested permissions").
+            actor_args += ["--allowedTools", *WEB_TOOLS.split(",")]
         bundles, ids, costs, notes, overhead = {}, {}, {}, [], 0.0
         for arm in arms:
             scratch = assemble(scenario, arm, a.advisor, a.reference_dir, base)
