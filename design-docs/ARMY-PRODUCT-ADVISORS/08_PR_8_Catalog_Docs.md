@@ -145,3 +145,7 @@ Then run the final verification and confirm every advisor's latest scorecard is 
 
 > **✅ PR Manual Acceptance:**
 > - [ ] **Functional:** read `.apm/README.md` as a new user: pick an advisor for "I have an idea, no product yet" and for "people sign up but don't buy"
+
+---
+
+> **Post-closure changes (PR #4 review, 2026-10-11/12):** shared advisor contract v2, all product skills rewritten in Prompt Architect shape, `/ux-review` walking the running app, and one copy of the skills (D21–D23 in the manifest). All 14 advisors were re-run through `advisor-eval` on v2; the ledger `tests/fixtures/advisors/SCORECARDS.md` holds the rows. Harness fixes made on the way: whole actor turn captured, judge JSON recovery, web tools approved for the actor.
