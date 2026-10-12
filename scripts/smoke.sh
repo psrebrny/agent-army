@@ -387,7 +387,7 @@ PY
     && ok "unmodified 0.3.1 copies in .agents/skills are removed" || bad "unmodified 0.3.1 copies left in .agents/skills"
   grep -q 'LOCAL-NEW-AGENT-NOTE' "$C031/.agents/skills/new-agent/SKILL.md" && ok "the locally changed skill is kept" || bad "a locally changed skill was removed or overwritten"
   [ -f "$C031/.agents/skills/ship/team-notes.md" ] && [ -f "$C031/.agents/skills/ship/SKILL.md" ] \
-    && grep -q 'conflict: .*ship' "$WORK/claude-031-up.txt" \
+    && grep -q 'conflict: .*\bship\b' "$WORK/claude-031-up.txt" \
     && ok "a skill dir holding a user file is kept whole and reported" || bad "a skill dir with a user file was removed or not reported"
   all_skills_present "$C031" claude && [ ! -e "$C031/.agents/skills/product" ] \
     && ok "the 19 skills live only in .claude/skills (nothing added to .agents/skills)" || bad "skills missing in .claude/skills or copied to .agents/skills"
@@ -424,10 +424,10 @@ fi
 printf '\n\033[1mGATE 1.75 · one copy of the skills\033[0m\n'
 [ ! -e "$WORK/claude/.agents/skills" ] && all_skills_present "$WORK/claude" claude && [ "$(skill_copies "$WORK/claude")" = 1 ] \
   && ok "fresh Claude bootstrap: one copy in .claude/skills, no .agents/skills" || bad "fresh Claude bootstrap made a second copy or missed .claude/skills"
-! grep -qx '.claude/skills/' "$WORK/claude/.gitignore" 2>/dev/null \
-  && ok "Claude bootstrap leaves .claude/skills out of .gitignore (the user's own skills live there)" || bad "Claude bootstrap ignores .claude/skills"
-grep -q '"product/advisor-contract.md"' "$WORK/claude/.agent-army/config.json" \
-  && ok "the package inventory tracks the shared advisor contract" || bad "advisor contract missing from the package inventory"
+[ -f "$WORK/claude/.gitignore" ] && grep -qx '.agent-army/state.json' "$WORK/claude/.gitignore" && ! grep -qx '.claude/skills/' "$WORK/claude/.gitignore" \
+  && ok "Claude bootstrap leaves .claude/skills out of .gitignore (the user's own skills live there)" || bad "Claude bootstrap ignores .claude/skills or wrote no .gitignore"
+python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); sys.exit(0 if "product/advisor-contract.md" in d["package"]["inventory"]["skills"] else 1)' "$WORK/claude/.agent-army/config.json" \
+  && ok "the package inventory tracks the shared advisor contract under skills" || bad "advisor contract missing from the skills group of the package inventory"
 MIGC="$WORK/cache-migration-claude"; init_repo "$MIGC"
 mkdir -p "$MIGC/apm_modules/psrebrny/agent-army/.apm"
 cp -R "$ROOT/.apm/skills" "$MIGC/apm_modules/psrebrny/agent-army/.apm/"
@@ -470,6 +470,26 @@ ship_before="$(tree_digest "$CM/.agents/skills/ship")"
   && ok "0.4.0 Claude: a modified file keeps its whole skill dir and is reported as a conflict" || bad "0.4.0 Claude: modified skill dir removed, changed or not reported"
 [ ! -e "$CM/.agents/skills/bootstrap" ] && [ "$(ls "$CM/.agents/skills" 2>/dev/null)" = ship ] \
   && ok "0.4.0 Claude: the unmodified skills beside it are removed" || bad "0.4.0 Claude: unmodified stale skills left beside the conflict"
+
+# Review repairs: a git-tracked .agents/skills is kept, an incomplete installed copy keeps the stale one,
+# and a run without apm.yml never turns the user's own skills into local APM sources.
+CT="$WORK/claude-040-tracked"; cp -R "$C040" "$CT" 2>/dev/null; rm -rf "$CT/.agents"; mkdir -p "$CT/.agents"; cp -R "$CT/.claude/skills" "$CT/.agents/skills"
+(cd "$CT" && git add -f .agents/skills >/dev/null 2>&1 && git commit -qm "track shared skills" >/dev/null 2>&1)
+(cd "$CT" && python3 .claude/skills/bootstrap/bootstrap.py claude --mode auto --upgrade-review-outcome skipped --skip-apm > "$WORK/claude-040-tracked.txt" 2>&1)
+[ -f "$CT/.agents/skills/ship/SKILL.md" ] && grep -q 'tracked by git' "$WORK/claude-040-tracked.txt" && [ -z "$(cd "$CT" && git status --porcelain -- .agents/skills)" ] \
+  && ok "0.4.0 Claude: a git-tracked .agents/skills is kept and reported, not deleted" || bad "0.4.0 Claude: tracked .agents/skills was removed or not reported"
+CI="$WORK/claude-040-incomplete"; cp -R "$C040" "$CI" 2>/dev/null; rm -rf "$CI/.agents"; mkdir -p "$CI/.agents"; cp -R "$CI/.claude/skills" "$CI/.agents/skills"
+rm -f "$CI/.claude/skills/bootstrap/baseline/AGENTS.md"
+(cd "$CI" && python3 .claude/skills/bootstrap/bootstrap.py claude --mode auto --upgrade-review-outcome skipped --skip-apm > "$WORK/claude-040-incomplete.txt" 2>&1)
+[ -f "$CI/.agents/skills/bootstrap/baseline/AGENTS.md" ] && grep -q 'installed copy in .claude/skills is incomplete' "$WORK/claude-040-incomplete.txt" \
+  && ok "0.4.0 Claude: a stale copy is kept when the installed copy lacks one of its files" || bad "0.4.0 Claude: stale copy removed although the installed copy is incomplete"
+if command -v apm >/dev/null 2>&1; then
+  CF="$WORK/claude-foreign"; init_repo "$CF"; install_skills "$CF" claude
+  mkdir -p "$CF/.claude/skills/my-own-skill"; printf -- '---\nname: my-own-skill\ndescription: mine\n---\n# mine\n' > "$CF/.claude/skills/my-own-skill/SKILL.md"
+  bootstrap_apm "$CF" claude --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null 2>&1 || true
+  [ -f "$CF/.claude/skills/my-own-skill/SKILL.md" ] && [ ! -e "$CF/.apm/skills/my-own-skill" ] \
+    && ok "Claude without apm.yml: the user's own skill stays out of the local APM sources" || bad "Claude without apm.yml: the user's skill was copied into .apm/skills"
+fi
 
 printf '\n\033[1mGATE 1.8 · Claude upgrade skip through APM keeps native agents\033[0m\n'
 if command -v apm >/dev/null 2>&1; then

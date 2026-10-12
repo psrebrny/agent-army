@@ -781,6 +781,10 @@ def classify_stale_shared_skills(
     if shared.resolve() in {live.resolve(), HERE.parent.resolve()}:
         # It is the installed copy behind a link, or the package this generator runs from.
         return {}, [(SHARED_SKILLS_DIR, f"in use as {skills_dir(target)} or by the running bootstrap")]
+    tracked = subprocess.run(["git", "ls-files", "--", SHARED_SKILLS_DIR], cwd=root, capture_output=True, text=True)
+    if tracked.returncode == 0 and tracked.stdout.strip():
+        # Other tools in the team may read the committed copy; deleting it is the user's decision.
+        return {}, [(SHARED_SKILLS_DIR, "tracked by git; remove it yourself with `git rm -r` if no other tool uses it")]
     known = known_package_digests()
     removable: dict[str, dict[str, str]] = {}
     kept: list[tuple[str, str]] = []
@@ -807,6 +811,9 @@ def classify_stale_shared_skills(
             continue
         if "SKILL.md" not in files:
             kept.append((skill, "not an Agent Army copy"))
+            continue
+        if skill not in (planned or {}) and not all((installed / rel).is_file() for rel in files):
+            kept.append((skill, f"the installed copy in {skills_dir(target)} is incomplete"))
             continue
         package = HERE.parent / skill
         local = [
@@ -1198,13 +1205,17 @@ def run_apm(root: Path, target: str) -> tuple[int, bool]:
             # native directory before using the shared compatible path.
             installed_skills = root / ".opencode/skills"
         local_skills = root / ".apm/skills"
-        if not installed_skills.is_dir():
-            print("WARN: no apm.yml and no installed skill directory; local agent sources were generated but cannot be rendered by APM.", file=sys.stderr)
+        if not installed_skills.is_dir() or not is_agent_army_skills(installed_skills):
+            print("WARN: no apm.yml and no installed Agent Army skill directory; local agent sources were generated but cannot be rendered by APM.", file=sys.stderr)
             return 0, False
         if local_skills.exists():
             print("WARN: no apm.yml but .apm/skills already exists; refusing to guess ownership. Run `apm lock` and `apm install --frozen --target %s` yourself." % target, file=sys.stderr)
             return 0, False
-        shutil.copytree(installed_skills, local_skills)
+        # Only the package's own skills: the skill dir of some tools (.claude/skills) also holds the
+        # user's skills, which must not become local APM sources.
+        for skill in SKILLS:
+            if (installed_skills / skill).is_dir():
+                shutil.copytree(installed_skills / skill, local_skills / skill)
         write_text(manifest, f"name: agent-army-profile\nversion: {PACKAGE_VERSION}\ndescription: Local Agent Army bootstrap profile\nincludes: auto\ndependencies:\n  apm: []\n  mcp: []\n", False)
         lock = subprocess.run([apm, "lock"], cwd=root)
         if lock.returncode != 0:
@@ -1325,7 +1336,7 @@ def main() -> int:
         # Preview the review the real run will show once skills are copied or refreshed.
         for skill, src in planned_skills.items():
             for name, digest in skill_digests(src.parent, skill).items():
-                inventory["templates" if "/" in name else "skills"][name] = digest
+                inventory["skills" if name in SKILLS or name == ADVISOR_CONTRACT else "templates"][name] = digest
     delta = inventory_delta(previous_package, inventory)
     if bootstrap_mode == "incremental":
         print_upgrade_review(ROOT, args.target, from_version, delta, kept_skills, stale_kept)
