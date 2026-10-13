@@ -6,42 +6,49 @@
 **Objective:** the `advisor-contract:v1` block, an identity check, attribution, and four advisors (`product-strategy`, `product-red-team`, `market-research`, `validate-product`) that pass gate G1.
 
 ## Execution State
-- **PR status:** planned
-- **Interaction policy:** unset — /ship asks once per PR before first execution
-- **Execution scope:** unset
-- **Scope Profile:** unset
-- **Model routing:** unset
-- **Last manual configuration:** unknown
-- **Current task:** none
+- **PR status:** ready_for_human_review
+- **Interaction policy:** autonomous (user switched from interactive after Task 2.1, 2026-10-09; D18)
+- **Execution scope:** PR 2
+- **Scope Profile:** one PR; coordinator = highest unfinished task profile (2.1 `design_decision`); coordination `medium`
+- **Model routing:** inherit (source repo has no `.agent-army/config.json`); eval actor and judge sessions use the `claude -p` default model, recorded per run
+- **Last manual configuration:** stay current (no material model recommendation)
+- **Current task:** none (all tasks done; closure complete)
 - **Temporary delegation:** none
 - **Active roles:** none
-- **Last verified stage:** planned
-- **Awaiting decision:** none
+- **Last verified stage:** closure (2026-10-09): four advisors + wrappers written as one Autonomous batch (D18); `scripts/check.sh` 166/0; new frontmatter parses as strict YAML (pre-existing `.apm/commands/ship.md` does not: unquoted `: `, out of scope, reported); spot checks: `product-strategy` S1 pass (N Σ18 ff0 vs K Σ10 ff1), `validate-product` S1 pass (N Σ16 ff0 vs K Σ13 ff0; judge: resume re-asked one settled question, next step was a list → fixed in `validate-product` Writes after the run, not re-run, so the row's hash is the pre-fix version); self-review + secrets grep clean; no independent `code-reviewer` run (not requested); `smoke.sh` 119/9 unchanged by this PR (gate 3 needs `apm`, absent here). Before that, 2.1 GREEN: `t21.sh` 9/9; contract 135 lines (reported only, D17); `SOURCES.md` 9 rows read at their commits
+- **Awaiting decision:** final review: manual acceptance (run `/product-strategy` on your real idea, resume in a new session)
 
 ---
 
 ## Execution Progress
-- **Milestones:** unset
-- **Current milestone:** none
-- **Finish condition:** unset
-- **Last map change:** none
+- **Milestones:** 1) Task 2.1 contract block + identity check + `SOURCES.md` · 2) Task 2.2 `product-strategy` + `product-red-team` (+ G1 eval) · 3) Task 2.3 `market-research` + `validate-product` (+ G1 eval) · 4) closure: review, security, docs, final verification
+- **Current milestone:** 4 of 4 (closure done)
+- **Finish condition:** all three tasks verified (check.sh GREEN, G1 scorecard rows with verdicts), review + security clean, PR at `ready_for_human_review`; commit only after approval
+- **Last map change:** 2026-10-09: Autonomous mode; 2.2 and 2.3 written as one batch; eval spot check on `product-strategy` + `validate-product` only (D18)
 - **Deferred ideas:** none
 
 ---
 
 ## Interaction Card
-none
+- **Checkpoint:** final review
+- **Progress:** krok 4 z 4; PR 2 gotowy do Twojego przeglądu
+- **Completed:** kontrakt + `SOURCES.md` (2.1); `product-strategy`, `product-red-team`, `market-research`, `validate-product` + wrappery (2.2–2.3)
+- **Evidence:** `check.sh` 166/0; spot checki: product-strategy N 18 vs K 10, validate-product N 16 vs K 13, 0 fałszywych faktów w N
+- **Review focus:** przetestuj `/product-strategy` na swoim pomyśle i wznów w nowej sesji
+- **Question:** czy po teście ręcznym PR 2 jest OK, czy coś poprawić?
+- **Options:** continue | direct a correction | show details
+- **Discussion:** none
 
 ---
 
 ### Task 2.1: Contract block, identity check, `SOURCES.md`
 
-**Task status:** open
+**Task status:** done
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
-- **Bottleneck rationale:** the block is the behavior every product skill shares; ≤ 120 lines must carry record types, store binding rules, register, output format, ADR template, stage model, work item format and safety rules
-- **Escalation trigger:** the block exceeds 120 lines, or a rule needs advisor-specific wording
+- **Bottleneck rationale:** the block is the behavior every product skill shares; it must carry record types, store binding rules, register, output format, ADR template, stage model, work item format and safety rules, and nothing advisor-specific (no line cap, D17)
+- **Escalation trigger:** a rule needs advisor-specific wording, or an advisor eval shows high `cost` or weak N − K that traces to the contract
 
 **Run Configuration:**
 - **Role:** main session
@@ -52,7 +59,7 @@ none
 
 **Action:**
 Write the contract text from manifest §3 "Data Flow / Strategy" (shared contract + ADR rules + brief schema + output format + record types and their repo default locations + `stores.json` schema and external-store rules (manifest Contract surfaces and Constraints) + stage model table + work item format + the closing line "stage N · full picture: `/product`") between `<!-- advisor-contract:v1 -->` and `<!-- /advisor-contract:v1 -->`. The brief schema has these sections: Product, Audience & initial segment, Problem, Alternatives & advantage, Revenue model, Out of scope, Customer language (real quotes with source, no personal data), Register (`ID | Type | Statement | Source | Evidence level | Status | Date`), Change proposals, Unknowns, Conversation state. Add `check_advisor_contract` to `scripts/check.sh`: every `.apm/skills/*/SKILL.md` that contains the opening tag must contain a byte-identical block, and every existing skill dir named in the product-skill list (the 14 names, kept in one variable) must contain it. Completeness (all 14 present) is asserted by the registry check in PR 7, so `check.sh` stays green between PRs. Create `.apm/SOURCES.md` with one row per borrowed idea (repo, file, commit, license, what was taken), wording it as attribution, not a recommendation.
-- **API/Component Contract:** contract block v1; `check.sh` prints `advisor contract identical in N present advisor skills`.
+- **API/Component Contract:** contract block v1; `check.sh` prints `advisor contract identical in N present advisor skills`. The contract includes the `interaction-pace:v1` paragraph (manifest §3, D16) between its own tags; add `check_interaction_pace`, which compares that paragraph in the contract with the copies in `/ship` and the baseline `AGENTS.md` once they exist (Task 6.5).
 - **Compatibility:** new surface; the authoritative copy is in `product-strategy`.
 - **Refactor checkpoint / recovery:** not applicable
 - `SOURCES.md` rows: pm-skills `strategy-red-team`, `pre-mortem`, `identify-assumptions-new`, `brainstorm-experiments-new` (XYZ, after Savoia), `interview-script` (Mom Test, after Fitzpatrick), `product-strategy` (trade-offs/"won't"), `privacy-policy` (section checklist only), all `@8607e3b` MIT; marketingskills `marketing-loops` `@5e721d7` MIT; pratikshadake Ship/Iterate/Kill `@0f81a86` MIT. Check the Torres/Cagan attribution at the source before writing it.
@@ -86,11 +93,11 @@ Write the contract text from manifest §3 "Data Flow / Strategy" (shared contrac
 3. Write the authoritative block; remove the scratch copy.
 4. Run `scripts/check.sh --skills` → GREEN; record the output.
 
-**Aligns with:** Contract surfaces; D2
+**Aligns with:** Contract surfaces; D2; D17
 
 ### Task 2.2: `product-strategy` + `product-red-team`
 
-**Task status:** open
+**Task status:** done
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
@@ -121,7 +128,7 @@ Write the contract text from manifest §3 "Data Flow / Strategy" (shared contrac
 - **Start gate:** Interactive: card with the write list | Autonomous: in-scope only
 - **STOP and return `awaiting_approval` when:** a method needs a third-party file copied verbatim (see D2 exception).
 
-**Verification Command:** `scripts/check.sh --skills` then `advisor-eval product-strategy product-red-team --scenario S1 S3 S11`
+**Verification Command:** `scripts/check.sh --skills`; spot check (D18): `advisor-eval product-strategy --scenario S1`
 
 **Testing Strategy & Cases (Testing Trophy):**
 - **Risk / level choice:** risk = confident advice built on invented demand. The behavioral gate is the only meaningful level.
@@ -130,7 +137,7 @@ Write the contract text from manifest §3 "Data Flow / Strategy" (shared contrac
 
 **TDD Execution & Auto-Critic:**
 1. Task type: non-code (skill prose) with a behavioral gate.
-2. Baseline K rows from PR 1 serve as the bar.
+2. The bar is arm K from the same run.
 3. Write both skills.
 4. Run check + eval; record the scorecard rows; apply the decision rule.
 
@@ -138,7 +145,7 @@ Write the contract text from manifest §3 "Data Flow / Strategy" (shared contrac
 
 ### Task 2.3: `market-research` + `validate-product`
 
-**Task status:** open
+**Task status:** done
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
@@ -169,7 +176,7 @@ Write the contract text from manifest §3 "Data Flow / Strategy" (shared contrac
 - **Start gate:** Interactive: card with the write list | Autonomous: in-scope only
 - **STOP and return `awaiting_approval` when:** research requires a paid tool or account.
 
-**Verification Command:** `scripts/check.sh --skills` then `advisor-eval market-research validate-product --scenario S1 S9 S14`
+**Verification Command:** `scripts/check.sh --skills`; spot check (D18): `advisor-eval validate-product --scenario S1`
 
 **Testing Strategy & Cases (Testing Trophy):**
 - **Risk / level choice:** risk = third-party data presented as proof of demand
@@ -178,7 +185,7 @@ Write the contract text from manifest §3 "Data Flow / Strategy" (shared contrac
 
 **TDD Execution & Auto-Critic:**
 1. Task type: non-code with a behavioral gate.
-2. Baseline from PR 1.
+2. The bar is arm K from the same run.
 3. Write both skills.
 4. Run check + eval; record the rows.
 

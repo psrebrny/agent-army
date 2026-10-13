@@ -36,7 +36,7 @@ Claude Code v2.x · `bash` · `python3` (barriers; a fallback runs without it). 
 cd my-repo
 apm install psrebrny/agent-army --target opencode   # or: claude | cursor | codex | gemini | copilot | windsurf
 ```
-apm deploys the five skills only. The baseline agents/hooks/CI ride bundled as raw assets inside the `bootstrap` skill — they become live, repo-tailored files only when you run `/bootstrap` below (it also installs the git pre-commit hook and appends to `.gitignore`).
+apm deploys the 19 skills only (see `.apm/README.md`). The baseline agents/hooks/CI ride bundled as raw assets inside the `bootstrap` skill — they become live, repo-tailored files only when you run `/bootstrap` below (it also installs the git pre-commit hook and appends to `.gitignore`).
 
 ## STEP 1 — entry point: `/bootstrap`  (run first)
 ```
@@ -91,8 +91,8 @@ CLAUDE.md                       # project memory (tailored to the repo after /bo
 - **git pre-commit** → secret scan + lint/tests, even when someone bypasses Claude Code.
 
 ## Extending
-New agent: `/new-agent` (holds `_STANDARD.md`). New reusable workflow: `/new-skill`. Core skills under
-`.agents/skills/` remain APM-managed; a local improvement belongs in `AGENTS.md`, a local `.agent-army/agents`
+New agent: `/new-agent` (holds `_STANDARD.md`). New reusable workflow: `/new-skill`. Core skills (in
+`.claude/skills/` on Claude, `.agents/skills/` elsewhere) remain APM-managed; a local improvement belongs in `AGENTS.md`, a local `.agent-army/agents`
 role, or a distinct local `.apm/skills` workflow.
 
 ## Updating Agent Army

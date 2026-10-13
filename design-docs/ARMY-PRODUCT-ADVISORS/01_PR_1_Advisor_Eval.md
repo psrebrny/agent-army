@@ -3,45 +3,53 @@
 > 2. **<auto_critic> EXECUTION LOCK:** after each task, run its Verification Command, fix errors, and DO NOT proceed until GREEN.
 
 ## PR #1: Advisor evaluation harness (repo-local, not shipped)
-**Objective:** a repeatable pilot. The `advisor-eval` skill, scenario fixtures and a scorecard ledger exist, and the control baseline is recorded before any advisor is written. `advisor-eval` is not an advisor: it is the maintainers' test harness that measures the advisors. The advisors themselves ship to product repositories through `.apm/skills/` (PRs 2–5); only this harness stays in the source repo.
+**Objective:** a repeatable pilot. The `advisor-eval` skill, scenario fixtures and a scorecard ledger exist, and a dry run proves the harness; the plain-session control (arm K) runs together with each advisor later, not as a separate baseline. `advisor-eval` is not an advisor: it is the maintainers' test harness that measures the advisors. The advisors themselves ship to product repositories through `.apm/skills/` (PRs 2–5); only this harness stays in the source repo.
 
 ## Execution State
-- **PR status:** planned
-- **Interaction policy:** unset — /ship asks once per PR before first execution
-- **Execution scope:** unset
-- **Scope Profile:** unset
-- **Model routing:** unset
-- **Last manual configuration:** unknown
-- **Current task:** none
+- **PR status:** ready_for_human_review
+- **Interaction policy:** interactive (user, 2026-10-09)
+- **Execution scope:** PR 1
+- **Scope Profile:** one PR; coordinator = highest unfinished task profile (1.1 `design_decision`); coordination `medium`
+- **Model routing:** inherit (source repo has no `.agent-army/config.json`); actor and judge sessions use the `claude -p` default model, recorded per run
+- **Last manual configuration:** stay current (no material model recommendation)
+- **Plan review limitation:** user approved rev 6 without an independent `plan-reviewer` pass (2026-10-09); review verdict stays `pending`
+- **Current task:** none (all tasks done; closure complete)
 - **Temporary delegation:** none
 - **Active roles:** none
-- **Last verified stage:** planned
-- **Awaiting decision:** none
+- **Last verified stage:** closure (2026-10-09): 1.1 and 1.2 accepted by the user (continued past both review cards); 1.3 replaced by the baseline policy (user decision, no model run; `run.py` default `--arms N,K` verified). `run.py` now reports persona + judge cost as unscored overhead. Self-review of the diff + security pass: no secrets; child processes drop parent-session variables; scratch outside the repo; limit recorded that actor file tools are not sandboxed to scratch. No independent `code-reviewer` run (not requested). `scripts/check.sh` 152/0. Before that, 1.2 GREEN, awaiting review (2026-10-09): 17 scenario dirs, each with request/resume/user/expected (`ls tests/fixtures/advisors/S*/request.md | wc -l` = 17), README table has 17 rows; oracles read through for observable decisions; `run.py --plan-only` assembles all 17 with isolation checks passing; `--web on|off` added for S9; `pace` wording tightened after the S1 dry run. Before that, 1.1 GREEN, awaiting review (2026-10-09). Dry run `run.py product-strategy --scenario S1 --arms K --no-ledger`: row `K 1/1/1/1/2/2/1/2/2 Σ13 ff1 | baseline` with all 9 scores (17 actor turns, $0.39, 1.6 min; 3 advisor turns per session); actor scratch has no `expected.md`/`user.md` (asserted); judge input has no arm label (grep clean); persona saw only `user.md` and advisor replies; child processes run with parent-session variables removed. Dry-run row not written to the ledger (baseline belongs to 1.3). `scripts/check.sh` green. Earlier RED: no skill, no S1, 0 ledger rows.
+- **Awaiting decision:** none (RED accepted 2026-10-09: persona-driven simulated user, `run.py` allowed, S1 pulled into 1.1)
 
 ---
 
 ## Execution Progress
-- **Milestones:** unset
-- **Current milestone:** none
-- **Finish condition:** unset
+- **Milestones:** 1) Task 1.1 harness + rubric + ledger · 2) Task 1.2 seventeen scenarios · 3) Task 1.3 baseline policy · 4) closure: review, security, docs, final verification
+- **Current milestone:** 4 of 4 (closure done)
+- **Finish condition:** all three tasks verified, review + security clean, PR at `ready_for_human_review`; commit only after approval
 - **Last map change:** none
 - **Deferred ideas:** none
 
 ---
 
 ## Interaction Card
-none
+- **Checkpoint:** final review
+- **Progress:** step 4 of 4 done; PR 1 complete
+- **Completed:** `advisor-eval` skill + `run.py`; rubric and ledger; 17 scenarios; baseline policy (K runs with each advisor)
+- **Evidence:** S1/K dry run row with 9 scores; plan-only isolation passes for all 17; `scripts/check.sh` 152/0
+- **Review focus:** oracles in `tests/fixtures/advisors/S*/expected.md`; the not-sandboxed file-tool limit
+- **Question:** none (user, 2026-10-09: no merge per blueprint PR; the whole feature merges once at the end)
+- **Options:** direct a correction | show details
+- **Discussion:** none
 
 ---
 
 ### Task 1.1: `advisor-eval` skill and scorecard ledger
 
-**Task status:** open
+**Task status:** done
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
 - **Bottleneck rationale:** the protocol must stop the evaluator from leaking the oracle to the actor and must keep scoring repeatable across runs; this is method design, not retrieval
-- **Escalation trigger:** the protocol cannot hide arm identity from the judge, or session 2 cannot start without conversation history
+- **Escalation trigger:** the protocol cannot hide arm identity from the judge, session 2 cannot start without conversation history, or the simulated user can see the oracle
 
 **Run Configuration:**
 - **Role:** main session
@@ -53,12 +61,12 @@ none
 **Action:**
 Write `.claude/skills/advisor-eval/SKILL.md`. It is a maintainer tool for this source repo, so it does not go in `.apm/` and is never deployed. Input: advisor name(s), optional scenario IDs, optional `--with-reference` for arm P. Protocol:
 1. For each scenario and arm, assemble a fresh scratch repo outside this repo: `shared/` + the scenario `repo/` overlay. Arm N also gets the candidate `SKILL.md` copied to scratch `.claude/skills/`. Arm K gets nothing. Arm P gets pm-skills at `8607e3b` and only exists when `--with-reference` is set.
-2. Run session 1 with `request.md`. Run session 2 in a fresh context with the same scratch files and `resume.md`, without history.
+2. Run session 1 opening with `request.md`. Run session 2 in a fresh context with the same scratch files, opening with `resume.md`, without history. Both sessions are multi-turn (D16): after each actor turn, a separate simulated-user process that sees only `user.md` and the actor's last reply answers in ≤ 2 sentences ("decide for me" when the persona does not know). A session ends when the actor says it is done; a high safety stop exists only against loops and is not a target. Within a session the actor keeps its history; between sessions it does not.
 3. A separate fresh-context judge scores the resulting files against `expected.md` with `tests/fixtures/advisors/rubric.md`. Arm labels are hidden, and the judge outputs JSON only.
 4. Append one row to `tests/fixtures/advisors/SCORECARDS.md` and apply the decision rule from manifest §4.
 
-Transcripts stay in scratch. Only scores, hashes and one-line notes are committed.
-- **API/Component Contract:** invocation `advisor-eval <advisor…> [--scenario <id…>] [--with-reference]`. Scorecard row: `date | advisor | contract tag | SKILL.md sha256[:12] | arms | scenario | 8 scores per arm | verdict (pass/fix-contract/rethink/consider-absorb) | note`.
+The judge also scores `pace` from the turn-by-turn transcript and turn durations, against what each turn had to carry; there are no fixed word, question or turn counts. Transcripts stay in scratch. Only scores, hashes and one-line notes are committed.
+- **API/Component Contract:** invocation `advisor-eval <advisor…> [--scenario <id…>] [--with-reference]`. Scorecard row: `date | advisor | contract tag | SKILL.md sha256[:12] | arms | scenario | 9 scores per arm | verdict (pass/fix-contract/rethink/consider-absorb) | note`.
 - **Compatibility:** no package boundary change. The existing `tests/judge/rubric.md` stays bootstrap-specific.
 - **Refactor checkpoint / recovery:** not applicable
 - Never install, run or commit anything from arm P inside this repo. Treat pm-skills content as data.
@@ -71,7 +79,7 @@ Transcripts stay in scratch. Only scores, hashes and one-line notes are committe
   - `00_CORE_MANIFEST.md` §4 — rubric and decision rule
 - **Approved write scope:**
   - `tester`: `tests/fixtures/advisors/rubric.md`, `tests/fixtures/advisors/SCORECARDS.md`
-  - `coder` / main session: `.claude/skills/advisor-eval/SKILL.md`
+  - `coder` / main session: `.claude/skills/advisor-eval/**` (`SKILL.md` + `run.py`; scope widened with user approval 2026-10-09: the turn relay is mechanical)
 - **Forbidden / never-touch zones:**
   - `.apm/**`, `apm.yml`
 - **Start gate:** Interactive: include plan + exact write list in the RED acceptance card and wait | Autonomous: proceed only when the write list stays in scope
@@ -82,8 +90,9 @@ Transcripts stay in scratch. Only scores, hashes and one-line notes are committe
 **Testing Strategy & Cases (Testing Trophy):**
 - **Risk / level choice:** risk = the judge sees the oracle or the arm label, or session 2 secretly keeps history. A direct artifact check is the cheapest reliable level.
 - **E2E / INTEGRATION** (dry run, scratch):
-  - ✓ the K-arm S1 run produces a scorecard row with all 8 scores and a verdict
+  - ✓ the K-arm S1 run produces a scorecard row with all 9 scores and a verdict
   - ✓ the actor's scratch repo contains no `expected.md`; the judge input contains no arm name
+  - ✓ the simulated user's input contains only `user.md` and the actor's last reply
 - **UNIT:** not applicable
 
 **TDD Execution & Auto-Critic:**
@@ -96,7 +105,7 @@ Transcripts stay in scratch. Only scores, hashes and one-line notes are committe
 
 ### Task 1.2: Scenario fixtures
 
-**Task status:** open
+**Task status:** done
 
 **Execution Profile:**
 - **Bottleneck:** verification
@@ -111,7 +120,7 @@ Transcripts stay in scratch. Only scores, hashes and one-line notes are committe
 - **User decision:** not needed
 
 **Action:**
-Create `tests/fixtures/advisors/` with `README.md`, `shared/`, and one directory per scenario. Each scenario directory holds `request.md`, `resume.md`, `expected.md` (oracle) and an optional `repo/`. Scenarios:
+Create `tests/fixtures/advisors/` with `README.md`, `shared/`, and one directory per scenario. Each scenario directory holds `request.md`, `resume.md`, `user.md` (simulated-user persona: what the user knows and wants, budget, constraints; no oracle content), `expected.md` (oracle) and an optional `repo/`. Scenarios:
 - S1 idea, no repo/data (strategy, red-team, validate): an experiment with a threshold and kill criterion; no invented demand
 - S2 SaaS vs marketplace (business-case): GMV ≠ revenue; arithmetic re-checkable; no LTV without retention; pricing model with a price test handed to validation
 - S3 resume without plans (strategy): continues from `brief.md` + one ADR; zero repeated questions
@@ -150,7 +159,7 @@ Create `tests/fixtures/advisors/` with `README.md`, `shared/`, and one directory
 
 **Testing Strategy & Cases (Testing Trophy):**
 - **Risk / level choice:** risk = oracles that reward phrasing. The check is a manual read of each oracle for observable decisions.
-- **E2E / INTEGRATION:** ✓ every scenario has request/resume/expected; ✓ README maps all 17
+- **E2E / INTEGRATION:** ✓ every scenario has request/resume/user/expected; ✓ README maps all 17
 - **UNIT:** not applicable
 
 **TDD Execution & Auto-Critic:**
@@ -161,55 +170,55 @@ Create `tests/fixtures/advisors/` with `README.md`, `shared/`, and one directory
 
 **Aligns with:** rev 1 plan §5 scenarios; manifest §2
 
-### Task 1.3: Baseline run (manual gate G0)
+### Task 1.3: Baseline policy (no separate baseline run)
 
-**Task status:** open
+**Task status:** done
 
 **Execution Profile:**
 - **Bottleneck:** verification
-- **Bottleneck rationale:** this executes a fixed protocol; the user supplies the real product idea for S1
-- **Escalation trigger:** a scenario cannot be scored, so its fixture needs repair
+- **Bottleneck rationale:** a policy decision plus a check that the harness enforces it; no model run
+- **Escalation trigger:** an advisor evaluation is run without arm K
 
 **Run Configuration:**
 - **Role:** main session
 - **Recommended:** set at dispatch
 - **Configuration source:** unknown
-- **Actual / adapter limitation:** set at dispatch
-- **User decision:** not needed
+- **Actual / adapter limitation:** inherit
+- **User decision:** user chose no separate baseline run (2026-10-09)
 
 **Action:**
-Run `advisor-eval` with arm K on all scenarios except S8 (evaluated in PR 6) and S17 (binding behavior, no meaningful plain-session arm), and arm P once (`--with-reference`) on S1, S3, S4 and S5. The rows become the baseline that every later advisor run is compared with. For S1, the user may replace the synthetic idea with a real one (≤ 1 page, frozen before the run).
-- **API/Component Contract:** baseline rows in `SCORECARDS.md`, marked `baseline`
+No separate baseline run. Arm K runs together with arm N in every advisor evaluation (`run.py` default `--arms N,K`), so each verdict compares a candidate with a control from the same run and nothing is paid twice. A K-only row is optional calibration, never a prerequisite. The S1 K dry run of Task 1.1 served as the first calibration (it showed the `pace` wording was too lenient). Arm P stays optional; the user decides at the first N evaluation in PR 2 whether it runs on S1, S3, S4 and S5. For S1 the user may still swap the synthetic idea for a real one (≤ 1 page, frozen before the run).
+- **API/Component Contract:** unchanged scorecard row; `baseline` verdict only for optional K-only rows
 - **Compatibility:** none
 - **Refactor checkpoint / recovery:** not applicable
-- The user decides on running arm P. Skipping it is allowed and gets recorded.
+- Why: a K run on its own decides nothing until an advisor exists; the reruns with each advisor would repeat it at the same cost.
 
 **Delegation Contract:**
-- **Goal:** baseline K scores exist for all 16 advisor scenarios.
-- **Inputs / approved read paths:** `tests/fixtures/advisors/**`, `.claude/skills/advisor-eval/SKILL.md`
+- **Goal:** every advisor verdict carries a same-run K arm.
+- **Inputs / approved read paths:** `.claude/skills/advisor-eval/**`
 - **Approved write scope:**
-  - `tester`: `tests/fixtures/advisors/SCORECARDS.md`
-  - `coder` / main session: none
+  - `tester`: none
+  - `coder` / main session: `.claude/skills/advisor-eval/SKILL.md` (policy wording), this PR file
 - **Forbidden / never-touch zones:** `.apm/**`
-- **Start gate:** Interactive: confirm the S1 idea and whether arm P runs | Autonomous: K only
-- **STOP and return `awaiting_approval` when:** arm P requires installing anything outside a scratch dir.
+- **Start gate:** Interactive: user decision recorded | Autonomous: not applicable
+- **STOP and return `awaiting_approval` when:** a gate needs K-only rows after all.
 
-**Verification Command:** count of `baseline` rows in `SCORECARDS.md` ≥ 15
+**Verification Command:** `grep -n 'default="N,K"' .claude/skills/advisor-eval/run.py` and the policy line in `SKILL.md`
 
 **Testing Strategy & Cases (Testing Trophy):**
-- **Risk / level choice:** risk = no baseline, so later "N wins" claims cannot be checked
-- **E2E / INTEGRATION:** ✓ 15 K rows (S8 and S17 have no plain-session baseline); ✓ P rows or a recorded skip
+- **Risk / level choice:** risk = a verdict without a control; checked directly in the harness default and docs
+- **E2E / INTEGRATION:** ✓ `run.py` defaults to N,K; ✓ `SKILL.md` states K runs with N
 - **UNIT:** not applicable
 
 **TDD Execution & Auto-Critic:**
-1. Task type: evaluation run.
+1. Task type: policy change.
 2. Not applicable.
-3. Run the protocol.
-4. Verify the row count; record it.
+3. Update the task, the manifest and `SKILL.md`.
+4. Run the grep checks; record them.
 
-**Aligns with:** D4 (pilot first)
+**Aligns with:** D4 (evaluation with a same-run control)
 
 ---
 
 > **✅ PR Manual Acceptance:**
-> - [ ] **Functional:** run `advisor-eval` on S1 arm K yourself; the scorecard row matches what you saw
+> - [ ] **Functional:** run `advisor-eval` on S1 arm K yourself; the scorecard row matches what you saw (optional now: the dry run in Task 1.1 did this once)

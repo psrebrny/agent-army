@@ -6,37 +6,44 @@
 **Objective:** three skills close the gap between "what" and `/ship`. `product-spec` writes the stories, `solution-architecture` decides the stack as ADRs, and `delivery-plan` produces the walking skeleton plus vertical slices as work items. All three must pass gate G3.
 
 ## Execution State
-- **PR status:** planned
-- **Interaction policy:** unset — /ship asks once per PR before first execution
-- **Execution scope:** unset
-- **Scope Profile:** unset
-- **Model routing:** unset
-- **Last manual configuration:** unknown
-- **Current task:** none
+- **PR status:** ready_for_human_review
+- **Interaction policy:** autonomous (D18; user, 2026-10-09 "lecimy z PR 4")
+- **Execution scope:** PR 4
+- **Scope Profile:** one PR; coordinator = highest unfinished task profile (`design_decision`); coordination `medium`
+- **Model routing:** inherit (source repo has no `.agent-army/config.json`)
+- **Last manual configuration:** stay current
+- **Current task:** none (all tasks done; closure complete)
 - **Temporary delegation:** none
 - **Active roles:** none
-- **Last verified stage:** planned
-- **Awaiting decision:** none
+- **Last verified stage:** closure (2026-10-09): three skills + wrappers, contract identical in 13 skills; `scripts/check.sh` green; spot checks (D18): `delivery-plan` S16 first `rethink` (N Σ14 = K Σ14) → fixed spike exit criteria, plan per milestone, slices cite `A-n` → re-run pass (N Σ17 ff0 vs K Σ10 ff1); `solution-architecture` S15 first run lost its judge scores to a greedy JSON regex in `run.py` (fixed, `c5e9905`) → re-run pass (N Σ16 ff0 vs K Σ10 ff0), judge notes fixed after the run (cost check vs business case; confirm/kill per risk), not re-run; K varied 14 → 10 between S16 runs (n = 1 noise); no independent `code-reviewer` run
+- **Awaiting decision:** final review
 
 ---
 
 ## Execution Progress
-- **Milestones:** unset
-- **Current milestone:** none
-- **Finish condition:** unset
+- **Milestones:** 1) three skills + wrappers (4.1–4.3, one batch) · 2) spot checks (D18): `solution-architecture` S15, `delivery-plan` S16 · 3) closure
+- **Current milestone:** 3 of 3 (closure done)
+- **Finish condition:** `check.sh` green, spot checks pass the decision rule, PR at `ready_for_human_review`
 - **Last map change:** none
 - **Deferred ideas:** none
 
 ---
 
 ## Interaction Card
-none
+- **Checkpoint:** final review
+- **Progress:** krok 3 z 3; PR 4 gotowy do Twojego przeglądu
+- **Completed:** `product-spec`, `solution-architecture`, `delivery-plan` + wrappery; poprawka parsera sędziego w `advisor-eval`
+- **Evidence:** `check.sh` zielony; spot checki: delivery-plan N 17 vs K 10 (po poprawkach, wcześniej remis 14:14), solution-architecture N 16 vs K 10, 0 fałszywych faktów w N
+- **Review focus:** na swoim pomyśle: `solution-architecture`, potem `delivery-plan`; czy W-1 i W-2 to rzeczy, które naprawdę zbudowałbyś najpierw
+- **Question:** czy PR 4 jest OK i lecimy z PR 5 (`/product` + stores)?
+- **Options:** continue | direct a correction | show details
+- **Discussion:** none
 
 ---
 
 ### Task 4.1: `product-spec`
 
-**Task status:** open
+**Task status:** done
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
@@ -67,7 +74,7 @@ The MVP goal must be tied to validated `F`/`A` IDs. If stage 3 is not done, the 
 - **Start gate:** Interactive: card with the write list | Autonomous: in-scope only
 - **STOP and return `awaiting_approval` when:** the story schema needs a contract change.
 
-**Verification Command:** `scripts/check.sh --skills` then `advisor-eval product-spec --scenario S13`
+**Verification Command:** `scripts/check.sh --skills`; spot check optional (D18)
 
 **Testing Strategy & Cases (Testing Trophy):**
 - **Risk / level choice:** risk = a wish list, or a hidden architecture document
@@ -76,7 +83,7 @@ The MVP goal must be tied to validated `F`/`A` IDs. If stage 3 is not done, the 
 
 **TDD Execution & Auto-Critic:**
 1. Task type: non-code with a behavioral gate.
-2. Baseline from PR 1.
+2. The bar is arm K from the same run.
 3. Write the skill.
 4. Run check + eval; record the row.
 
@@ -84,7 +91,7 @@ The MVP goal must be tied to validated `F`/`A` IDs. If stage 3 is not done, the 
 
 ### Task 4.2: `solution-architecture`
 
-**Task status:** open
+**Task status:** done
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
@@ -115,7 +122,7 @@ Inputs: stories, register constraints (team skills, time, budget), business case
 - **Start gate:** Interactive: card with the write list | Autonomous: in-scope only
 - **STOP and return `awaiting_approval` when:** the skill would need web access to be useful at all (then define the partial-result behavior first).
 
-**Verification Command:** `scripts/check.sh --skills` then `advisor-eval solution-architecture --scenario S15`
+**Verification Command:** `scripts/check.sh --skills`; spot check (D18): `advisor-eval solution-architecture --scenario S15`
 
 **Testing Strategy & Cases (Testing Trophy):**
 - **Risk / level choice:** risk = a confident, fashionable stack the founder cannot operate, or one built on stale pricing
@@ -124,7 +131,7 @@ Inputs: stories, register constraints (team skills, time, budget), business case
 
 **TDD Execution & Auto-Critic:**
 1. Task type: non-code with a behavioral gate.
-2. Baseline from PR 1 (S15 K arm).
+2. The bar is arm K from the same run (S15).
 3. Write the skill.
 4. Run check + eval; record the row.
 
@@ -132,7 +139,7 @@ Inputs: stories, register constraints (team skills, time, budget), business case
 
 ### Task 4.3: `delivery-plan`
 
-**Task status:** open
+**Task status:** done
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
@@ -163,7 +170,7 @@ Inputs: stories, architecture ADRs and open risks, metrics events, and open `fix
 - **Start gate:** Interactive: card with the write list | Autonomous: in-scope only
 - **STOP and return `awaiting_approval` when:** a tracker concept (sprints, story points) seems needed; it stays out unless the user's project adds it.
 
-**Verification Command:** `scripts/check.sh --skills` then `advisor-eval delivery-plan --scenario S16 S17`
+**Verification Command:** `scripts/check.sh --skills`; spot check (D18): `advisor-eval delivery-plan --scenario S16` (S17 stays manual, PR 5)
 
 **Testing Strategy & Cases (Testing Trophy):**
 - **Risk / level choice:** risk = a plan that delivers no usable value until the end, or a tracker filled with duplicates
@@ -172,7 +179,7 @@ Inputs: stories, architecture ADRs and open risks, metrics events, and open `fix
 
 **TDD Execution & Auto-Critic:**
 1. Task type: non-code with a behavioral gate.
-2. Baseline from PR 1 (S16 K arm).
+2. The bar is arm K from the same run (S16).
 3. Write the skill.
 4. Run check + eval; record the rows.
 

@@ -32,8 +32,9 @@ including OpenCode, open or invoke `.agents/skills/bootstrap/SKILL.md` directly
 when the tool does not register the command natively. Use the corresponding
 path for `/ship`, `/new-agent`, `/new-skill` and `/adapt-army` too.
 
-The install is intentionally passive: it ships five skills and templates only.
+The install is intentionally passive: it ships 19 skills and templates only.
 `/bootstrap` is the explicit second step that creates the tailored local role contracts.
+The product skills need no bootstrap: they work in any repository.
 For OpenCode, `.agent-army/agents/*.agent` is the only agent artifact: skills read it and
 `/ship` executes roles in the main thread. Other targets may use their native APM adapter.
 
@@ -75,9 +76,11 @@ task or PR from `design-docs/` (plain `/ship` resumes only when one open scope
 exists). Each PR persists its interaction mode, Interaction Card and task state,
 so a new session can continue without reconstructing chat history.
 
-Architect assigns each task a portable capability/effort profile. `/ship`
-combines it with the selected scope's coordinator profile, while bootstrap maps
-roles to the target's native model field where that field is confirmed. The
+Architect gives each task an Execution Profile: its reasoning `Bottleneck`, the
+rationale and an escalation trigger. `/ship` derives the coordinator profile for
+the selected scope from those bottlenecks and escalates from them, while each
+role's model comes from the routing bootstrap maps to the target's native model
+field where that field is confirmed (otherwise the tool default). The
 static defaults are strong for architect/review/security, mid for coder/perf,
 and light for tester/docs, so autonomous execution can move between roles
 without a model-switch pause. Claude uses its documented tier names; Cursor
@@ -95,7 +98,9 @@ when the recommendation is material. It never invents a provider/model ID,
 changes the main-session setting, or claims that a role-level effort changed:
 effort falls back to the tool default unless the adapter explicitly supports it.
 
-`/ship` has two interaction modes per PR. **Autonomous** continues after the
+`/ship` has two interaction modes per PR. When it asks, it recommends one with a
+reason: Interactive when a task still has an open design choice or no runnable check,
+otherwise Autonomous; your choice wins. **Autonomous** continues after the
 mandatory gate until a real decision, risk, or final human review. **Interactive**
 works through small, verifiable outcomes with you. It shows "Step X of approximately
 Y", the current action, remaining outcomes and a finish condition. Each selected
@@ -109,19 +114,52 @@ new evidence or a decision, it names the obstacle and proposes a resolution or s
 experiment. Side ideas stay deferred; a scope change needs your decision and an
 explained update to the map.
 
-Interactive pauses after RED (or an approved refactor baseline) and after verified
-implementation. A lighter test policy uses implementation acceptance when no RED
-exists. One combined Interaction Card shows progress, the decisive assertion and its
-expected-result source, the small behavior-focused diff, verification limits and the
-next action. Required checks and independent review/security still apply.
+Interactive pauses so you keep the thread and can steer, not to tick off steps. Each
+task opens with a two- or three-line plan that waits only when it has a question; tests,
+implementation and verification then run without a pause, and one task review follows.
+It shows progress, the decisive assertion and its expected-result source, the small
+behavior-focused diff, verification limits and the next action. After a break it opens
+with one sentence on where the work stands. Required checks and independent review/security still apply.
 
 "Decide for me" delegates the current in-scope choice. "Do this task yourself" grants
 one explicitly bounded task through verification: the agent records the authorization,
-waives its routine pre-implementation pause, then returns automatically to interactive
+settles that task's in-scope choices itself, then returns automatically to interactive
 task review. Risk/scope stops and final approval remain. "Switch to autonomous" changes
 the PR policy explicitly. Progress, pending questions and temporary delegation persist
 in the PR; older PRs derive missing progress from existing task evidence without
 restarting. Existing `supervised` PRs still migrate to `interactive` on resume.
+
+## The 19 skills
+
+Every skill is optional and callable on its own; none runs another. Not sure where to start with a
+product? Run `/product`. The full catalog, with inputs, outputs, examples and what reaches `/ship`, is
+[`.apm/README.md`](.apm/README.md).
+
+| Skill | Use it for |
+|---|---|
+| `/bootstrap` | tailor the agent team and control ownership to this repository |
+| `/ship` | execute or resume agreed engineering work up to human review |
+| `/new-agent` | add a specialised local role |
+| `/new-skill` | add a reusable local workflow |
+| `/adapt-army` | turn a recurring workflow problem into a targeted improvement |
+| `/product` | where am I on the 12-stage product journey, and the one next step |
+| `/product-strategy` | audience, problem, advantage, features, revenue model, out of scope |
+| `/product-red-team` | attack a plan: "Fails if …", cheapest test, kill criterion |
+| `/market-research` | competitors, alternatives and prices with dated sources |
+| `/business-case` | costs, scenarios, break-even and pricing you can recheck |
+| `/validate-product` | falsifiable experiments and reading their results, incl. post-launch churn |
+| `/product-spec` | MVP goal, stories with acceptance and priority |
+| `/solution-architecture` | architecture style and stack per layer, recorded as ADRs |
+| `/delivery-plan` | walking skeleton and vertical slices as work items for `/ship` |
+| `/go-to-market` | channels as written predictions with budget caps |
+| `/product-metrics` | decision questions, events, collection checks, honest reads |
+| `/ux-review` | heuristic review of the paths that matter |
+| `/legal-review` | applicability, dated sources, lawyer and accountant questions |
+| `/launch-readiness` | launch verdict per area with evidence |
+
+Product skills write conversation results to `docs/product/` and decisions to `docs/adr/` by default;
+`.agent-army/stores.json` can bind a record type to a connected tool instead. They never write product
+code: anything that becomes code is a work item you hand to `/ship`.
 
 ## Update an installed Army
 
@@ -131,11 +169,14 @@ apm update psrebrny/agent-army --target opencode
 
 Then run `/bootstrap`. It detects an older profile or changed live package materials, previews a narrow
 incremental migration and shows an **Incremental Upgrade Review** before any local specialization changes.
-The review compares shared `.agents/skills` and baseline-template hashes with the local inventory, then
-asks whether to apply selected recommendations, apply all, inspect details or skip. The migration preserves
+The review compares the installed skills (`.claude/skills` on Claude, `.agents/skills` elsewhere) and
+baseline-template hashes with the local inventory, then asks whether to apply selected recommendations, apply all, inspect details or skip. The migration preserves
 repo-specialized `.agent-army/agents`, model routing, quality policy and external controls; it updates only marked
 Agent Army fragments. A manually edited marked fragment is reported as a conflict, never overwritten. Use
 `/bootstrap --mode full` only when you want to intentionally re-specialize the team or change target.
+The skills keep one copy, where APM installed them. On Claude, bootstrap 0.3.1 and 0.4.0 also copied them to
+`.agents/skills`; `/bootstrap` removes that copy where every file is identical to a package release and
+reports anything else there (a local change, a link) as a conflict.
 
 ## Keeping the team current
 

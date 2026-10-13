@@ -6,37 +6,44 @@
 **Objective:** six advisors (`business-case`, `go-to-market`, `product-metrics`, `ux-review`, `legal-review`, `launch-readiness`) that embed the contract unchanged and pass gate G2. Starts only after gate G1 in PR 2 passes. `product-spec`, `solution-architecture` and `delivery-plan` follow in PR 4, `/product` in PR 5.
 
 ## Execution State
-- **PR status:** planned
-- **Interaction policy:** unset — /ship asks once per PR before first execution
-- **Execution scope:** unset
-- **Scope Profile:** unset
-- **Model routing:** unset
-- **Last manual configuration:** unknown
-- **Current task:** none
+- **PR status:** ready_for_human_review
+- **Interaction policy:** autonomous (D18: advisors written in batches; user, 2026-10-09 "lecimy z PR 3")
+- **Execution scope:** PR 3
+- **Scope Profile:** one PR; coordinator = highest unfinished task profile (3.2 `design_decision`); coordination `medium`
+- **Model routing:** inherit (source repo has no `.agent-army/config.json`)
+- **Last manual configuration:** stay current
+- **Current task:** none (all tasks done; closure complete)
 - **Temporary delegation:** none
 - **Active roles:** none
-- **Last verified stage:** planned
-- **Awaiting decision:** none
+- **Last verified stage:** closure (2026-10-09): six advisors + wrappers, contract unchanged (identical in 10 skills); `scripts/check.sh` 184/0; all frontmatter parses as strict YAML; spot checks (D18): `business-case` S2 pass (N Σ16 ff0 vs K Σ10 ff2), `legal-review` S5 pass (N Σ15 ff0 vs K Σ8 ff1); judge notes fixed after the runs (business-case: recompute before concluding, price-test kill criterion; legal-review: `done when` per finding, one lawyer/accountant list), not re-run, so the rows' hashes are pre-fix; secrets grep clean; no independent `code-reviewer` run
+- **Awaiting decision:** final review
 
 ---
 
 ## Execution Progress
-- **Milestones:** unset
-- **Current milestone:** none
-- **Finish condition:** unset
+- **Milestones:** 1) six advisors + wrappers (3.1–3.3, one batch) · 2) spot checks (D18): `business-case` S2, `legal-review` S5 · 3) closure
+- **Current milestone:** 3 of 3 (closure done)
+- **Finish condition:** `check.sh` green, spot checks pass the decision rule, PR at `ready_for_human_review`
 - **Last map change:** none
 - **Deferred ideas:** none
 
 ---
 
 ## Interaction Card
-none
+- **Checkpoint:** final review
+- **Progress:** krok 3 z 3; PR 3 gotowy do Twojego przeglądu
+- **Completed:** `business-case`, `go-to-market`, `product-metrics`, `ux-review`, `legal-review`, `launch-readiness` + wrappery
+- **Evidence:** `check.sh` 184/0; spot checki: business-case N 16 vs K 10, legal-review N 15 vs K 8, 0 fałszywych faktów w N
+- **Review focus:** przeliczyć ręcznie jedną tabelę z business-case (manual acceptance)
+- **Question:** czy PR 3 jest OK i lecimy z PR 4?
+- **Options:** continue | direct a correction | show details
+- **Discussion:** none
 
 ---
 
 ### Task 3.1: `business-case` + `go-to-market`
 
-**Task status:** open
+**Task status:** done
 
 **Execution Profile:**
 - **Bottleneck:** capability_gap
@@ -67,7 +74,7 @@ none
 - **Start gate:** Interactive: card with the write list | Autonomous: in-scope only
 - **STOP and return `awaiting_approval` when:** the contract needs a change.
 
-**Verification Command:** `scripts/check.sh --skills` then `advisor-eval business-case go-to-market --scenario S2 S4 S11`
+**Verification Command:** `scripts/check.sh --skills`; spot check (D18): `advisor-eval business-case --scenario S2`
 
 **Testing Strategy & Cases (Testing Trophy):**
 - **Risk / level choice:** risk = plausible but wrong numbers. The judge re-computes the S2 tables.
@@ -76,7 +83,7 @@ none
 
 **TDD Execution & Auto-Critic:**
 1. Task type: non-code with a behavioral gate.
-2. Baseline from PR 1.
+2. The bar is arm K from the same run.
 3. Write both skills.
 4. Run check + eval; record the rows.
 
@@ -84,7 +91,7 @@ none
 
 ### Task 3.2: `product-metrics`
 
-**Task status:** open
+**Task status:** done
 
 **Execution Profile:**
 - **Bottleneck:** design_decision
@@ -115,7 +122,7 @@ The cycle from the manifest runs: decision questions → primary metric + 3–5 
 - **Start gate:** Interactive: card with the write list | Autonomous: in-scope only
 - **STOP and return `awaiting_approval` when:** data access would need an integration (deferred to automation stage 1).
 
-**Verification Command:** `scripts/check.sh --skills` then `advisor-eval product-metrics --scenario S10`
+**Verification Command:** `scripts/check.sh --skills`; spot check optional (D18)
 
 **Testing Strategy & Cases (Testing Trophy):**
 - **Risk / level choice:** risk = interpreting noise, or unverified collection
@@ -124,7 +131,7 @@ The cycle from the manifest runs: decision questions → primary metric + 3–5 
 
 **TDD Execution & Auto-Critic:**
 1. Task type: non-code with a behavioral gate.
-2. Baseline from PR 1.
+2. The bar is arm K from the same run.
 3. Write the skill.
 4. Run check + eval; record the row.
 
@@ -132,7 +139,7 @@ The cycle from the manifest runs: decision questions → primary metric + 3–5 
 
 ### Task 3.3: `ux-review` + `legal-review` + `launch-readiness`
 
-**Task status:** open
+**Task status:** done
 
 **Execution Profile:**
 - **Bottleneck:** verification
@@ -163,7 +170,7 @@ The cycle from the manifest runs: decision questions → primary metric + 3–5 
 - **Start gate:** Interactive: card with the write list | Autonomous: in-scope only
 - **STOP and return `awaiting_approval` when:** legal content would be stated from memory without a source.
 
-**Verification Command:** `scripts/check.sh --skills` then `advisor-eval ux-review legal-review launch-readiness --scenario S5 S6 S7`
+**Verification Command:** `scripts/check.sh --skills`; spot check (D18): `advisor-eval legal-review --scenario S5`
 
 **Testing Strategy & Cases (Testing Trophy):**
 - **Risk / level choice:** risk = false assurance to a founder before launch
@@ -172,7 +179,7 @@ The cycle from the manifest runs: decision questions → primary metric + 3–5 
 
 **TDD Execution & Auto-Critic:**
 1. Task type: non-code with a behavioral gate.
-2. Baseline from PR 1.
+2. The bar is arm K from the same run.
 3. Write the three skills.
 4. Run check + eval; record the rows.
 

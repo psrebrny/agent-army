@@ -6,5 +6,5 @@
 - Add integration cases for omitted, true, and false query values, including an unauthorized owner.
 - Run the existing profile test command after the focused integration tests.
 - No data migration is needed because the `archived` field already exists.
-- **Status:** do zrobienia.
+- **Status:** open.
 - **Checkpoint:** no implementation has started; next step is the contract-derived test.

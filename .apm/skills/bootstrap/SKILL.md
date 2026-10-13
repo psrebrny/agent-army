@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: Evidence-led setup and safe incremental migration of a tailored Agent Army v0.3.1. It preserves existing user controls, creates canonical role contracts, and uses native agent adapters only where enabled.
+description: Evidence-led setup and safe incremental migration of a tailored Agent Army v0.4.0. It preserves existing user controls, creates canonical role contracts, and uses native agent adapters only where enabled.
 ---
 # /bootstrap — own controls, then author a real team
 
@@ -19,7 +19,7 @@ with generic prompts is not a successful bootstrap.
 After `apm update psrebrny/agent-army --target <target>`, run `/bootstrap` normally. It first runs:
 
 ```bash
-python3 "$SKILLS_DIR/bootstrap/bootstrap.py" <target> --mode auto --dry-run
+python3 "$BOOTSTRAP_DIR/bootstrap.py" <target> --mode auto --dry-run   # BOOTSTRAP_DIR: Step 0
 ```
 
 `auto` detects the profile state: no profile means first bootstrap; an older Agent Army package means an
@@ -28,8 +28,8 @@ target change requires `--mode full`; and a newer local profile is never downgra
 migration, show the exact version transition, managed paths, preserved local sources and any conflict,
 then get one explicit “apply migration” confirmation before rerunning without `--dry-run`.
 
-Incremental mode first shows an **Incremental Upgrade Review**. Read the live shared skills under
-`.agents/skills`, the current root `AGENTS.md`, and local `.agent-army/agents`; use the deterministic package
+Incremental mode first shows an **Incremental Upgrade Review**. Read the live installed skills under
+`$SKILLS_DIR` (Step 0), the current root `AGENTS.md`, and local `.agent-army/agents`; use the deterministic package
 inventory as the delta, then recommend only concrete local improvements. The card
 lists new package capabilities, possibly affected local paths, a recommended diff, reason, test and the
 choices `apply selected`, `apply all`, `show details` or `skip`. Do not modify local specialization until
@@ -37,10 +37,15 @@ the user chooses. After applying selected/all local diffs, rerun the generator w
 `--upgrade-review-outcome applied`; after `skip`, rerun it with `--upgrade-review-outcome skipped`. The
 mechanical migration then updates only versioned, managed fragments and runs targeted validation. New shared
 role contracts appear in the inventory delta: `apply` adds missing role files while preserving every existing
-specialization; `skip` preserves the current local roster and role contracts. A local file colliding with a newly
+specialization; `skip` preserves the current local roster and role contracts. New product skills (from 0.4.0:
+`/product` and the thirteen product advisors) are capabilities only: list them under new capabilities, as
+optional and callable on their own; they need no local file, role contract or native agent. Each generator line
+`recommended local diff: <template> -> <local contract>` names a changed baseline role template (for 0.4.0, the
+`docs-writer` ADR rules): show the package change applied to that local specialized contract, merged into the
+specialization so its repository-specific rules stay, never a replacement of the file. A local file colliding with a newly
 introduced role name stops the upgrade before writes and requires the user to resolve the exact path. The update
-does not redo deep recon or overwrite `.agent-army/agents`, user-owned model routing, quality policy or external
-controls. If the managed feedback-router block in `AGENTS.md` was edited, stop on the conflict rather than
+does not redo deep recon or overwrite `.agent-army/agents`, `.agent-army/stores.json`, user-owned model routing,
+quality policy or external controls. If the managed feedback-router block in `AGENTS.md` was edited, stop on the conflict rather than
 replacing it. Use `--mode full` only when the user asks to re-specialize the team or deliberately switches targets.
 
 Use this exact user-facing card after the dry-run and live-material review:
@@ -60,21 +65,28 @@ never erase feedback or upgrade state.
 
 ## Step 0 — target and ownership (mechanical, explicit)
 
-Every normal skill invocation uses the shared installed directory:
+There is one copy of the skills: the directory APM installed them to (the target's `dirs.skills` in
+`baseline/tools/<target>.yml`). Every normal skill invocation uses it:
 
 ```bash
-SKILLS_DIR=".agents/skills"
+SKILLS_DIR="<.claude/skills on Claude; .agents/skills on every other target>"
+BOOTSTRAP_DIR="<directory of the SKILL.md you are following, e.g. .claude/skills/bootstrap>"
 ```
+
+Run the program next to the SKILL.md the tool loaded (`$BOOTSTRAP_DIR`), not a copy elsewhere. Bootstrap
+0.3.1 and 0.4.0 also copied the skills into `.agents/skills` on Claude. The program removes such a stale copy
+only where every file is identical to a package release (and nothing is a link), and reports any other
+skill dir there as a conflict on the upgrade card. Never follow or edit that stale copy.
 
 If this directory is missing, stop and ask the user to repair the installation with `apm install` or
 `apm update`. Do not read `.opencode/skills` or `apm_modules` as instructions. The deterministic bootstrap
-program may use those locations only as a mechanical recovery source to restore a missing shared directory;
+program may use those locations only as a mechanical recovery source to restore a missing installed directory;
 they are never a source of workflow guidance or of the upgrade review.
 
 Run the detector; do not infer the active tool from a directory listing:
 
 ```bash
-bash "$SKILLS_DIR/bootstrap/assemble.sh" --detect
+bash "$BOOTSTRAP_DIR/assemble.sh" --detect
 ```
 
 `DETECTED=<tool>` is unambiguous. With `AMBIGUOUS` or `NONE`, ask the user
@@ -97,7 +109,7 @@ Ask separately for runtime hooks, git pre-commit and CI. Each is `army`,
 Generate the profile:
 
 ```bash
-python3 "$SKILLS_DIR/bootstrap/bootstrap.py" <target> \
+python3 "$BOOTSTRAP_DIR/bootstrap.py" <target> \
   --runtime-hooks <army|external|disabled> \
   --git-precommit <army|external|disabled> \
   --ci <army|external|disabled>
@@ -108,7 +120,7 @@ Claude uses its documented `haiku`/`sonnet`/`opus` role defaults. Cursor can use
 static per-role routing when the user provides exact native model IDs:
 
 ```bash
-python3 "$SKILLS_DIR/bootstrap/bootstrap.py" cursor \
+python3 "$BOOTSTRAP_DIR/bootstrap.py" cursor \
   --model-light '<exact available model ID>' \
   --model-mid '<exact available model ID>' \
   --model-strong '<exact available model ID>'
@@ -124,7 +136,7 @@ It creates one canonical local role-contract set in `.agent-army/agents/*.agent`
 primitives in `.apm/hooks`, and `.agent-army/config.json`. OpenCode deliberately does not receive
 APM agent staging or `.opencode/agents` output in this profile; `/ship` reads the role contracts
 and executes them in the main thread. Other targets may still use their native APM adapter.
-All tools can use the same `.agents/skills` directory.
+The skills stay where APM installed them (`$SKILLS_DIR`); bootstrap makes no second copy.
 
 Read the status before continuing:
 
@@ -237,7 +249,7 @@ Apply role-specific depth:
 - `security-auditor` and `perf-auditor`: stack-specific sinks and bottlenecks.
 - `docs-writer` and `coder`: actual documentation ownership and module limits.
 
-Write or refresh root `AGENTS.md` first: stacks, commands, laws, reusable
+Write or refresh root `AGENTS.md` first (keep the generator's `agent-army:feedback-router` block in it unchanged): stacks, commands, laws, reusable
 assets, policy, roster, delegation/review rules, PR execution-state conventions, adapter model-control availability and the ownership status of controls. Claude alone gets
 a thin `CLAUDE.md` pointer to it. Keep `architect`, `tester`, `ship` and the
 architect's embedded blueprint skeletons in lockstep.

@@ -6,37 +6,44 @@
 **Objective:** documentation matches delivered behavior. `.apm/README.md` becomes the real catalog with the `/ship` boundary table, and the root, baseline and test docs are correct.
 
 ## Execution State
-- **PR status:** planned
-- **Interaction policy:** unset — /ship asks once per PR before first execution
-- **Execution scope:** unset
-- **Scope Profile:** unset
-- **Model routing:** unset
-- **Last manual configuration:** unknown
-- **Current task:** none
+- **PR status:** ready_for_human_review
+- **Interaction policy:** autonomous (user, 2026-10-10)
+- **Execution scope:** PR 8
+- **Scope Profile:** one PR; coordinator = highest unfinished task profile (`retrieval`); coordination `low`
+- **Model routing:** inherit (source repo has no `.agent-army/config.json`)
+- **Last manual configuration:** stay current
+- **Current task:** none (closure done)
 - **Temporary delegation:** none
 - **Active roles:** none
-- **Last verified stage:** planned
-- **Awaiting decision:** none
+- **Last verified stage:** closure (2026-10-10): with apm 0.33.0 `scripts/check.sh` 204/0/0, `scripts/smoke.sh` 249/0, `scripts/check.sh --pack` 205/0/0 (no staleness WARN: every product skill matches its latest SCORECARDS row); stale-count grep empty. `advisor-eval` (N,K, one scenario each, 13 advisors): 11 `pass`; `product` S12 and `product-spec` S13 `rethink`; `product-metrics` S10 first `fix-contract` (misread the CSV: "about 10 visits per variant per week", file shows 19–25), Reads step fixed at the user's request, rerun `pass` ff0; `ux-review` S6 and `go-to-market` S4 each lost one run to malformed judge JSON (no row; rerun). Cost from the ledger ≈ $34 (+ ≈ $3–5 for the runs without a row). Independent review (fresh context) `APPROVED`; its 2 medium + 2 low doc fixes applied
+- **Awaiting decision:** final review
 
 ---
 
 ## Execution Progress
-- **Milestones:** unset
-- **Current milestone:** none
-- **Finish condition:** unset
-- **Last map change:** none
-- **Deferred ideas:** none
+- **Milestones:** 1) catalog (8.1) · 2) root/baseline/test docs (8.2) · 3) `advisor-eval` for the 12 advisors without a current row · 4) final verification
+- **Current milestone:** 4 of 4 (closure done)
+- **Finish condition:** 8.1 and 8.2 `done`, all three verification commands green, no staleness WARN, PR at `ready_for_human_review`
+- **Last map change:** scope expansion (user, 2026-10-10): APM does not install `.apm/SOURCES.md` (PR 7, Task 7.3), so the "see `SOURCES.md`" pointers in `product-strategy`, `product-red-team`, `validate-product` and `legal-review` dangled in an installed repo. The user chose to fix the skills now: each names its source repo and license inline, `go-to-market` gains its missing `marketing-loops` attribution, and `SOURCES.md` says it stays in the source repo. `product-strategy` joins the `advisor-eval` runs (13 advisors), and the `go-to-market` run on the old text was stopped and re-queued.
+- **Post-closure repair (user, 2026-10-10, "napraw i powtórz oceny"):** the `rethink` on `/product` S12 had two causes found in the raw actor transcripts. (1) Skill: turn 1 wrote the map snapshot to `journey.md` and replied with only the stage footer; step 8 now says the snapshot never replaces the reply. (2) Harness: `run.py` kept only the text after the last tool call (`claude -p` `result`), so text before a file write never reached the persona or the judge; about 12% of actor turns across all runs (128 of 1052, both arms) lost text. `run.py` now streams actor turns and joins every text block. Re-runs on the fixed harness: `/product` S12 `pass` (N Σ17 ff0, K Σ13; N showed the map, warned about building before validation and ads before measurement, one next step), `product-spec` S13 `pass` (N Σ17 ff0, K Σ14). Earlier `pass` rows stand (the loss could only lower scores). Every product skill now has a current `pass` row; `check.sh` 204/0/0.
+- **Deferred ideas:** the judge sometimes returns malformed JSON (2 of 15 runs today); `run.py` stops and the run is repeated by hand
 
 ---
 
 ## Interaction Card
-none
+- **Checkpoint:** final review
+- **Progress:** krok 4 z 4; PR 8 gotowy do Twojego przeglądu
+- **Completed:** katalog `.apm/README.md`, README/AGENTS/baseline AGENTS/tests GUIDE, atrybucja w skillach, poprawka odczytu danych w product-metrics, oceny 13 advisorów
+- **Evidence:** check 204/0/0, smoke 249/0, pack 205/0/0 (apm 0.33.0); 13 × `pass` (po naprawie harnessu i `/product`); niezależny przegląd `APPROVED`
+- **Review focus:** `.apm/README.md` „Pick by situation” i „Product skills in detail”; dwa `rethink` (`/product` S12: sesja 1 nie pokazała mapy; `product-spec` S13: test odnowień bez progu i kill criterion)
+- **Question:** czy PR 8 jest OK, i czy zawężamy `/product` / `product-spec` teraz, czy po merge?
+- **Options:** continue | direct a correction | show details
 
 ---
 
 ### Task 8.1: `.apm/README.md` catalog
 
-**Task status:** open
+**Task status:** done — `.apm/README.md` rewritten as the delivered catalog (19-row table, 14 detailed product skills, `/ship` boundary table, paths, ADRs, attribution); `scripts/check.sh --skills` 81/0/1 (staleness WARN only, runs in progress); each row cross-read against its SKILL.md
 
 **Execution Profile:**
 - **Bottleneck:** retrieval
@@ -83,7 +90,7 @@ Replace the "proposals" framing with the delivered catalog. Open with "Not sure 
 
 ### Task 8.2: Root, baseline and test docs + final verification
 
-**Task status:** open
+**Task status:** done — docs: `README.md` (19-skill table + catalog link; "five skills" → 19; the stale capability/effort paragraph now describes the D15 Execution Profile), `AGENTS.md` (19 skills, catalog, `SOURCES.md` source-repo only, `advisor-eval` by path + re-run rule), baseline `AGENTS.md` ("Workflows available here", advisors included), `tests/GUIDE.md` (Advisor evaluation), and one line in root `GUIDE.md` ("five skills" → 19, same stale-count risk). With apm 0.33.0: `check.sh` 203/0/1, `smoke.sh` 249/0, `check.sh --pack` 204/0/1; the one WARN is staleness while the `advisor-eval` runs finish; stale-count grep empty
 
 **Execution Profile:**
 - **Bottleneck:** retrieval
@@ -138,3 +145,7 @@ Then run the final verification and confirm every advisor's latest scorecard is 
 
 > **✅ PR Manual Acceptance:**
 > - [ ] **Functional:** read `.apm/README.md` as a new user: pick an advisor for "I have an idea, no product yet" and for "people sign up but don't buy"
+
+---
+
+> **Post-closure changes (PR #4 review, 2026-10-11/12):** shared advisor contract v2, all product skills rewritten in Prompt Architect shape, `/ux-review` walking the running app, and one copy of the skills (D21–D23 in the manifest). All 14 advisors were re-run through `advisor-eval` on v2; the ledger `tests/fixtures/advisors/SCORECARDS.md` holds the rows. Harness fixes made on the way: whole actor turn captured, judge JSON recovery, web tools approved for the actor.
