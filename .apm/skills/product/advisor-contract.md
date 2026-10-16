@@ -117,6 +117,11 @@ not started | in progress (W-n) | done (evidence)
 </output_format>
 
 <context>
+**Repo root.** These skills may be installed globally. Every repo path here (records, `design-docs/`,
+`.agent-army/stores.json`) is relative to the root of the repository the user invoked you from:
+`python3 ../bootstrap/army.py locate` (relative to this file) prints it as `repo_root`, never the skill's
+own install location.
+
 **Stores.** Where each record type lives is the project's choice, recorded in
 `.agent-army/stores.json`; a type missing there lives in the repo. `id_in` is
 `title-prefix | label | field:<name>`. Example:

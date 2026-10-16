@@ -25,6 +25,7 @@ capabilities:
   auto_loads_skills: false
   commands_dir: null
   skill_invocation: invoke-by-path
+  dispatch: main-thread            # no confirmed generic subagent call with a per-call prompt; run the role inline
 
 model_control:
   main_session: inherit

@@ -8,8 +8,10 @@
 
 **Agent Army** is a deployable toolkit that creates a tailored agent team in a target repo. This
 repo is the source, distributed as an **apm package**. `apm install` deploys only skills and
-templates; `/bootstrap` creates local APM sources and has the user choose whether runtime hooks,
-git pre-commit and CI are owned by Agent Army, external, or disabled.
+templates (globally with `-g`, or per repo); `/bootstrap` writes one tool-neutral profile into the target
+repo's `.agent-army/` and has the user choose where it lives in git and whether runtime hooks, git
+pre-commit and CI are owned by Agent Army, external, or disabled. Skills find that profile from the git
+root they are invoked in; there are no native agent copies.
 
 No build step, no test suite, no installer script — apm is the install mechanism.
 
@@ -21,12 +23,13 @@ No build step, no test suite, no installer script — apm is the install mechani
   - fourteen product skills: the `/product` navigator and thirteen advisors (`product-strategy`, `product-red-team`, `market-research`, `business-case`, `validate-product`, `product-spec`, `solution-architecture`, `delivery-plan`, `go-to-market`, `product-metrics`, `ux-review`, `legal-review`, `launch-readiness`). Each points at one shared contract, `.apm/skills/product/advisor-contract.md` (`advisor-contract:v2`; it lives inside the `/product` skill folder because APM installs only skill folders), and names its own stage; the full stage map lives in `product/SKILL.md`. A semantic change to the contract bumps the tag. Skills follow the Prompt Architect shape: purpose, `<objective>`, at most 12 `<rules>` (conditional where judgment is needed), `<output_format>`, optional `<escalation>`, `<examples>`; `check.sh` enforces the pointer, stage, objective and rule cap.
 - `.apm/README.md` — the user-facing catalog: stage model, record stores, every skill, the `/ship` boundary table, ADRs.
 - `.apm/SOURCES.md` — attribution for borrowed methods (repo · file · commit · license). Source repo only: APM installs just the skill folders, so each skill also names its source and license inline.
-- `.apm/commands/` — thin command wrappers for tools that surface a `command/` dir rather than `skills/`; each just points at the matching `.agents/skills/<skill>/SKILL.md`. Claude does not use them: there the skills are native in `.claude/skills`. The skills have exactly one installed copy, wherever APM puts them for the target (`dirs.skills` in `baseline/tools/<tool>.yml`); `/bootstrap` never makes a second one. (apm's own placement varies by tool/version; when a native command isn't registered, invoke the skill directly by its `.agents/skills/…/SKILL.md` path.)
-- `.apm/skills/bootstrap/bootstrap.py` — deterministic v0.3.1 generator/migrator: `python3 bootstrap.py <tool> [--mode auto|incremental|full] [--runtime-hooks …] [--git-precommit …] [--ci …]`. It creates canonical local `.agent-army/agents/*.agent` role contracts, optional `.apm/hooks`, `.agent-army/runtime.py`, versioned ownership/config state, then lets the selected adapter render only where native agents are enabled. OpenCode uses the main-thread fallback and creates no native agent tree. `assemble.sh` is a no-APM compatibility wrapper.
+- `.apm/commands/` — thin command wrappers for tools that surface a `command/` dir rather than `skills/`; each just points at the matching `.agents/skills/<skill>/SKILL.md`. Claude does not use them: there the skills are native in `.claude/skills`. The skills may be installed globally or per repo; `/bootstrap` never copies them. (apm's own placement varies by tool/version; when a native command isn't registered, invoke the skill directly by its `.agents/skills/…/SKILL.md` path.)
+- `.apm/skills/bootstrap/bootstrap.py` — deterministic 0.5.0 generator/migrator (profile schema v3, no target): `python3 bootstrap.py [--visibility committed|gitignore|exclude] [--mode auto|incremental|full] [--runtime-hooks …] [--git-precommit …] [--ci …] [--tool <tool>]`. It creates `.agent-army/agents/*.agent` role contracts (the only copy), `.agent-army/config.json` with per-tool `model_routing.tools`, optional `.agent-army/runtime.py` and `.apm/hooks` (rendered through APM only with `--tool`). Migrating a 0.3/0.4 profile removes the native role copies those versions rendered when identical to the contract. `assemble.sh` is a no-APM compatibility wrapper.
+- `.apm/skills/bootstrap/army.py` — read-only resolver every skill can call relative to itself (`../bootstrap/army.py`): `locate` prints the repo root, profile (`specialized`/`baseline`), dispatch mode and per-role contract + model for a tool; `role <name>` prints a contract. Shared constants live in `armylib.py`.
 - `.apm/skills/bootstrap/baseline/` — **the single source of truth** for everything `/bootstrap` installs:
-  - `core/agents/` — seven source agent definitions + `_STANDARD.md`; bootstrap materializes canonical `.agent-army/agents/*.agent` role contracts. Native adapters may stage them as ignored `.apm/agents/*.agent.md`; OpenCode deliberately does not and runs roles in the main thread.
+  - `core/agents/` — nine source role definitions + `_STANDARD.md`; bootstrap materializes them as `.agent-army/agents/*.agent`, and skills use them directly as baseline roles in a repo without a profile.
   - `runtime.py` — the only barrier runtime. It accepts structured `{cwd, argv}` commands and never sources or evaluates project configuration.
-  - `tools/` and legacy hook wrappers remain migration references; profile schema v2 does not materialize them as active controls.
+  - `tools/` — per-tool descriptors; `capabilities.dispatch` (`subagent-with-prompt` | `main-thread`) tells skills how to run a role in that tool. Legacy hook wrappers remain migration references.
   - `AGENTS.md` — canonical cross-tool entry point (written into target repos). `CLAUDE.md` is NOT here — `/bootstrap` writes a thin Claude-only pointer to AGENTS.md.
   - `.github/workflows/quality.yml` — owned CI template which runs `runtime.py verify` and fails if no quality command exists.
 
@@ -62,11 +65,11 @@ scripts/check.sh --target-dir <dir>   # validate a MATERIALIZED tool dir (e.g. a
 ```
 **Advisor evaluation — `.claude/skills/advisor-eval/SKILL.md`** (maintainer tool, never shipped). It runs one product skill (arm N) against a plain session (arm K) through the scenario fixtures in `tests/fixtures/advisors/`, with a simulated user and a blind judge, and appends one row to `tests/fixtures/advisors/SCORECARDS.md`. Claude Code calls it as `/advisor-eval <advisor> --scenario <id>`; any other tool follows that `SKILL.md` by path and runs `python3 .claude/skills/advisor-eval/run.py <advisor> --scenario <id>` (first with `--plan-only`; it needs the `claude` CLI). **Rule: any change to a product skill → re-run `advisor-eval` for that advisor; any change to the shared `product/advisor-contract.md` → re-run it for all fourteen**; `check.sh` warns while a skill's fingerprint (its `SKILL.md` plus the shared contract) or the contract tag differs from its latest row. See `tests/GUIDE.md` for the protocol.
 
-**Releasing a new version:** before bumping `PACKAGE_VERSION`, run `scripts/package-manifest.py <previous-version> <its commit>` so the new generator recognises unmodified copies of the previous release (it refreshes them in the installed copy and removes a stale Claude `.agents/skills` copy); without it they are kept and reported as conflicts.
+**Releasing a new version:** bump `PACKAGE_VERSION` in `armylib.py` and `version` in `apm.yml` together; `scripts/smoke.sh` migrates a real profile made by the previous release's generator (extracted from its commit).
 
-**Generator preview — `python3 .apm/skills/bootstrap/bootstrap.py <target> --mode auto --dry-run`** prints what the v0.3.1 profile would create or migrate.
+**Generator preview — `python3 .apm/skills/bootstrap/bootstrap.py --mode auto --dry-run`** prints what the profile would create or migrate.
 
-**Smoke test — `scripts/smoke.sh`.** Deterministic gates cover all target profiles, external-control preservation, unsafe hook collision handling, shell secret writes, staged secret content, failing structured commands, native APM rendering where enabled, and OpenCode's main-thread fallback. See `tests/GUIDE.md` for the full testing guide.
+**Smoke test — `scripts/smoke.sh`.** Deterministic gates cover the target-free profile, `army.py locate` (subdirectory, baseline fallback, per-tool dispatch/models, user overrides), visibility, per-tool model routing, incremental and real 0.4.0 → 0.5.0 migration (native copies removed only when identical), external-control preservation, unsafe hook collisions, runtime secret/command safety, and a real APM hook render. See `tests/GUIDE.md` for the full testing guide.
 
 **End-to-end (the real apm path):**
 ```bash

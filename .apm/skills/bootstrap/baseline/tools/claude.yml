@@ -18,6 +18,7 @@ capabilities:
   auto_loads_skills: true            # .claude/skills/*/SKILL.md become native slash commands
   commands_dir: null                 # skills dir doubles as the commands dir
   skill_invocation: native-command
+  dispatch: subagent-with-prompt   # Agent tool: general-purpose subagent, contract as prompt, per-call model
 
 model_control:
   main_session: inherit

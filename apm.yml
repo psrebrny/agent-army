@@ -1,5 +1,5 @@
 name: agent-army
-version: 0.4.0
+version: 0.5.0
 description: >-
   Self-checking agent team + deterministic barriers for any repo, plus optional
   product advisors. Installs 19 live skills: five delivery skills (bootstrap,

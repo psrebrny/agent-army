@@ -3,32 +3,31 @@
 > Portable instruction file read natively by 20+ agentic coding tools (OpenAI Codex, Cursor,
 > GitHub Copilot, Gemini/Antigravity, Aider, Windsurf, Zed, Factory, Jules, Devin, Amp, VS Code,
 > JetBrains Junie …; Claude Code reads it too). This is the kickoff for the self-checking Agent
-> Army installed in this repo. Keep it focused — deep detail lives in `<SKILLS_DIR>/` and
-> `<AGENTS_DIR>/`.
+> Army used in this repo. Keep it focused — deep detail lives in the Agent Army skills (installed
+> globally or in this repo; `<SKILLS_DIR>` below means wherever they are) and in `<AGENTS_DIR>/`.
 
-## Target tool
-Set at install time: **__ARMY_TOOL__**. If this says `auto` or `other`, the bootstrap will ask
-once which tool is in use and adapt; otherwise treat it as already chosen (do not re-ask).
+## One profile, every tool
+The repo's specialized team lives only in `<AGENTS_DIR>/` and `.agent-army/config.json`. Every tool
+uses the same profile: the skills find it with `bootstrap/army.py locate` and run each role as a
+subagent or in the main thread. There is no native agent copy (`.claude/agents`, `.codex/agents`, …).
 
 ## First run — bootstrap ONCE
-The team shipped here is a generic, tool-agnostic baseline. Before real work, specialize it to
-THIS repo and emit it in this tool's native format.
+The team shipped with the package is a generic baseline. Skills work on it right away, but before
+real work, specialize it to THIS repo.
 
 **Run the bootstrap routine in `<SKILLS_DIR>/bootstrap/SKILL.md`.**
 - **Claude Code:** type `/bootstrap`.
 - **Other tools (no slash command):** start a task and paste the Kickoff prompt below, or tell the
   agent: "Follow `<SKILLS_DIR>/bootstrap/SKILL.md` against this repo."
 
-Bootstrap will: confirm the tool and resolve its Adapter Contract (agent format/location, memory
-file, guardrail mechanism, command format, model controls), read the codebase, ask a few gap
-questions, then emit a repo-tailored team in this tool's native format, refresh this `AGENTS.md`
-(+ the tool's native memory file), wire the guardrails, and verify the commands actually run. Run
-it once.
+Bootstrap will: read the codebase, ask a few gap questions, write the repo-tailored role contracts to
+`<AGENTS_DIR>/`, refresh this `AGENTS.md`, ask where the profile lives in git (committed, `.gitignore`
+or `.git/info/exclude`), wire the guardrails you choose, and verify the commands actually run. Run it once.
 
 ### Kickoff prompt (copy-paste for tools without slash commands)
-> Read `<SKILLS_DIR>/bootstrap/SKILL.md` and run it against this repository. The target tool is
-> __ARMY_TOOL__. Honor `<AGENTS_DIR>/_STANDARD.md` and the "Cost & context discipline" section below.
-> Ask only for gaps recon can't settle, then specialize the team in this tool's native format.
+> Read `<SKILLS_DIR>/bootstrap/SKILL.md` and run it against this repository. Honor
+> `<AGENTS_DIR>/_STANDARD.md` and the "Cost & context discipline" section below.
+> Ask only for gaps recon can't settle, then specialize the team in `<AGENTS_DIR>/`.
 
 ## Day-to-day — plan, ship, resume
 Invoke `architect` directly when you want discovery and an interactive blueprint in `design-docs/`; it never
@@ -103,21 +102,18 @@ The team already bakes most cost control into its parts (per-task profiles in bl
 <!-- agent-army:feedback-router:start -->
 ## Keeping Agent Army current
 
-In **any conversation**, treat a user correction, repeatable weakness, workflow improvement or missing
-specialist as a possible lesson for the Army. First correct the current task inside its approved scope.
-Then use `<SKILLS_DIR>/adapt-army/SKILL.md` to classify it as task-local, repo convention, existing agent,
-existing skill, deterministic control, new agent or new skill. Ask one durability question only when the
-signal is ambiguous.
-
-Never silently mutate the Army. For every durable change present an **Army Improvement Proposal** with
-evidence, recommended target, alternatives, planned write scope, verification and one approval question.
-Record its normalized status locally in `.agent-army/state.json`; do not store raw user messages or
-secrets. A declined proposal stays quiet unless materially new evidence appears.
-
-Core skills in `<SKILLS_DIR>/` are APM-managed and shared across tools. Before proposing a durable
-improvement, read the live relevant skill, applicable `AGENTS.md` files and local `<AGENTS_DIR>/` sources.
-Put a repo-wide law in `AGENTS.md`, a role responsibility in `<AGENTS_DIR>/`, and a separate user-invoked
-workflow in a new `.apm/skills` skill. Never edit a package-managed core skill inside a target repository.
+When the user corrects an agent, identifies a repeatable weakness, asks for a better workflow, or
+needs a missing specialist, first fix the current task inside its approved scope. Then classify the
+lesson with the `/adapt-army` skill: task-local correction, repo convention, existing agent, existing
+skill, deterministic control, new agent, or new skill. Never modify the Army silently. Show an **Army
+Improvement Proposal** with the evidence, recommended target, write scope, verification and one approval
+question. Durable proposals and decisions live locally in `.agent-army/state.json`; do not store raw user
+text, secrets, blueprint paths or `design-docs` references there. The Agent Army skills are
+package-managed and may be installed globally or in this repo; never edit them here. Role contracts live
+only in `.agent-army/agents` (skills find them with `bootstrap/army.py locate`); there is no native agent
+copy to edit. Put a repo law in `AGENTS.md`, a role responsibility in `.agent-army/agents`, and a separate
+user-invoked workflow in a new repo-local skill. After a package update, run `/bootstrap` to review new
+package skills and templates before choosing any local specialization changes.
 <!-- agent-army:feedback-router:end -->
 
 ## Hardening the formatter config — offer once, never nag

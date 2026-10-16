@@ -394,7 +394,7 @@ PY
 check_v2_source() {
   [ -z "$TARGET_DIR" ] || return
   printf '\n\033[1m• v0.3 generator safety\033[0m\n'
-  if python3 - "$ROOT/.apm/skills/bootstrap/bootstrap.py" "$BASE/runtime.py" <<'PY'
+  if python3 - "$ROOT/.apm/skills/bootstrap/bootstrap.py" "$ROOT/.apm/skills/bootstrap/army.py" "$ROOT/.apm/skills/bootstrap/armylib.py" "$BASE/runtime.py" <<'PY'
 import sys
 for path in sys.argv[1:]:
     compile(open(path, encoding='utf-8').read(), path, 'exec')

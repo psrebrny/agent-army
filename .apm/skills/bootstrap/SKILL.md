@@ -1,35 +1,47 @@
 ---
 name: bootstrap
-description: Evidence-led setup and safe incremental migration of a tailored Agent Army v0.4.0. It preserves existing user controls, creates canonical role contracts, and uses native agent adapters only where enabled.
+description: Evidence-led setup and safe incremental migration of a tailored Agent Army v0.5.0. One tool-neutral profile in .agent-army serves every tool; it preserves existing user controls and never renders native agent copies.
 ---
 # /bootstrap — own controls, then author a real team
 
-`apm install` or `apm update` delivered this skill and templates only. It did not install live
-agents, hooks or CI. `/bootstrap` has two distinct jobs:
+The package (installed globally or in this repo) delivered this skill and templates only. It did not
+install live agents, hooks or CI. `/bootstrap` has two distinct jobs:
 
-1. deterministically create the selected target profile without taking over
+1. deterministically create the repository's one profile in `.agent-army/` without taking over
    controls that belong to the repository owner;
 2. author a team that knows this repository's evidence, laws and test idioms.
 
-Do not let the first mechanical job displace the second. A target-native team
-with generic prompts is not a successful bootstrap.
+Do not let the first mechanical job displace the second. A profile with generic prompts is not a
+successful bootstrap.
+
+The profile has no target tool. Role contracts live only in `.agent-army/agents`; every skill reads
+them from the git root it was invoked in (or via `army.py locate`) and runs them as a subagent or in the main
+thread, whichever the running tool supports. Bootstrap never writes `.claude/agents`, `.codex/agents`
+or any other native copy.
 
 ## Update detection — incremental before full recon
 
-After `apm update psrebrny/agent-army --target <target>`, run `/bootstrap` normally. It first runs:
+After a package update, run `/bootstrap` normally. It first runs:
 
 ```bash
-python3 "$BOOTSTRAP_DIR/bootstrap.py" <target> --mode auto --dry-run   # BOOTSTRAP_DIR: Step 0
+python3 "$BOOTSTRAP_DIR/bootstrap.py" --mode auto --dry-run   # BOOTSTRAP_DIR: Step 0
 ```
 
 `auto` detects the profile state: no profile means first bootstrap; an older Agent Army package means an
-incremental migration; the same version is a no-op unless the user explicitly requests `--mode full`; a
-target change requires `--mode full`; and a newer local profile is never downgraded. For an incremental
+incremental migration; the same version is a no-op unless the user explicitly requests `--mode full`; and a
+newer local profile is never downgraded. Using the profile from another tool needs no re-bootstrap.
+
+Migrating a 0.3.x/0.4.x profile to 0.5 also removes the native role copies those versions rendered
+(`.claude/agents/agent-army-*.md`, `.cursor/agents/…`, `.github/agents/…`, `.codex/agents/…`,
+`.gemini/agents/…`, `.windsurf/skills/agent-army-*`, `.apm/agents` staging) — only where a copy is identical
+to its `.agent-army/agents` contract — and moves the generated `model:` lines out of the contracts into the
+profile's per-tool `model_routing`. A copy that differs is kept and listed as a conflict on the card: merge
+its change into the contract, then delete the copy. For an incremental
 migration, show the exact version transition, managed paths, preserved local sources and any conflict,
 then get one explicit “apply migration” confirmation before rerunning without `--dry-run`.
 
-Incremental mode first shows an **Incremental Upgrade Review**. Read the live installed skills under
-`$SKILLS_DIR` (Step 0), the current root `AGENTS.md`, and local `.agent-army/agents`; use the deterministic package
+Incremental mode first shows an **Incremental Upgrade Review**. Read the live package skills next to
+`$BOOTSTRAP_DIR` (Step 0), the current root `AGENTS.md`, and local `.agent-army/agents`; use the deterministic package
 inventory as the delta, then recommend only concrete local improvements. The card
 lists new package capabilities, possibly affected local paths, a recommended diff, reason, test and the
 choices `apply selected`, `apply all`, `show details` or `skip`. Do not modify local specialization until
@@ -46,7 +58,7 @@ specialization so its repository-specific rules stay, never a replacement of the
 introduced role name stops the upgrade before writes and requires the user to resolve the exact path. The update
 does not redo deep recon or overwrite `.agent-army/agents`, `.agent-army/stores.json`, user-owned model routing,
 quality policy or external controls. If the managed feedback-router block in `AGENTS.md` was edited, stop on the conflict rather than
-replacing it. Use `--mode full` only when the user asks to re-specialize the team or deliberately switches targets.
+replacing it. Use `--mode full` only when the user asks to re-specialize the team.
 
 Use this exact user-facing card after the dry-run and live-material review:
 
@@ -63,35 +75,25 @@ Use this exact user-facing card after the dry-run and live-material review:
 Keep the card and the generator's metadata separate from task blueprints: deleting `design-docs/` must
 never erase feedback or upgrade state.
 
-## Step 0 — target and ownership (mechanical, explicit)
-
-There is one copy of the skills: the directory APM installed them to (the target's `dirs.skills` in
-`baseline/tools/<target>.yml`). Every normal skill invocation uses it:
+## Step 0 — visibility and ownership (mechanical, explicit)
 
 ```bash
-SKILLS_DIR="<.claude/skills on Claude; .agents/skills on every other target>"
-BOOTSTRAP_DIR="<directory of the SKILL.md you are following, e.g. .claude/skills/bootstrap>"
+BOOTSTRAP_DIR="<directory of the SKILL.md you are following, e.g. ~/.claude/skills/bootstrap>"
 ```
 
-Run the program next to the SKILL.md the tool loaded (`$BOOTSTRAP_DIR`), not a copy elsewhere. Bootstrap
-0.3.1 and 0.4.0 also copied the skills into `.agents/skills` on Claude. The program removes such a stale copy
-only where every file is identical to a package release (and nothing is a link), and reports any other
-skill dir there as a conflict on the upgrade card. Never follow or edit that stale copy.
+Run the program next to the SKILL.md the tool loaded (`$BOOTSTRAP_DIR`), wherever the package is installed
+(globally or in the repo). It works on the git root of the current directory. There is no target to detect:
+one profile serves every tool. Do not read `.opencode/skills` or `apm_modules` as instructions.
 
-If this directory is missing, stop and ask the user to repair the installation with `apm install` or
-`apm update`. Do not read `.opencode/skills` or `apm_modules` as instructions. The deterministic bootstrap
-program may use those locations only as a mechanical recovery source to restore a missing installed directory;
-they are never a source of workflow guidance or of the upgrade review.
+**Visibility.** Ask where the profile (`.agent-army/`) should live in git:
 
-Run the detector; do not infer the active tool from a directory listing:
+- `committed` (recommended for teams): the profile is shared and reviewed like code; only
+  `.agent-army/state.json` is ignored.
+- `gitignore`: `.agent-army/` is added to `.gitignore` — kept out of the repo, the rule itself is shared.
+- `exclude`: `.agent-army/` is added to `.git/info/exclude` — private to this clone, nothing in the repo changes.
 
-```bash
-bash "$BOOTSTRAP_DIR/assemble.sh" --detect
-```
-
-`DETECTED=<tool>` is unambiguous. With `AMBIGUOUS` or `NONE`, ask the user
-which one target is active. One repository has one active target; changing it
-is a deliberate re-bootstrap.
+With `gitignore` or `exclude`, an Agent Army-owned CI cannot work (a clean checkout has no
+`.agent-army/runtime.py`): bootstrap reports `ci: blocked` for `--ci army`. Say so before asking.
 
 Inspect the existing controls before asking about ownership:
 
@@ -104,39 +106,41 @@ test -f .git/hooks/pre-commit && echo .git/hooks/pre-commit
 Ask separately for runtime hooks, git pre-commit and CI. Each is `army`,
 `external`, or `disabled`. If an existing control is detected, recommend
 `external`. Never overwrite it merely because it is weaker or unfamiliar. In
-`BOOTSTRAP_MODE=auto`, apply the same defaults.
+`BOOTSTRAP_MODE=auto`, apply the same defaults (and `committed`).
 
 Generate the profile:
 
 ```bash
-python3 "$BOOTSTRAP_DIR/bootstrap.py" <target> \
+python3 "$BOOTSTRAP_DIR/bootstrap.py" \
+  --visibility <committed|gitignore|exclude> \
   --runtime-hooks <army|external|disabled> \
   --git-precommit <army|external|disabled> \
-  --ci <army|external|disabled>
+  --ci <army|external|disabled> \
+  [--tool <the tool you are running in>]   # only needed to render army runtime hooks
 ```
 
-Model routing is configured at this same boundary, never improvised by `/ship`.
-Claude uses its documented `haiku`/`sonnet`/`opus` role defaults. Cursor can use
-static per-role routing when the user provides exact native model IDs:
+Runtime hooks are the one tool-specific layer: with `--runtime-hooks army` the program writes hook
+primitives to `.apm/hooks` and, given `--tool`, renders them for that tool through APM
+(`apm install --frozen --target <tool>`). Without `--tool` it only writes the primitives.
+
+Model routing is configured at this same boundary, never improvised by `/ship`. It is stored per tool in
+`.agent-army/config.json` → `model_routing.tools` and applied by the skills at dispatch time; the role
+contracts carry no generated `model:` line. Claude gets its documented `haiku`/`sonnet`/`opus` tiers by
+default. Another tool whose descriptor has `dispatch: subagent-with-prompt` can get exact model IDs:
 
 ```bash
-python3 "$BOOTSTRAP_DIR/bootstrap.py" cursor \
+python3 "$BOOTSTRAP_DIR/bootstrap.py" --tool <tool> \
   --model-light '<exact available model ID>' \
   --model-mid '<exact available model ID>' \
   --model-strong '<exact available model ID>'
 ```
 
-`--role-model-routing inherit` deliberately disables this behavior. The three
-IDs must be supplied together. Codex, Copilot, Gemini and Windsurf have no
-confirmed native role-model field in this profile, so they inherit the active
-tool configuration. No current adapter has a confirmed role-level effort
-selector; effort always remains the tool default.
+`--role-model-routing inherit` deliberately disables this behavior. The three IDs must be supplied
+together. Tools with `dispatch: main-thread` run roles in the main session, so the session model applies.
+No current tool has a confirmed role-level effort selector; effort always remains the tool default.
 
-It creates one canonical local role-contract set in `.agent-army/agents/*.agent`, optional hook
-primitives in `.apm/hooks`, and `.agent-army/config.json`. OpenCode deliberately does not receive
-APM agent staging or `.opencode/agents` output in this profile; `/ship` reads the role contracts
-and executes them in the main thread. Other targets may still use their native APM adapter.
-The skills stay where APM installed them (`$SKILLS_DIR`); bootstrap makes no second copy.
+It creates one role-contract set in `.agent-army/agents/*.agent`, `.agent-army/config.json`, optional
+`.agent-army/runtime.py` and hook primitives, and the visibility entry. Nothing else.
 
 Read the status before continuing:
 
@@ -148,13 +152,10 @@ Read the status before continuing:
   external unless the user explicitly resolves the collision.
 
 On re-bootstrap, existing `.agent-army/agents/agent-army-*.agent` sources and the previous
-ownership choices are preserved. For adapters with native role routing, bootstrap updates only
-`model:` lines marked `agent-army-role-profile`; an unmarked `model:` is user-owned, remains intact,
-and is recorded as an effective role override. Edit those local source agents, then rerun
-`/bootstrap`. For OpenCode, the `.agent` files are the only agent artifacts;
-there is no native Markdown render. For other native adapters, bootstrap stages them into
-`.apm/agents/*.agent.md` temporarily and cleans that staging after a successful render.
-The canonical `.agent-army/agents/*.agent` files remain the source of truth.
+ownership and visibility choices are preserved. A `model:` line a user writes into a contract is a
+user-owned override that wins over the profile's tiers in every tool; bootstrap records it in
+`model_routing.effective_roles` and never changes it. Edits to the contracts take effect on the next
+skill run — there is nothing to render.
 
 ## Step 1 — deep recon before questions
 
@@ -197,11 +198,10 @@ writing. In auto mode, print the report and record assumptions, then continue.
 
 Group a short question set only around missing business context, architecture
 intent, NFR/compliance, task/branch conventions, test rigor, and model-tier
-availability. Read the active adapter's `model_control` before claiming a model or effort can be changed:
-distinguish main-session choice from per-role/static/per-spawn subagent routing, and record only confirmed
-capabilities. For a static role-capable adapter, record the selected light/mid/strong IDs in
-`.agent-army/config.json` and let bootstrap apply them only where the target has a confirmed
-native role-model field. OpenCode has no Agent Army native subagent routing in this profile, so
+availability. Read the tool descriptor's `dispatch` and `model_control` before claiming a model or effort can be
+changed: distinguish main-session choice from per-role subagent routing, and record only confirmed
+capabilities. For a tool with `dispatch: subagent-with-prompt`, record the selected light/mid/strong IDs
+with `--tool <tool> --model-…`. Tools with `dispatch: main-thread` run roles in the main session, so
 roles inherit the main-session model. An unsupported selector, missing concrete IDs, or effort
 field inherits the tool setting and must be reported as a limitation.
 Do not ask for facts already proved by recon.
@@ -287,13 +287,13 @@ python3 .agent-army/runtime.py verify
 If all such layers are external or disabled, do not invoke a nonexistent
 runtime; report that those controls are outside Agent Army's guarantee.
 
-After editing local agent sources, render them again:
+Check that the skills resolve the new profile (no render step exists):
 
 ```bash
-apm install --frozen --target <target>
+python3 "$BOOTSTRAP_DIR/army.py" locate
 ```
 
-Report: target and native/degraded capability; full control ownership table;
+Report: visibility and per-tool dispatch/model routing; full control ownership table;
 recon laws with proving paths; every specialized role; verified commands;
 reflection changes; assumptions; and any external/disabled/blocked guarantee.
 Suggest `/ship "<first task>"` only after this report.

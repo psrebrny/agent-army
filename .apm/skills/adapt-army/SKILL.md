@@ -25,9 +25,9 @@ Do not repeatedly raise a declined proposal unless new, material evidence change
 
 ## 2 · Inspect, then route to the smallest correct owner
 
-Before proposing a change, read the live relevant `.agents/skills/<skill>/SKILL.md` files (on Claude the one
-installed copy is `.claude/skills/<skill>/SKILL.md`), applicable root and nested `AGENTS.md` files, and
-local `.agent-army/agents` sources. Do not use `.opencode/skills` or `apm_modules` as instruction sources. Choose the narrowest owner and explain why it wins over alternatives:
+Before proposing a change, run `python3 ../bootstrap/army.py locate` (relative to this file) and work in its
+`repo_root`. Read the live relevant `<skill>/SKILL.md` files next to this skill (they may be installed
+globally), applicable root and nested `AGENTS.md` files, and local `.agent-army/agents` sources. Do not use `.opencode/skills` or `apm_modules` as instruction sources. Choose the narrowest owner and explain why it wins over alternatives:
 
 | Signal | Owner |
 |---|---|
@@ -40,8 +40,8 @@ local `.agent-army/agents` sources. Do not use `.opencode/skills` or `apm_module
 
 Creating a new agent is justified only when no existing role can own the responsibility without losing
 single-purpose scope. Creating a new skill is justified only when the user needs a distinct reusable
-workflow, not merely a longer existing prompt. Core skills under `.agents/skills/` (on Claude, `.claude/skills/`) are
-APM-managed: never edit them in a target repository.
+workflow, not merely a longer existing prompt. The Agent Army skills (global or per repo) are
+package-managed: never edit them for one repository.
 
 ## 3 · Persist the proposal locally and ask
 
@@ -89,8 +89,8 @@ decision progresses.
 3. Hand an independent role to `/new-agent`; hand a new user workflow to `/new-skill`.
 4. Preserve external/disabled controls. Extend only the formatter, linter or test control the repository
    already owns; never create a competing config merely to enforce an agent preference.
-5. Render through `apm install --frozen --target <target>` when agents or local skills changed, then run
-   the relevant verification. Do not commit without explicit approval.
+5. Role changes need no render: skills read `.agent-army/agents` directly. Render through
+   `apm install --frozen --target <tool>` only when a repo-local skill changed, then run the relevant verification. Do not commit without explicit approval.
 
 ## <prompt_examples>
 **EX 1 — task correction plus durable workflow lesson.** USER: “You started coding before I accepted the

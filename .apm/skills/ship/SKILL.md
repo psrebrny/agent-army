@@ -10,7 +10,21 @@ description: Resumable SDD executor — resolves a task, PR, feature or small fi
 > skip the RED-first loop entirely (implement → audit → docs); at `light`/`pragmatic`
 > scale the tests down. Security barriers stay on at every level.
 
-## 0 · RESOLVE THE EXECUTION SCOPE
+## 0 · THE REPO'S ARMY
+The repo is the git root of the directory you were invoked from; its whole Army is `.agent-army/` there
+(this skill may be installed globally — never look for repo state next to it). Every role named below
+(`architect`, `tester`, `coder`, `code-reviewer`, …) is the contract `.agent-army/agents/agent-army-<role>.agent`.
+There are no native `agent-army-*` agents; never look for or spawn one.
+
+- **No `.agent-army/`:** say once that `/bootstrap` is recommended, then continue on the package's baseline
+  roles (`../bootstrap/baseline/core/agents/<role>.md`, relative to this file) and the default policy.
+- **Dispatch:** in Claude Code, run a role as a general-purpose subagent whose prompt is the full contract,
+  then `---`, then the task brief. In a tool without such a subagent call, execute the contract in the main
+  session and record it under `Active roles`.
+- `python3 ../bootstrap/army.py locate --tool <tool>` prints all of this resolved (repo root, contract path
+  and model per role, dispatch mode) when you want it deterministic instead of reading the files yourself.
+
+## 0.1 · RESOLVE THE EXECUTION SCOPE
 `/ship` is an executor, not the planning agent. It reads `design-docs/**/00_CORE_MANIFEST.md` and
 `0*_PR_*.md` first, including every `Execution State`, and resolves the narrowest unambiguous scope:
 
@@ -297,20 +311,18 @@ unbounded effort on retrieval, context noise or a repeated failed approach.
 Every atomic task has an `Execution Profile`: `Bottleneck`, `Bottleneck rationale` and `Escalation
 trigger`. It carries no capability, deliberation or vendor model ID, and `/ship` makes no per-task
 capability recommendation. Each role is routed from `model_routing` (bootstrap) or the tool default.
-Bootstrap resolves a target-native model-routing record once in `.agent-army/config.json`; this is
-configuration, not an LLM decision.
+Bootstrap records per-tool model tiers once in `.agent-army/config.json`; `army.py locate --tool <tool>`
+resolves them into `roles.<role>.model`. This is configuration, not an LLM decision.
 
-### Per-role static routing (preferred for native adapters)
-When `model_routing.strategy` is `per_role_static`, the native agent definition selects its model before
-the agent is spawned. `/ship` dispatches it directly, including in autonomous mode: it does **not** pause
-or ask the user to switch at each role boundary. Read `effective_roles` in `model_routing` and record its
-configured model and source (`bootstrap` or `user-override`) in that dispatch's Run Configuration.
+### Per-role static routing (`dispatch: subagent-with-prompt`)
+Pass the role's model (`model_routing.tools.<tool>.<capability>`, or the contract's own `model:` line,
+which wins; `army.py locate` resolves both as `roles.<role>.model`) as the subagent's model. `/ship` dispatches directly, including in autonomous mode: it does **not**
+pause or ask the user to switch at each role boundary. Record the model and its `model_source`
+(`profile`, `package-default` or `user-override`) in that dispatch's Run Configuration.
 
-### Main-thread fallback
-When the active adapter reports `capabilities.subagents: false` — including OpenCode in this profile —
-do not look for native agent files or try to spawn a worker. Read the relevant contract from
-`.agent-army/agents/agent-army-<role>.agent`, execute that role in the main session, and record the
-role as `Active roles`. The main-session model and effort remain unchanged; `model_routing` is `inherit`.
+### Main-thread fallback (`dispatch: main-thread`)
+Do not try to spawn a worker. Read the role's contract (`army.py role <role>`), execute that role in the
+main session, and record it as `Active roles`. The main-session model and effort remain unchanged.
 
 The portable defaults intentionally distinguish roles:
 
@@ -321,13 +333,13 @@ The portable defaults intentionally distinguish roles:
 | `light` | tester, docs-writer | focused RED/GREEN work or factual documentation |
 
 The task's Execution Profile remains the planner's evidence for coordination and escalation; it
-does not silently mutate a static native agent definition mid-run. If a task demonstrably needs a model
+does not silently change a role's configured model mid-run. If a task demonstrably needs a model
 above the configured role profile, record a `needs_input` configuration gap at the mandatory gate and ask
-for an explicit re-bootstrap with the selected target's real model IDs. Never fake a provider/model ID.
+for an explicit re-bootstrap with that tool's real model IDs (`--tool <tool> --model-…`). Never fake a provider/model ID.
 
 ### Inherit fallback
-When the adapter has no confirmed model field, or bootstrap lacks all three exact target-native IDs,
-`model_routing.strategy` is `inherit`. The subagent uses the tool/session configuration and effort remains
+When `roles.<role>.model` is null (the tool has no per-role model, or bootstrap lacks its three exact
+model IDs, or `model_routing.strategy` is `inherit`), the role inherits. The subagent uses the tool/session configuration and effort remains
 the tool default. `/ship` cannot observe that actual setting and must not claim it changed. Only then, when
 a material recommendation differs, pause at the mandatory gate and show:
 ```
@@ -449,7 +461,7 @@ the final-review card.
 ## 5 · DOCS + FINAL VERIFICATION
 Persist PR `docs` and `Active roles: docs-writer`; `docs-writer` updates only necessary, truthful docs.
 Before the task closes, `docs-writer` sweeps the plan for significant decisions without an ADR and proposes them (no new checkpoint).
-Without a native `docs-writer` agent, read its contract at `.agent-army/agents/agent-army-docs-writer.agent` before writing docs. An ADR
+When `docs-writer` runs in the main thread, read its contract (`army.py role docs-writer`) before writing docs. An ADR
 uses that contract's template with every field, and stays `Proposed` until the user confirms the decision itself; "decide for me" is not a
 confirmation. Ask for it in the final-review card, not in a new pause.
 Run the configured full verification, record its output in `Execution State`, set `Active roles: none`,

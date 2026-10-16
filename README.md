@@ -4,39 +4,44 @@ Agent Army is an [APM](https://microsoft.github.io/apm/) package for creating a
 repository-specific team of planner, coder, tester, reviewer, security,
 performance and documentation agents.
 
-## Install, then bootstrap
+## Install once, bootstrap per repository
+
+The skills are generic, so install them once for your user. Every repository you open
+then has `/ship`, `/product`, `/bootstrap` and the rest:
 
 ```bash
-cd my-repository
-apm install psrebrny/agent-army --target opencode
-# choose one target: claude | cursor | codex | gemini | copilot | windsurf | opencode
+apm install -g psrebrny/agent-army --target claude   # user scope; or claude | cursor | codex | gemini | copilot | windsurf | opencode
 ```
 
-Choose the tool that is active for this repository:
+A per-repository install (`apm install psrebrny/agent-army --target <tool>` in the repo) works the same.
+In Claude Code a personal skill wins over a project skill with the same name. That is harmless here:
+all repo knowledge lives in the repository, not in the skills.
 
-| `--target` | Agent delivery |
+In the repository, run `/bootstrap` once. It writes **one profile for every tool**:
+
+- `.agent-army/agents/agent-army-*.agent`: the role contracts, specialized to this codebase;
+- `.agent-army/config.json`: per-tool model routing, quality commands and control ownership.
+
+There is no target and no native agent copy (`.claude/agents`, `.codex/agents`, …). When you call a
+skill, it reads `.agent-army/` from the git root of the directory you invoked it in. The deterministic
+helper `bootstrap/army.py locate` does the same. The skill then runs each role from its contract: as a
+subagent with the role's model in Claude Code, or in the main session in tools without such a call. A
+repository without a profile still works on the package's baseline roles, and the skills recommend
+`/bootstrap`.
+
+You decide whether the profile is part of the repository (`--visibility`):
+
+| Visibility | Effect |
 |---|---|
-| `claude` | Native agents through APM; runtime hook adapter available |
-| `codex` | Native Codex TOML agents through APM |
-| `cursor` | Native Cursor agents through APM |
-| `copilot` | Native `.github/agents/*.agent.md` through APM |
-| `opencode` | Canonical role contracts in `.agent-army/agents`; main-thread execution via shared skills |
-| `gemini` | Agent sources plus a temporary direct Gemini adapter |
-| `windsurf` | Role-skills fallback; Windsurf has no native project subagents |
+| `committed` | shared and reviewed like code; only `.agent-army/state.json` is ignored |
+| `gitignore` | `.agent-army/` is added to `.gitignore` |
+| `exclude` | `.agent-army/` is added to `.git/info/exclude`, private to your clone |
 
-Use one target per repository. To switch tools, explicitly re-run `/bootstrap`
-for the new target.
+An Agent Army-owned CI needs a committed profile, so with `gitignore`/`exclude` it is reported as `blocked`.
 
-On Claude, `/bootstrap` is normally a slash command. In the other tools,
-including OpenCode, open or invoke `.agents/skills/bootstrap/SKILL.md` directly
-when the tool does not register the command natively. Use the corresponding
-path for `/ship`, `/new-agent`, `/new-skill` and `/adapt-army` too.
-
-The install is intentionally passive: it ships 19 skills and templates only.
-`/bootstrap` is the explicit second step that creates the tailored local role contracts.
+In tools without slash commands, invoke the skill file directly (`<skills dir>/bootstrap/SKILL.md`, and the
+same for `/ship`, `/new-agent`, `/new-skill`, `/adapt-army` and the product skills).
 The product skills need no bootstrap: they work in any repository.
-For OpenCode, `.agent-army/agents/*.agent` is the only agent artifact: skills read it and
-`/ship` executes roles in the main thread. Other targets may use their native APM adapter.
 
 During bootstrap, choose the owner of each layer independently:
 
@@ -53,18 +58,13 @@ rewrites an unmanaged pre-commit hook or workflow. The resulting
 
 ## What bootstrap creates
 
-- `.agent-army/agents/agent-army-*.agent` role contracts. OpenCode does not create `.apm/agents`
-  or `.opencode/agents` agent files; other native targets may create temporary APM staging and
-  native output through `apm install --frozen --target <target>`.
-- `.apm/hooks/agent-army-*.json` only when runtime hooks are owned by Agent
-  Army and the target supports the adapter.
+- `.agent-army/agents/agent-army-*.agent` role contracts: the only copy, read by the skills in every tool.
 - `.agent-army/runtime.py` and `.agent-army/config.json`; quality commands are
   structured `cwd` plus `argv`, never shell snippets.
+- `.apm/hooks/agent-army-*.json` only when runtime hooks are owned by Agent Army; with
+  `--tool <tool>` they are rendered for that tool through APM (the only tool-specific step).
 - An owned CI workflow only at `.github/workflows/agent-army-quality.yml`.
-
-OpenCode uses the main-thread role-contract fallback in this profile. Windsurf
-receives role-skills fallback because it has no native project subagents. All
-other listed targets may receive the full agent roster through APM.
+- The visibility entry in `.gitignore` or `.git/info/exclude`.
 
 Runtime hooks provide quick deterministic feedback. Agent Army only claims
 repository enforcement for chosen, active `army` pre-commit and CI layers;
@@ -79,20 +79,20 @@ so a new session can continue without reconstructing chat history.
 Architect gives each task an Execution Profile: its reasoning `Bottleneck`, the
 rationale and an escalation trigger. `/ship` derives the coordinator profile for
 the selected scope from those bottlenecks and escalates from them, while each
-role's model comes from the routing bootstrap maps to the target's native model
-field where that field is confirmed (otherwise the tool default). The
+role's model comes from the per-tool routing bootstrap records, applied when the skill dispatches
+the role (otherwise the tool default). The
 static defaults are strong for architect/review/security, mid for coder/perf,
 and light for tester/docs, so autonomous execution can move between roles
-without a model-switch pause. Claude uses its documented tier names; Cursor
-receives this routing only after bootstrap is given three real target-native
-model IDs. OpenCode uses the main-session model because this profile does not
-spawn native subagents. The delivery loop is TDD → independent review/security
+without a model-switch pause. Claude uses its documented tier names by default; another tool
+with a per-call subagent model gets routing only after bootstrap receives three real model IDs
+for it (`--tool <tool> --model-light … --model-mid … --model-strong …`). Tools that run roles in the
+main session use the main-session model. The delivery loop is TDD → independent review/security
 → repairs and re-audit → docs/full verification → ready for human review.
 
 When an architect creates or materially revises a blueprint, `/ship` always
 pauses — including in autonomous mode — so the user can review acceptance
 criteria and choose one task, one PR or all unfinished PRs before implementation.
-For adapters without a configured native model field, every subagent inherits
+For tools without a configured per-role model, every role inherits
 the active tool/session configuration and `/ship` asks for a manual change only
 when the recommendation is material. It never invents a provider/model ID,
 changes the main-session setting, or claims that a role-level effort changed:
@@ -164,19 +164,22 @@ code: anything that becomes code is a work item you hand to `/ship`.
 ## Update an installed Army
 
 ```bash
-apm update psrebrny/agent-army --target opencode
+apm update -g psrebrny/agent-army    # or without -g for a per-repository install
 ```
 
-Then run `/bootstrap`. It detects an older profile or changed live package materials, previews a narrow
-incremental migration and shows an **Incremental Upgrade Review** before any local specialization changes.
-The review compares the installed skills (`.claude/skills` on Claude, `.agents/skills` elsewhere) and
-baseline-template hashes with the local inventory, then asks whether to apply selected recommendations, apply all, inspect details or skip. The migration preserves
-repo-specialized `.agent-army/agents`, model routing, quality policy and external controls; it updates only marked
-Agent Army fragments. A manually edited marked fragment is reported as a conflict, never overwritten. Use
-`/bootstrap --mode full` only when you want to intentionally re-specialize the team or change target.
-The skills keep one copy, where APM installed them. On Claude, bootstrap 0.3.1 and 0.4.0 also copied them to
-`.agents/skills`; `/bootstrap` removes that copy where every file is identical to a package release and
-reports anything else there (a local change, a link) as a conflict.
+Then run `/bootstrap` in each repository. It detects an older profile or changed package material, previews
+a narrow incremental migration, and shows an **Incremental Upgrade Review** before it changes any local
+specialization. The review compares the package's skill and baseline-template hashes with the profile's
+inventory. You can then apply selected recommendations, apply all, inspect details or skip. The migration
+preserves the repo-specialized `.agent-army/agents`, model routing, quality policy and external controls, and
+updates only marked Agent Army fragments. A manually edited marked fragment is reported as a conflict and
+never overwritten. Use `/bootstrap --mode full` only when you intend to re-specialize the team.
+
+Upgrading a 0.3/0.4 profile to 0.5 also deletes the native role copies those versions rendered, but only
+where a copy is identical to its contract: `.claude/agents/agent-army-*.md`, `.codex/agents/…`,
+`.github/agents/…`, `.cursor/agents/…`, `.gemini/agents/…`, `.windsurf/skills/agent-army-*` and `.apm/agents`
+staging. It also moves generated `model:` lines from the contracts into the profile. An edited copy is kept
+and listed as a conflict.
 
 ## Keeping the team current
 
