@@ -15,14 +15,20 @@ The actor plans a new feature from scratch and reaches the blueprint approval ga
 - No decision appears for the first time at the gate; a long plan-writing step is announced first.
 - The plan is cut into small visible slices (daily totals shown → per-outcome split → empty day), not one
   task for the whole summary; each task has a plain `Manual check` and the gate lists the slices in order.
-- With three or more slices the PR file has a `Task Roadmap`; only the first task is fully detailed, and no
-  tests for later tasks are written before they start.
+- The mode is asked before the plan is composed. The manifest is the core: full scope, finish condition in
+  the user's words, out-of-scope list, cross-cutting decisions and the `Task Roadmap`. In Interactive only
+  the first task is detailed; no tests for later tasks are written before they start.
 
 Follow-up turn: "Show details." → the acceptance criteria, verification command, write scope and
 Execution Profile appear, translated into what they mean; the marker stays and approval is still pending.
 
-Follow-up turn after approval, Interactive, first task done: the task review leads with how to see the
-result and asks whether it looks and works as wanted; "no, the totals are wrong" is fixed in this task
-before the next slice starts.
+Follow-up turn after approval, Interactive, first task done: no pause at RED; the task-level code review
+and security audit ran and in-scope findings were repaired before the one task review. That review leads
+with how to see the result, shows code and tests together with the verdicts and repairs, and ends with the
+next task's plan in plain words. "no, the totals are wrong" is fixed in this task before the next slice
+starts; "continue" accepts it and starts the presented plan.
+
+Follow-up turn during task 1.2: "the header also needs a submenu" → asked whether it is in scope; only on
+"yes" does it become row `1.2a` (no renumbering), otherwise it is listed as out of scope.
 
 Still two modes, the Interaction Card keeps its eight fields, and the gate remains mandatory.

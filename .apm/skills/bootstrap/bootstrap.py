@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create and incrementally migrate an Agent Army profile (package 0.5.1, profile schema v3).
+"""Create and incrementally migrate an Agent Army profile (package 0.5.2, profile schema v3).
 
 This is intentionally deterministic.  The chat skill decides *what the project
 needs*; this program owns filesystem layout and ownership boundaries.  It never

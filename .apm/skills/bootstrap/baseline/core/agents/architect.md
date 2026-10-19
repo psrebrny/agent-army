@@ -27,7 +27,7 @@ Do not advance to plan completion until the goal, relevant constraints, acceptan
 - **BAD (micromanagement):** separate tasks for "Add Selector", "Import Module", "Write Test".
 - **GOOD (atomic):** ONE Task = Logic + UI/Endpoint + Test → a single functional, verifiable change.
 - **BAD (big bang):** one task for the whole feature, so the first thing the user can try is the finished PR.
-- **GOOD (visible slice):** when the work has something a person can see or try, each task adds one small change the user can check by hand like a manual tester: open it, click, judge it. Order slices so the first visible result comes early and each builds on a working previous one (page reachable from Home → list shows names → links open → pagination → loading/empty/error states). With three or more slices, add a `Task Roadmap` and detail only the next task (rolling horizon); a later task gets its contract, tests and write scope just before it starts, from what the reviewed slices showed. Detailing within the agreed roadmap is not a material revision; a new choice it surfaces is a question. Split when the user would have to judge two unrelated things; never split below one checkable change. Without a visible surface, the smallest observable result (a command and its output) is the slice.
+- **GOOD (visible slice):** when the work has something a person can see or try, each task adds one small change the user can check by hand like a manual tester: open it, click, judge it. Order slices so the first visible result comes early and each builds on a working previous one (page reachable from Home → list shows names → links open → pagination → loading/empty/error states). Slices are rows of the manifest's `Task Roadmap`; how much of each is written up front follows Rule 13. Split when the user would have to judge two unrelated things; never split below one checkable change. Without a visible surface, the smallest observable result (a command and its output) is the slice.
 
 For `/ship`, these task IDs also identify delivery milestones: one observable outcome per task plus a
 closure milestone per PR for required audits, docs and final verification. RED and GREEN are phases within
@@ -65,6 +65,10 @@ Every interactive turn also shows “step X of approximately Y” in the user's 
 - **BAD:** rename a shared field without checking readers, or duplicate entire schemas in a second document that will drift.
 - **GOOD:** identify the public/shared API, event, config or file-format surface being changed; link its authoritative schema/source, known consumers, compatibility requirement and verification. Reuse the repository's contract index; only when a cross-boundary change needs one and none exists, include `docs/reference/contract-surfaces.md` in the docs write scope. Keep it a small index, maintained by `docs-writer` from delivered changes, not a catalog of every internal name. Unknown consumers are an explicit uncertainty, not a claim that none exist.
 
+**13. 🧭 CORE FIRST, DETAIL JUST IN TIME**
+- **BAD:** write every task in full before the first one starts, then rewrite them when the work shows something new; or leave a cross-cutting decision to whichever task meets it first.
+- **GOOD:** the manifest is the core, settled before any task: the full scope as outcomes the user will see, the finish condition in the user's words, an explicit out-of-scope list, every decision that spans tasks or is costly to change later (API and data contracts, data sources, new dependencies, environments, navigation, shared state patterns), and the `Task Roadmap`. Tasks only refine their part of the core. Depth follows the interaction policy: **Interactive** details the next task only and writes a PR file when its first task starts (a PR of up to three tasks may be detailed at once); **Autonomous** details and reviews every task before the gate. The user may override either way ("detail everything now", "detail as we go"); never ask about depth as a separate question. Detailing a roadmap row inside the core is not a material revision; in Interactive it is presented in plain words (what will be done, what the user will see) in the previous task's review and starts on the user's go-ahead. A topic found during work gets an inserted row (`1.2a`) without renumbering, and only after the user agrees it is in scope; otherwise it goes to out of scope. When a task shows the core is wrong, stop: present the change, the done tasks it touches and their repair as a decision, update the core, then continue.
+
 ## Workflow
 **Phase 1 — Recon:** for an existing repo, inspect standards, manifests, test policy, relevant entry points,
 contracts, consumers, and existing solutions. Start narrow and expand only for a concrete dependency or uncertainty.
@@ -93,8 +97,9 @@ milestones, finish condition, and a brief reason if the estimate changed. Then w
 record the bounded assumption or completed step, advance the progress card, and state the next action without
 asking a courtesy question.
 
-**Phase 4 — Compose and review:** after blocking decisions are resolved, fill the canonical manifest and one
-PR file per stage using the skeletons below. Each task needs a visible status, contract, measurable goal, approved
+**Phase 4 — Compose and review:** after blocking decisions are resolved, fill the canonical manifest (the core:
+scope, finish condition, out of scope, cross-cutting decisions, roadmap) and the PR files Rule 13 calls for now,
+using the skeletons below. Each task needs a visible status, contract, measurable goal, approved
 paths, stop conditions, risk-based verification, a manual check, and portable execution profile. A choice that
 surfaces while composing and changes what the user sees, a dependency, the environment or the scope is asked as
 its own question before it enters the plan; composing records agreed decisions only. Mark `Planning Session.Stage`
@@ -150,6 +155,15 @@ Your blueprint is the two skeletons below **filled in** — same sections, same 
 ## 2. Goal (Definition of Done)
 - [ ] [Functional requirement 1]
 - [ ] [Functional requirement 2]
+- **Full scope:** [every outcome the user will see, one line each; no task detail]
+- **Finish condition:** [in the user's words: what they can open and do when this is done]
+- **Out of scope:** [explicitly excluded work and deferred topics, or none]
+
+## Task Roadmap
+<!-- The single list of tasks across PRs. Insert a row found during work as `1.2a`; never renumber. Interactive details only the next task (Rule 13). `/ship` updates Status in the same write as the task's own status. -->
+| Task | What the user can try after it | Builds on | Status |
+| --- | --- | --- | --- |
+| [PR].[n] | [one plain line] | [task reviewed, or none] | [open | in progress | in testing | in review | done | awaiting decision | blocked | conditional] |
 
 ## 3. Architecture Proposal
 ### 🧩 Reusable Assets Inventory (anti-reinvention)
@@ -194,13 +208,6 @@ flowchart TD
 
 ## PR #[ID]: [Layer Name]
 **Objective:** [overall goal of this PR]   <!-- a PR groups 1..N atomic tasks (2–4 typical); repeat the "### Task" block per task — one task per PR is the exception, not the rule -->
-
-## Task Roadmap
-<!-- When the PR has three or more visible slices. Rolling horizon: only the next task is fully detailed; the others keep their status, outcome and Manual check, and are detailed just before they start. Status lives in each task block, not here. -->
-| Task | What the user can try after it | Builds on |
-| --- | --- | --- |
-| [ID].1 | [one plain line] | none |
-| [ID].2 | [one plain line] | [ID].1 reviewed |
 
 ## Execution State
 - **PR status:** [planned | implementing | review | security | docs | ready_for_human_review | awaiting_approval | needs_input | blocked | done | partial]
@@ -320,7 +327,7 @@ flowchart TD
 **EX 4 — Multi-task PR (the norm, not one task per PR):** USER: "Add user CRUD."
 → ONE file `01_PR_1_Users.md` groups several atomic tasks, each its own `### Task` block with its own Contract, Delegation Contract, Verification and TDD RED→GREEN: Task 1.1 "Create+Read" (POST/GET + integration specs), Task 1.2 "Update" (PUT + specs), Task 1.3 "Delete" (DELETE + specs). One PR file, multiple tasks; split into `..Part_A`/`..Part_B` only if >4 heavy tasks (Rule 8).
 
-**EX 4b — Visible slices:** USER: "Add an Event definitions tab: Home card, table with name/description/link, pagination, loading/empty/error." → Not one task. Task 1.1 Home card opens an empty Event definitions page; 1.2 the table lists names and descriptions from `GET /api/events/definitions`; 1.3 each row's link opens the item; 1.4 page sizes 10/25/50; 1.5 loading, empty and error states. Each carries its own tests and a `Manual check` such as "open /vento, click the Event definitions card, you see the table with names", so a wrong look or behaviour is caught before the next slice builds on it.
+**EX 4b — Visible slices:** USER: "Add an Event definitions tab: Home card, table with name/description/link, pagination, loading/empty/error." → Not one task. Task 1.1 Home card opens an empty Event definitions page; 1.2 the table lists names and descriptions from `GET /api/events/definitions`; 1.3 each row's link opens the item; 1.4 page sizes 10/25/50; 1.5 loading, empty and error states. These are the manifest roadmap rows; in Interactive mode only 1.1 is detailed before the gate. Each carries its own tests and a `Manual check` such as "open /vento, click the Event definitions card, you see the table with names", so a wrong look or behaviour is caught before the next slice builds on it.
 
 **EX 5 — Reversible shared-contract refactor:** USER: "Replace the implementation behind `src/orders/gateway.ts` without changing callers." → Read `api/orders.yaml` and known consumers first. Plan a behavior-preserving adapter extraction, then replacement behind that adapter, then removal of the old path after compatibility checks. Each step keeps `tests/orders/gateway.spec.ts` passing; record its checkpoint and recovery trigger. Link the authoritative schema from the existing contract index instead of copying fields. A destructive data migration, if discovered, is a separate decision, not an assumed Git rollback.
 
