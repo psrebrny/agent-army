@@ -26,6 +26,8 @@ Do not advance to plan completion until the goal, relevant constraints, acceptan
 **2. 🔎 ATOMIC UNITS OF WORK**
 - **BAD (micromanagement):** separate tasks for "Add Selector", "Import Module", "Write Test".
 - **GOOD (atomic):** ONE Task = Logic + UI/Endpoint + Test → a single functional, verifiable change.
+- **BAD (big bang):** one task for the whole feature, so the first thing the user can try is the finished PR.
+- **GOOD (visible slice):** when the work has something a person can see or try, each task adds one small change the user can check by hand like a manual tester: open it, click, judge it. Order slices so the first visible result comes early and each builds on a working previous one (page reachable from Home → list shows names → links open → pagination → loading/empty/error states). With three or more slices, add a `Task Roadmap` and detail only the next task (rolling horizon); a later task gets its contract, tests and write scope just before it starts, from what the reviewed slices showed. Detailing within the agreed roadmap is not a material revision; a new choice it surfaces is a question. Split when the user would have to judge two unrelated things; never split below one checkable change. Without a visible surface, the smallest observable result (a command and its output) is the slice.
 
 For `/ship`, these task IDs also identify delivery milestones: one observable outcome per task plus a
 closure milestone per PR for required audits, docs and final verification. RED and GREEN are phases within
@@ -93,7 +95,9 @@ asking a courtesy question.
 
 **Phase 4 — Compose and review:** after blocking decisions are resolved, fill the canonical manifest and one
 PR file per stage using the skeletons below. Each task needs a visible status, contract, measurable goal, approved
-paths, stop conditions, risk-based verification, and portable execution profile. Mark `Planning Session.Stage`
+paths, stop conditions, risk-based verification, a manual check, and portable execution profile. A choice that
+surfaces while composing and changes what the user sees, a dependency, the environment or the scope is asked as
+its own question before it enters the plan; composing records agreed decisions only. Mark `Planning Session.Stage`
 as `review`; send only the clean packet to `plan-reviewer` in a fresh context. Resolve concrete plan defects;
 route new goal, scope, or risk choices back to the user. Update `Review` with the exact revision and verdict.
 
@@ -191,6 +195,13 @@ flowchart TD
 ## PR #[ID]: [Layer Name]
 **Objective:** [overall goal of this PR]   <!-- a PR groups 1..N atomic tasks (2–4 typical); repeat the "### Task" block per task — one task per PR is the exception, not the rule -->
 
+## Task Roadmap
+<!-- When the PR has three or more visible slices. Rolling horizon: only the next task is fully detailed; the others keep their status, outcome and Manual check, and are detailed just before they start. Status lives in each task block, not here. -->
+| Task | What the user can try after it | Builds on |
+| --- | --- | --- |
+| [ID].1 | [one plain line] | none |
+| [ID].2 | [one plain line] | [ID].1 reviewed |
+
 ## Execution State
 - **PR status:** [planned | implementing | review | security | docs | ready_for_human_review | awaiting_approval | needs_input | blocked | done | partial]
 - **Interaction policy:** [autonomous | interactive | unset — /ship asks once per PR before first execution]
@@ -267,6 +278,8 @@ flowchart TD
 
 **Verification Command:** `[exact command]`
 
+**Manual check:** [in plain words: how to start or reach the app, what to open and click, and what the user should see after this task; or a command and its expected output when nothing is visible]
+
 **Testing Strategy & Cases (Testing Trophy):**
 - **Risk / level choice:** [user-visible failure, impact/likelihood evidence and cheapest reliable check; important residual gaps]
 - **E2E / INTEGRATION** (`[explicit test file path]`):
@@ -306,6 +319,8 @@ flowchart TD
 
 **EX 4 — Multi-task PR (the norm, not one task per PR):** USER: "Add user CRUD."
 → ONE file `01_PR_1_Users.md` groups several atomic tasks, each its own `### Task` block with its own Contract, Delegation Contract, Verification and TDD RED→GREEN: Task 1.1 "Create+Read" (POST/GET + integration specs), Task 1.2 "Update" (PUT + specs), Task 1.3 "Delete" (DELETE + specs). One PR file, multiple tasks; split into `..Part_A`/`..Part_B` only if >4 heavy tasks (Rule 8).
+
+**EX 4b — Visible slices:** USER: "Add an Event definitions tab: Home card, table with name/description/link, pagination, loading/empty/error." → Not one task. Task 1.1 Home card opens an empty Event definitions page; 1.2 the table lists names and descriptions from `GET /api/events/definitions`; 1.3 each row's link opens the item; 1.4 page sizes 10/25/50; 1.5 loading, empty and error states. Each carries its own tests and a `Manual check` such as "open /vento, click the Event definitions card, you see the table with names", so a wrong look or behaviour is caught before the next slice builds on it.
 
 **EX 5 — Reversible shared-contract refactor:** USER: "Replace the implementation behind `src/orders/gateway.ts` without changing callers." → Read `api/orders.yaml` and known consumers first. Plan a behavior-preserving adapter extraction, then replacement behind that adapter, then removal of the old path after compatibility checks. Each step keeps `tests/orders/gateway.spec.ts` passing; record its checkpoint and recovery trigger. Link the authoritative schema from the existing contract index instead of copying fields. A destructive data migration, if discovered, is a separate decision, not an assumed Git rollback.
 

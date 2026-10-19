@@ -110,6 +110,9 @@ plan. Label a GREEN task as verified and awaiting audit, not fully complete; `Ta
 in `Execution State` remain authoritative. A card's progress line is a view, not separately maintained state.
 
 Before each task, the first one included, show its `task plan` in two or three lines: behavior, significant cases, verification and exact write list.
+A roadmap task that is not yet detailed is detailed first, by the architect role, from the reviewed slices; this is
+not a new blueprint gate, but a write outside the approved scope or a new choice becomes a question. Never write
+tests for later roadmap tasks in advance.
 When nothing is open and the write list is inside approved scope, show it and continue; it is a heads-up, not
 an approval step. It waits only when it carries a question: a missing requirement, trade-off, scope choice or
 interpretation that would change the work, or something unexpected such as a needed write outside scope. Read
@@ -188,7 +191,9 @@ A `task plan` that waits names the behavior, significant cases, verification and
 one question with a recommendation; a plan without a question is shown and not persisted as a pause. For an
 Interactive task-review card, include the decisive RED assertion and its failure reason (or the passing
 baseline for a refactor), the focused diff summary, GREEN command/result, known limitations, and the next
-planned task, in about one screen. Group the diff by the behavior just delivered,
+planned task, in about one screen. Lead with the task's `Manual check` in plain words (how to start or
+reach the app, what to click, what should be visible) and ask whether it looks and works as the user wants;
+a "no" is a correction to this task before the next one builds on it. Group the diff by the behavior just delivered,
 with file/line pointers and the important implementation decisions. Explain what the check cannot establish.
 For `behavior decision`, include the unknown, recommendation and consequence; do not pause when all are settled.
 A finding-decision card names the finding,
@@ -215,9 +220,10 @@ the architect handoff. Persist an Interaction Card for the blueprint decision an
   only for an `inherit` fallback whose main-session recommendation is material.
 
 Then, in the chat and in the user's language, say that the plan is finished and nothing is built yet, and
-summarize in a few bullets what will be built as the user will see it (from the acceptance criteria). Name
-anything unusual in one plain sentence each: a write outside the feature, a new dependency, a non-default
-environment, a review limitation. Say that approval happens here; the blueprint link is optional. The
+list in order the small steps the user will be able to try, one line each (from the tasks' manual checks).
+Name anything unusual in one plain sentence each: a write outside the feature, a new dependency, a non-default
+environment, a review limitation. Nothing appears here for the first time: a choice the user has not seen is
+asked as its own question before the gate. Say that approval happens here; the blueprint link is optional. The
 acceptance criteria, verification command, write scope and Execution Profile stay in the PR file and card,
 shown on `show details`. Ask the user to make these decisions explicitly, phrasing the scope as what gets
 built rather than task IDs:
