@@ -89,6 +89,13 @@ This paragraph governs the size and rhythm of every turn of `/ship` and of each 
 `architect`; the progress line and the architect's progress card below use its `step X of ~Y` marker. Every reply
 opens with it, not only a card: a short answer, a refusal and an "everything at once" reply too.
 
+Decisions happen in the chat, in plain words. Before a question, say in one line where the work stands (for
+example: planning is finished, nothing is built yet) and name what the question is about, so it can be answered
+without earlier context. At a decision point the chat alone is enough to decide; a file link is optional
+reference, never required reading. Internal labels (`Execution Profile`, `Bottleneck`, model routing, write
+scope, plan revision, card field names) stay in the PR file unless the user asks or a card below requires them;
+then translate them into what they mean for the user.
+
 After scope approval, initialize `Execution Progress` using the architect's PR template. Show the selected
 scope and goal, a short outcome map, the current milestone and approximate total, and the finish condition.
 Use one milestone per selected atomic task plus one explicit closure milestone for audits, documentation
@@ -207,8 +214,13 @@ the architect handoff. Persist an Interaction Card for the blueprint decision an
 - `Awaiting decision: approve/revise blueprint; select scope` — add `switch and continue/stay current`
   only for an `inherit` fallback whose main-session recommendation is material.
 
-Then show the task's acceptance criteria, verification command, approved write scope, and its Execution
-Profile. Ask the user to make these decisions explicitly:
+Then, in the chat and in the user's language, say that the plan is finished and nothing is built yet, and
+summarize in a few bullets what will be built as the user will see it (from the acceptance criteria). Name
+anything unusual in one plain sentence each: a write outside the feature, a new dependency, a non-default
+environment, a review limitation. Say that approval happens here; the blueprint link is optional. The
+acceptance criteria, verification command, write scope and Execution Profile stay in the PR file and card,
+shown on `show details`. Ask the user to make these decisions explicitly, phrasing the scope as what gets
+built rather than task IDs:
 
 1. Blueprint: `approve and continue` or `request blueprint changes`.
 2. Scope: `Task <PR.Task> only`, `PR <ID>`, or `all unfinished PRs for this feature`.

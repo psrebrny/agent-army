@@ -31,3 +31,4 @@ The complete contract supplies the expected result independently of that impleme
 | mode-recommendation | The mode question carries one justified recommendation; the user's choice wins without argument |
 | pace | Short turns with one question, `step X of ~Y` with announced re-estimates, long runs announced first; "everything at once" honoured |
 | light-interactive | Interactive pauses only when it helps: a plan that waits only with a question, one task review per task, always-on stops intact |
+| plain-gate | The blueprint gate is decidable from the chat: plain summary, planning-finished stated, no internal labels, link optional |
