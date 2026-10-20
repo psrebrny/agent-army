@@ -62,8 +62,8 @@ If `Interaction policy` is `unset`, ask once and persist one of two user-visible
 - **Interactive** — after that same gate, work one atomic task at a time together with the user. Pauses
   exist so the user keeps the thread and can steer, not to tick off steps: before a task, show its
   `task plan` and wait only when it carries a question or something unexpected; then run RED,
-  implementation, GREEN and a task-level code review and security audit with in-scope repairs, without a
-  routine pause; then pause once at `task review`, which also presents the next task's plan.
+  implementation, GREEN and the task-level audits that section 4 selects by risk, with in-scope repairs,
+  as one loop without a routine pause; then pause once at `task review`, which also presents the next task's plan.
   A recorded one-task delegation below lets the main session settle the task's in-scope choices itself; it
   never waives task review.
 
@@ -197,11 +197,10 @@ Interactive task-review card, include the decisive RED assertion and its failure
 baseline for a refactor), the focused diff summary, GREEN command/result, known limitations, and the next
 planned task, in about one screen. Lead with the task's `Manual check` in plain words (how to start or
 reach the app, what to click, what should be visible) and ask whether it looks and works as the user wants;
-a "no" is a correction to this task before the next one builds on it. Include the task-level review and security
-verdicts and the repairs already made. End with the next task's plan in plain words (what will be done and what
+a "no" is a correction to this task before the next one builds on it. Include the task-level audit verdicts
+(and any audit skipped, with the reason) and the repairs already made. End with the next task's plan in plain words (what will be done and what
 the user will then see); `continue` accepts this task and starts that plan, and a correction to the plan is
-settled before it starts. The user reviews the task's code and tests together here, once. Group the diff by the behavior just delivered,
-with file/line pointers and the important implementation decisions. Explain what the check cannot establish.
+settled before it starts. The user reviews the task's code and tests together here, once. Because a task can be a few hundred lines, give a **review map** instead of a bare diff: (1) a reading order, normally tests first as the specification, then the core logic, then wiring such as barrels, mounts and schemas, each with file/line pointers; (2) the diff grouped in those stages, as separate commits or staged groups when the user has asked for commits; (3) three to five `where to look` points, the decisions and risks only a human can judge, such as naming, UX, an assumption or a trade-off; (4) what the task-level audits already covered and which were skipped and why, so the user does not repeat mechanical review; (5) the `Manual check`. Explain what the check cannot establish.
 For `behavior decision`, include the unknown, recommendation and consequence; do not pause when all are settled.
 A finding-decision card names the finding,
 its severity, the in-scope repair option, and any decision that needs the user. A final-review card names
@@ -455,17 +454,17 @@ This exception does not let a bugfix or new feature claim success without demons
 1. Persist PR `implementing`, task `in progress`, `Active roles: tester`, then **`tester` writes the tests (RED)** independently from the contract/acceptance criteria and proves they fail for the right reason. On return, persist `Active roles: none` and the exact RED result in `Last verified stage`; task status remains `in progress` while implementation is pending.
 2. Continue in both modes unless a decision condition applies. Persist task `in progress` and `Active roles: main session` or `coder`. The main session implements the smallest change; a delegated `coder` receives only the Delegation Contract, RED tests and approved read paths. It proceeds only within the `task plan` write list, and only when that list is wholly inside approved scope; anything else is a stop.
 3. After implementation, persist task `in testing`, `Active roles: tester` and the exact next command; **`tester` verifies (GREEN)**. A passing command moves the task to `in review` only after the GREEN result is saved. On failure, persist `in progress` with the failure evidence and correction. A required path outside scope, ambiguous/disproved contract, unapproved dependency/migration or repeated failed approach becomes `awaiting decision` or `blocked`, never silent expansion.
-No batching without verification. *Exception:* for trivial tasks the main session may do the whole Red→Green cycle inline, without a round-trip to the subagent (the cheaper default — see AGENTS.md "Cost & context discipline"). This does not remove an Interactive `task plan` or task-review card: it changes only who performs the work. Run the configured verification command after every GREEN step; runtime hooks are feedback, while the user-selected pre-commit/CI controls provide repository enforcement.
+No batching without verification. *Exception:* for trivial tasks the main session may do the whole Red→Green cycle inline, without a round-trip to the subagent (the cheaper default — see AGENTS.md "Cost & context discipline"). This does not remove an Interactive `task plan` or task-review card: it changes only who performs the work. Inside a task run only the focused tests of the changed area after each GREEN step; run the configured full verification (types, lint, package regression) once when the task is ready for review, and again at PR closure. Runtime hooks are feedback, while the user-selected pre-commit/CI controls provide repository enforcement.
 After every verified task in Interactive mode, clear any one-task delegation, run section 4 on that task's diff,
 repair plainly in-scope findings, detail the next roadmap task, then write the task-review Interaction Card and wait. In Autonomous
 mode, continue to the next planned task without a routine pause.
 
 ## 4 · REVIEW + SECURITY  → independent read-only agents
-Persist PR `review` and `Active roles: code-reviewer, security-auditor`, then start a fresh reviewer
+Select audits by risk. `code-reviewer` always runs. `security-auditor` runs when the diff touches authentication or authorization, secrets or configuration, network or user input, data storage or queries, file or shell access, or dependencies; a purely presentational change may skip it at task level with the reason recorded. `perf-auditor` runs only for lists, queries, large renders or a stated performance goal. The closure pass over the whole PR diff always runs `code-reviewer` and `security-auditor`, so a skipped task-level audit is never skipped for good. Persist PR `review` and the selected `Active roles`, then start a fresh reviewer
 context where the tool supports subagents; otherwise invoke the review role with a clean packet. The
 packet contains **only** the task contract, finished diff and human decisions. Do not include
 coder/tester reports, rationales or transcripts. Audit that packet against standards + business goal; if
-the contract is absent, label the result `Diff-Only Review`. Run `security-auditor` independently against
+the contract is absent, label the result `Diff-Only Review`. Run a selected `security-auditor` independently against
 the finished diff at the same time. Neither auditor receives implementation/tester reports or transcripts.
 The change scope includes relevant committed, staged, unstaged and untracked files; provide the comparison
 base and source pointers so a branch-only diff cannot hide current changes. Authoritative schemas and
@@ -490,7 +489,7 @@ At closure it then runs once over the whole PR diff for cross-task issues. With 
 the final-review card.
 
 ## 5 · DOCS + FINAL VERIFICATION
-Persist PR `docs` and `Active roles: docs-writer`; `docs-writer` updates only necessary, truthful docs.
+Persist PR `docs` and `Active roles: docs-writer`; `docs-writer` runs once per PR at closure, not after every task, and updates only necessary, truthful docs.
 Before the task closes, `docs-writer` sweeps the plan for significant decisions without an ADR and proposes them (no new checkpoint).
 When `docs-writer` runs in the main thread, read its contract (`army.py role docs-writer`) before writing docs. An ADR
 uses that contract's template with every field, and stays `Proposed` until the user confirms the decision itself; "decide for me" is not a

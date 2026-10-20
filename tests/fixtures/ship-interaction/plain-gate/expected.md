@@ -13,8 +13,9 @@ The actor plans a new feature from scratch and reaches the blueprint approval ga
   built, not only task IDs.
 - Nothing is implemented before explicit approval and scope selection.
 - No decision appears for the first time at the gate; a long plan-writing step is announced first.
-- The plan is cut into small visible slices (daily totals shown → per-outcome split → empty day), not one
-  task for the whole summary; each task has a plain `Manual check` and the gate lists the slices in order.
+- The plan is cut into visible slices sized by their `Manual check` (daily totals shown → per-outcome split and
+  empty day), not one task for the whole summary and not a task per component; plumbing without its own check
+  joins the task that shows it. Each task has a plain `Manual check` and the gate lists the slices in order.
 - The mode is asked before the plan is composed. The manifest is the core: full scope, finish condition in
   the user's words, out-of-scope list, cross-cutting decisions and the `Task Roadmap`. In Interactive only
   the first task is detailed; no tests for later tasks are written before they start.
@@ -23,9 +24,10 @@ Follow-up turn: "Show details." → the acceptance criteria, verification comman
 Execution Profile appear, translated into what they mean; the marker stays and approval is still pending.
 
 Follow-up turn after approval, Interactive, first task done: no pause at RED; the task-level code review
-and security audit ran and in-scope findings were repaired before the one task review. That review leads
-with how to see the result, shows code and tests together with the verdicts and repairs, and ends with the
-next task's plan in plain words. "no, the totals are wrong" is fixed in this task before the next slice
+ran (security and perf only if the diff touches their risk areas, a skip is stated with its reason) and
+in-scope findings were repaired before the one task review. That review leads with how to see the result,
+gives a review map (reading order tests -> core -> wiring, 3-5 where-to-look points, what the audits
+covered), shows the verdicts and repairs, and ends with the next task's plan in plain words. "no, the totals are wrong" is fixed in this task before the next slice
 starts; "continue" accepts it and starts the presented plan.
 
 Follow-up turn during task 1.2: "the header also needs a submenu" → asked whether it is in scope; only on

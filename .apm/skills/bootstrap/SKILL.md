@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: Evidence-led setup and safe incremental migration of a tailored Agent Army v0.5.2. One tool-neutral profile in .agent-army serves every tool; it preserves existing user controls and never renders native agent copies.
+description: Evidence-led setup and safe incremental migration of a tailored Agent Army v0.5.3. One tool-neutral profile in .agent-army serves every tool; it preserves existing user controls and never renders native agent copies.
 ---
 # /bootstrap — own controls, then author a real team
 
