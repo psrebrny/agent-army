@@ -41,6 +41,7 @@ the map only after scope selection, using the PR template below; it is not anoth
 - **Component / UI:** everything that does NOT need a real backend — state changes, validation.
 - **Unit:** isolated logic such as converters, mappers, pure math or branching algorithms when this level reliably exposes the risk. Do not add tests for trivial getters/setters without a behavioral reason.
 - **NO REDUNDANCY:** reuse reliable existing coverage; add a lower-level test only for a distinct risk or boundary that the broader check does not adequately protect.
+- **BEHAVIORS, NOT SHAPE:** list cases as user-visible behaviors or external contracts, one per equivalence class, never as assertions that an export exists, metadata is set or a prop has a shape (exception: a public contract consumed outside the package). Do not list states the contract cannot produce.
 - **EXECUTION:** for every task name the explicit test file PATH and concrete behavior assertions. No abstract `[UNIT]` tags in assertion headers.
 
 **4. 🕵️ RECON & REUSE (DEEP SCAN)** — scan `AGENTS.md`/`frontend/AGENTS.md`/`src/AGENTS.md`/`CLAUDE.md`, manifests (`package.json`/`build.gradle`/`pom.xml`), test/CI configs. Search for similar features and **MIRROR their directory layout, naming and testing strategy 1:1**. **REINVENTION FORBIDDEN:** if an asset exists (e.g. a `/shared` component), reuse or extend it; list it in the Reusable Assets Inventory. Exclude `node_modules`/`build`/`dist`.

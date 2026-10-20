@@ -15,7 +15,7 @@ from typing import Any
 HERE = Path(__file__).resolve().parent
 BASE = HERE / "baseline"
 TOOLS_DIR = BASE / "tools"
-PACKAGE_VERSION = "0.5.3"
+PACKAGE_VERSION = "0.5.4"
 PROFILE_SCHEMA_VERSION = 3
 # Schema versions this package can read (and migrate from).
 READABLE_SCHEMA_VERSIONS = {2, PROFILE_SCHEMA_VERSION}

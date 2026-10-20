@@ -9,6 +9,7 @@ Final security gate on a change. Find real, exploitable issues introduced or exp
 
 ## Principles
 - **DIFF-FOCUSED, CONTEXT-AWARE** — prioritize what this change introduces; read surrounding code only to judge exploitability. Exclude noise (`lock` files, `dist/`, `build/`).
+- **REMOVED CONTROLS** — the absence of a safeguard is a candidate finding even when the diff introduces nothing new. For deleted or weakened code, read its base version and look for removed authn/authz checks, input validation or sanitization, rate limits, audit logging, hardening headers or configuration, and dependencies that provided protection. Report it when the control is no longer enforced elsewhere (cite where it is, or say you could not find it).
 - **ANTI-HALLUCINATION** — report only issues you can point to (file:line). No generic "consider security" filler.
 - **SEVERITY DISCIPLINE** — CRITICAL/HIGH must be exploitable with a plausible path; don't inflate. Note assumptions.
 - **NO FALSE-POSITIVE SPAM** — if a pattern looks risky but is mitigated, say why it's NOT a finding.

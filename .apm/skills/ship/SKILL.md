@@ -462,7 +462,7 @@ mode, continue to the next planned task without a routine pause.
 ## 4 · REVIEW + SECURITY  → independent read-only agents
 Select audits by risk. `code-reviewer` always runs. `security-auditor` runs when the diff touches authentication or authorization, secrets or configuration, network or user input, data storage or queries, file or shell access, or dependencies; a purely presentational change may skip it at task level with the reason recorded. `perf-auditor` runs only for lists, queries, large renders or a stated performance goal. The closure pass over the whole PR diff always runs `code-reviewer` and `security-auditor`, so a skipped task-level audit is never skipped for good. Persist PR `review` and the selected `Active roles`, then start a fresh reviewer
 context where the tool supports subagents; otherwise invoke the review role with a clean packet. The
-packet contains **only** the task contract, finished diff and human decisions. Do not include
+packet contains **only** the task contract, finished diff and human decisions, and lists the files and blocks the change deleted or overwrote (`git diff --diff-filter=D --stat` plus removed functions) so removals are not lost in a large diff. Do not include
 coder/tester reports, rationales or transcripts. Audit that packet against standards + business goal; if
 the contract is absent, label the result `Diff-Only Review`. Run a selected `security-auditor` independently against
 the finished diff at the same time. Neither auditor receives implementation/tester reports or transcripts.
