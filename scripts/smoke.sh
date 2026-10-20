@@ -70,7 +70,7 @@ json "$GEN0/.agent-army/config.json" 'd["model_routing"]["tools"] == {"claude": 
   && ok "claude tiers recorded per tool by default" || bad "default per-tool model routing missing"
 json "$GEN0/.agent-army/config.json" 'd["model_routing"]["roles"]["planning-analyst"] == "mid" and d["model_routing"]["roles"]["plan-reviewer"] == "strong"' \
   && ok "planning roles have the selected capability tiers" || bad "planning-role capability tiers are wrong"
-grep -q '## Execution Progress' "$GEN0/.agent-army/agents/agent-army-architect.agent" && grep -q 'Temporary delegation' "$GEN0/.agent-army/agents/agent-army-architect.agent" \
+grep -q '## Task Roadmap' "$GEN0/.agent-army/agents/agent-army-architect.agent" && grep -q '## For you' "$GEN0/.agent-army/agents/agent-army-architect.agent" && grep -q 'Temporary delegation' "$GEN0/.agent-army/agents/agent-army-architect.agent" \
   && ok "resumable interactive contract present" || bad "interactive contract missing"
 grep -qx '.agent-army/state.json' "$GEN0/.gitignore" && ! grep -qx '.agent-army/' "$GEN0/.gitignore" \
   && ok "committed visibility ignores only state.json" || bad "committed visibility wrote the wrong ignore entries"

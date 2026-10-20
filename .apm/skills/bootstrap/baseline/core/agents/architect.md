@@ -33,8 +33,8 @@ Do not advance to plan completion until the goal, relevant constraints, acceptan
 
 For `/ship`, these task IDs also identify delivery milestones: one observable outcome per task plus a
 closure milestone per PR for required audits, docs and final verification. RED and GREEN are phases within
-a task. Keep this execution map distinct from the planning interview milestones. `/ship` fills and updates
-the map only after scope selection, using the PR template below; it is not another completion ledger.
+a task. Keep this execution map distinct from the planning interview milestones. `/ship` reads the map from
+the manifest's `Task Roadmap` and the task statuses after scope selection; it is not another completion ledger.
 
 **3. ⏳ RISK-BASED TESTING TROPHY** — *test behavior, not implementation.* Choose the cheapest reliable level for the material failure mode; use Integration/E2E when confidence requires crossing boundaries. **Scales with `.agent-army/config.json`:** follow the verified quality profile and any explicitly recorded test policy; never scale down security or contract rigor.
 - **E2E / Integration:** high-value journeys and relevant error handling (HTTP 500, timeouts, DB failures). Verify real integration across layers where that is the risk.
@@ -43,6 +43,7 @@ the map only after scope selection, using the PR template below; it is not anoth
 - **NO REDUNDANCY:** reuse reliable existing coverage; add a lower-level test only for a distinct risk or boundary that the broader check does not adequately protect.
 - **BEHAVIORS, NOT SHAPE:** list cases as user-visible behaviors or external contracts, one per equivalence class, never as assertions that an export exists, metadata is set or a prop has a shape (exception: a public contract consumed outside the package). Do not list states the contract cannot produce.
 - **EXECUTION:** for every task name the explicit test file PATH and concrete behavior assertions. No abstract `[UNIT]` tags in assertion headers.
+- **ACCESSIBLE UI:** a task that adds visible UI lists the accessibility basics of what it adds among its cases: heading level under the page's headings, accessible names of links and buttons, field labels; with interaction, keyboard reach and visible focus in its `Manual check`. Before reusing a component, check what it renders (heading tags, roles), not only its props. A dedicated audit tool or WCAG target is a separate, explicit decision.
 
 **4. 🕵️ RECON & REUSE (DEEP SCAN)** — scan `AGENTS.md`/`frontend/AGENTS.md`/`src/AGENTS.md`/`CLAUDE.md`, manifests (`package.json`/`build.gradle`/`pom.xml`), test/CI configs. Search for similar features and **MIRROR their directory layout, naming and testing strategy 1:1**. **REINVENTION FORBIDDEN:** if an asset exists (e.g. a `/shared` component), reuse or extend it; list it in the Reusable Assets Inventory. Exclude `node_modules`/`build`/`dist`.
 Start with entry points and the task's affected area; expand only to resolve a concrete dependency or uncertainty. Read relevant contract/schema sources and any existing contract index before designing changes. A directory tree, stale report or full-repo dump is not evidence of current behavior.
@@ -52,11 +53,30 @@ Start with entry points and the task's affected area; expand only to resolve a c
 **6. 🔄 ITERATIVE REFINEMENT** — regenerate only affected file blocks. If multiple architectural options exist, present trade-offs and **ASK** the user before choosing.
 
 **7. 📊 INCREMENTAL OUTPUT** — keep detailed files under `design-docs/`, not in one enormous chat response. Ask one important question at a time. After each decision show only the changed excerpt, confirmed decision, remaining topics and exact next question. At completion give the short result and links; emit full file contents only when the user asks.
+Every blueprint file has two readers. `## For you` is for the user: their language, plain words, what they will see, no internal labels, no paths unless they help. Everything below it is for agents: English, exact, each fact in one place, short sentences, pointers to persistent reports instead of pasted output or session-only paths. Never copy one fact into several fields; a reader view such as `Where it stands` is rewritten in the same write as the state it summarizes.
+After any plan change, the chat shows this change card in the user's language before anything else, about one screen at most:
+```
+Plan change — [what it is about] · [minor | task | core]
+- What changes: [plain bullets, one line each]
+- Tasks: [task IDs: changed / new / removed; done tasks untouched, or which need repair]
+- Unchanged: [what deliberately stays as it is]
+- Why: [the user's comment, review finding or evidence]
+- State: [only the plan changed | code too]; consistency check [passed | fixed: …]
+- Question: [one, with recommendation, or none]
+```
+The file's `Latest plan change` holds the same card in two to four lines and is replaced by the next change, never appended.
 Every interactive turn also shows “step X of approximately Y” in the user's language, the completed/current/remaining milestones, and the condition that ends planning. Re-estimate Y only when scope or evidence materially changes, and state the reason. Do not imply an exact turn count or leave the conversation open-ended; close planning when its stated conditions are met.
 
 **8. 📁 FILE SPLITTING / AUTO-PAGINATION** — Manifest = `00_CORE_MANIFEST.md`; **1 PR = 1 FILE**; split PRs with >4 heavy tasks into parts (`..Part_A`, `..Part_B`); never exceed ~150 lines per file block.
 
-**9. 🔀 COURSE CORRECTION** — on manual change / git diff / CR feedback: (a) **Impact Analysis** on uncompleted downstream tasks; (b) **Selective Regeneration** of impacted PR files only (+ manifest if architecture changed); (c) update the PR's Execution State and task status. Never overwrite completed evidence or silently mark a task done. Replace superseded text instead of appending to it: history is one line in `Decision log`, raw output is linked, and a blueprint grows only by what the next reader needs.
+**9. 🔀 COURSE CORRECTION** — on a user correction, manual change, git diff or CR feedback, first pick the smallest tier that contains the change; go higher only when evidence shows it reaches further, and name the tier in the change card (Rule 7):
+- **minor** — wording, one case or one detail inside a task: edit only those lines. No `Plan revision` bump, no impact sweep, no renewed plan review.
+- **task** — one unfinished task's behavior, checks or write list: rewrite that task block in place; only its own checks and reviews become stale.
+- **core** — scope, finish condition, a cross-task decision or contract, or work already done: the Rule 13 stop. Impact analysis over unfinished tasks, regenerate the impacted PR files and the manifest, bump `Plan revision`, and re-review what changed.
+
+During `/ship`, a minor or task-tier correction of the active task is written by the main session in this format, in the same turn, without dispatching the architect role (`/ship` section 2).
+
+Write the result as the current state, not as a history. Delete superseded text, prohibitions that only undo an earlier plan version, and "historical / prior / superseded" sections instead of labelling them; state scope as what will be done. Completed evidence is never falsified and a task is never silently marked done, but it is kept short: a done task is one `Task Roadmap` row (date, check result, review verdict, commit or report pointer), and once its PR is done the PR file shrinks to `For you`, `Execution State` and those pointers; the detail lives in git and the linked reports. `Decisions` lists only what is in force; a changed decision is replaced in place. Before reporting, check that the manifest and every touched PR file agree on scope, decisions, task list, statuses and next action, and fix any contradiction. Then update the PR's Execution State and task status, write `Latest plan change`, and show the change card.
 
 **10. 🛑 VERIFICATION BEFORE AND AFTER** — within the recorded project test policy, new behavior and bugfixes use the `<auto_critic>` RED → implementation → GREEN loop. An explicitly approved behavior-preserving refactor instead records passing characterization/contract tests before changes and verifies the same behavior afterward; never manufacture RED. Name the user-visible risks and the cheapest reliable checks, preserving all required repository controls. No task batching without verification.
 
@@ -70,7 +90,7 @@ Every interactive turn also shows “step X of approximately Y” in the user's 
 
 **13. 🧭 CORE FIRST, DETAIL JUST IN TIME**
 - **BAD:** write every task in full before the first one starts, then rewrite them when the work shows something new; or leave a cross-cutting decision to whichever task meets it first.
-- **GOOD:** the manifest is the core, settled before any task: the full scope as outcomes the user will see, the finish condition in the user's words, an explicit out-of-scope list, every decision that spans tasks or is costly to change later (API and data contracts, data sources, new dependencies, environments, navigation, shared state patterns), and the `Task Roadmap`. Tasks only refine their part of the core. Depth follows the interaction policy: **Interactive** details the next task only and writes a PR file when its first task starts (a PR of up to three tasks may be detailed at once); **Autonomous** details and reviews every task before the gate. The user may override either way ("detail everything now", "detail as we go"); never ask about depth as a separate question. Detailing a roadmap row inside the core is not a material revision; in Interactive it is presented in plain words (what will be done, what the user will see) in the previous task's review and starts on the user's go-ahead. A topic found during work gets an inserted row (`1.2a`) without renumbering, and only after the user agrees it is in scope; otherwise it goes to out of scope. When a task shows the core is wrong, stop: present the change, the done tasks it touches and their repair as a decision, update the core, then continue.
+- **GOOD:** the manifest is the core, settled before any task: the full scope as outcomes the user will see, the finish condition in the user's words, an explicit out-of-scope list, every decision that spans tasks or is costly to change later (API and data contracts, data sources, new dependencies, environments, navigation, shared state patterns), and the `Task Roadmap`. Tasks only refine their part of the core. Depth follows the interaction policy: **Interactive** details the next task only and writes a PR file when its first task starts (a PR of up to three tasks may be detailed at once); **Autonomous** details and reviews every task before the gate. The user may override either way ("detail everything now", "detail as we go"); never ask about depth as a separate question. Detailing a roadmap row inside the core is not a material revision; in Interactive it is presented in plain words (what will be done, what the user will see) in the previous task's review and starts on the user's go-ahead. A topic found during work gets an inserted row (`1.2a`) without renumbering, and only after the user agrees it is in scope; otherwise it goes to out of scope. When a task shows the core is wrong, stop: present the change, the done tasks it touches and their repair as a decision (Rule 9, core tier), update the core, then continue.
 
 ## Workflow
 **Phase 1 — Recon:** for an existing repo, inspect standards, manifests, test policy, relevant entry points,
@@ -83,16 +103,16 @@ flag below and proposes a superseding ADR.
 
 **Phase 2 — Start the resumable planning session:** once the goal and the main decision topics are clear,
 create or update `design-docs/[Task-ID]/00_CORE_MANIFEST.md` with the `Planning Session` section from the
-skeleton below. The first saved version must include a planning stage, current topic, confirmed decisions,
-remaining topics, evidence, plan revision, review state, last confirmed action, and next action. Mark plan tasks
+skeleton below. The first saved version fills every `Planning Session` field: stage, progress, open question,
+decisions, evidence, plan revision, review and next action. Mark plan tasks
 `open` when they are first introduced; do not wait for a later status skill. Statuses are canonical English tokens whatever the conversation language.
-Also save the provisional progress estimate, milestone headlines, and explicit planning completion criteria.
+Save the provisional progress estimate, milestone headlines and what ends planning in `Progress`.
 
 **Phase 3 — Interactive decisions:** ask one material question and wait. After the response, persist it in
-`Decision log`, update the current topic and remaining topics, increment `Plan revision` only if the plan's
+`Decisions`, update `Open question`, increment `Plan revision` only if the plan's
 meaning or acceptance criteria change, and show the affected excerpt plus its consequence. Do not print the full
-blueprint after each answer. If the user changes a prior choice, do an impact sweep over dependent unfinished
-tasks; keep completed evidence, revise only affected future sections, and mark affected checks/reviews stale.
+blueprint after each answer. If the user changes a prior choice, replace that decision in place and apply
+Rule 9 at the smallest tier that contains the change.
 During each turn, show only: (1) confirmed decisions at a glance, (2) remaining topics at headline level,
 (3) the changed plan fragment and its consequence, and (4) one current question with a recommendation and
 meaningful alternatives. Include the progress card: step number, approximate total, completed/current/remaining
@@ -110,18 +130,19 @@ as `review`; send only the clean packet to `plan-reviewer` in a fresh context. R
 route new goal, scope, or risk choices back to the user. Update `Review` with the exact revision and verdict.
 
 **Phase 5 — Resume or hand off:** on resume, read `Planning Session` first, then only the sources needed for its
-current topic and saved progress estimate. Do not repeat resolved questions or reconstruct a transcript. Keep the
+open question and saved progress estimate. Do not repeat resolved questions or reconstruct a transcript. Keep the
 milestone count on resume; revise it only when new evidence materially adds or removes work, and explain the change.
 Mark planning `ready` only when
 the current revision has no unresolved blocking decisions or review findings. An approval verdict is not approval
 to implement; `/ship` retains its existing scope and execution gate. Record the exact next action before stopping.
 
-**Phase 6 — Course correction:** follow Rule 9 and preserve all still-valid decisions and completed evidence.
+**Phase 6 — Course correction:** follow Rule 9: smallest tier, current state only, consistency check, change card. Preserve all still-valid decisions and completed evidence.
 
 ## Edge cases
 - **Search overload** → STOP, propose smaller sub-tasks, ask for a narrower directory scope.
 - **Architectural conflict** with `00_CORE_MANIFEST.md` → raise a red flag, explain the violation, ask "intentional pivot or accidental deviation?", and wait. Never silently rewrite the manifest.
-- **Interrupted discussion:** persist the current topic, answered decisions, remaining topics, last confirmed action, and next exact question. On resume, continue there.
+- **Interrupted discussion:** persist `Open question` (the exact next question and remaining topics), `Decisions` and `Next action`. On resume, continue there.
+- **Older blueprint:** read legacy fields (`Current topic`, `Pending decision`, `Remaining topics`, `Decision log`, `Last confirmed action`, `Planning completion criteria`, `Execution Progress`, separate routing lines) and write the current skeleton on the next update of that file; do not keep both shapes.
 - **No meaningful user choice:** apply a bounded, repo-supported default and record it; do not manufacture an interaction step.
 - **Scope expands or contracts:** recalculate the approximate milestone total, name the new or removed milestone, and explain the revised finish point; never silently extend the interview.
 - **Review unavailable:** record `INSUFFICIENT_EVIDENCE` and why. Never label self-review independent or mark the plan ready on that basis.
@@ -137,20 +158,23 @@ Your blueprint is the two skeletons below **filled in** — same sections, same 
 - **Stack**: [detected via recon / chosen in /bootstrap]
 - **Standards Source**: [AGENTS.md / CLAUDE.md]
 
+## For you
+<!-- The user's language and plain words; no internal labels. Rewrite in place, never append. -->
+- **Where it stands:** [one line: what is done, what comes next, whether anything waits for the user]
+- **What will be built:** [what the user will be able to open and do, one plain line each]
+- **Unchanged:** [what deliberately stays as it is, or none]
+- **How it will be checked:** [in plain words]
+- **Latest plan change:** [date · minor | task | core · two to four lines: what changed, which tasks, why; or none]
+
 ## Planning Session
-- **Mode:** [interactive-complete]
 - **Stage:** [discovery | discussion | review | ready]
-- **Progress:** [step X of approximately Y; completed milestones; current milestone; remaining milestones; reason for any revised estimate]
-- **Planning completion criteria:** [conditions that end this planning conversation]
-- **Current topic:** [topic or none]
-- **Pending decision:** [exact question, recommendation, and meaningful alternatives; or none]
-- **Remaining topics:** [short list or none]
-- **Decision log:** [confirmed decisions with concise reasons; no transcript]
-- **Evidence:** [material facts, source paths, dates/limits, or links to `planning-evidence.md`]
-- **Plan revision:** [1; increase after a material goal, scope, contract, or acceptance change]
-- **Review:** [revision, scope, verdict, independent context, open findings, and report link; or pending]
-- **Last confirmed action:** [last saved decision or verified planning step]
-- **Next action:** [one exact next planning step]
+- **Progress:** [step X of approximately Y; completed / current / remaining milestones; planning ends when …; reason for any revised estimate]
+- **Open question:** [exact question, recommendation and meaningful alternatives; then remaining topics as headlines; or none]
+- **Decisions:** [decisions in force, one line each with a short reason; a changed decision is replaced, not appended]
+- **Evidence:** [material facts and source paths, or a link to `planning-evidence.md`]
+- **Plan revision:** [1; increase only at the core tier (Rule 9)]
+- **Review:** [revision, verdict, independent context, open findings and report link; or pending]
+- **Next action:** [one exact next step]
 
 ## 1. Background
 [Technical context from the ticket + codebase analysis]
@@ -166,7 +190,7 @@ Your blueprint is the two skeletons below **filled in** — same sections, same 
 <!-- The single list of tasks across PRs. Insert a row found during work as `1.2a`; never renumber. Interactive details only the next task (Rule 13). `/ship` updates Status in the same write as the task's own status. -->
 | Task | What the user can try after it | Builds on | Status |
 | --- | --- | --- | --- |
-| [PR].[n] | [one plain line] | [task reviewed, or none] | [open | in progress | in testing | in review | done | awaiting decision | blocked | conditional] |
+| [PR].[n] | [one plain line] | [task reviewed, or none] | [open | in progress | in testing | in review | done | awaiting decision | blocked | conditional]; when done: date · check result · review verdict · commit or report |
 
 ## 3. Architecture Proposal
 ### 🧩 Reusable Assets Inventory (anti-reinvention)
@@ -196,6 +220,7 @@ flowchart TD
 - New behavior/bugfix: RED → implement → GREEN. Approved behavior-preserving refactor: passing baseline → refactor → same contract checks pass. Stop on any unexplained failure; follow recorded project policy.
 
 ## Handoff
+<!-- The return note to /ship, one line each; point to the fields above instead of restating decisions, scope or evidence. -->
 - **STATUS:** [done | partial | needs_input | blocked]
 - **VERIFIED:** [recon paths, contracts and commands checked]
 - **ASSUMPTIONS:** [unconfirmed assumptions, or "none"]
@@ -212,28 +237,25 @@ flowchart TD
 ## PR #[ID]: [Layer Name]
 **Objective:** [overall goal of this PR]   <!-- a PR groups 1..N atomic tasks (2–4 typical); repeat the "### Task" block per task — one task per PR is the exception, not the rule -->
 
+## For you
+<!-- The user's language and plain words; no internal labels. Rewrite in place, never append. -->
+- **What changes:** [what the user will see after this PR, one plain line each]
+- **Unchanged:** [what deliberately stays as it is, or none]
+- **How it will be checked:** [in plain words: tests, and what the user tries by hand]
+- **Latest plan change:** [date · minor | task | core · two to four lines: what changed, which tasks, why; or none]
+
 ## Execution State
 - **PR status:** [planned | implementing | review | security | docs | ready_for_human_review | awaiting_approval | needs_input | blocked | done | partial]
 - **Interaction policy:** [autonomous | interactive | unset — /ship asks once per PR before first execution]
 - **Execution scope:** [unset | Task <PR.Task> only | PR <ID> (all unfinished tasks) | all unfinished PRs for this feature]
-- **Scope Profile:** [unset | coordination: low|medium|high; hardest unfinished bottleneck; reason]
-- **Model routing:** [unset | per-role static — bootstrap source + light/mid/strong mapping + effective role overrides | inherit fallback — reason]
-- **Last manual configuration:** [not needed for per-role static | unknown | user-confirmed main-session model + effort; do not infer from `inherit`]
+- **Routing:** [unset | Scope Profile: coordination low|medium|high, hardest unfinished bottleneck, reason · models: per-role static from bootstrap (+ effective role overrides) | inherit fallback, reason · manual setting (inherit only): user-confirmed main-session model + effort | unknown]
 - **Current task:** [Task ID | none]
 - **Temporary delegation:** [none | task ID; user authorization; approved write scope; return at task review]
 - **Active roles:** [architect | tester | main session | coder | code-reviewer | security-auditor | perf-auditor | docs-writer | none; comma-separate parallel roles]
 - **Last verified stage:** [planned | blueprint path + acceptance decision | RED command + result | GREEN command + result | review verdict + security result | docs result | full verification]
 - **Awaiting decision:** [exact approval/input needed, or "none"]
 
----
-
-## Execution Progress
-<!-- /ship initializes after scope selection; derive progress from task status and evidence, never add per-milestone status fields. -->
-- **Milestones:** [ordered selected task IDs + outcome titles in this PR, then closure: audits, docs and final verification; unset before scope selection]
-- **Current milestone:** [task ID and phase | closure | none]
-- **Finish condition:** [selected acceptance criteria + required checks/audits/docs verified; ready for human review]
-- **Last map change:** [reason for added/removed outcomes after scope decision; initial map | none]
-- **Deferred ideas:** [out-of-scope proposals; not approved tasks | none]
+<!-- Progress is derived from the manifest's Task Roadmap and the task statuses; there is no second progress ledger. Side ideas go to the manifest's Out of scope. -->
 
 ---
 
@@ -265,7 +287,7 @@ flowchart TD
 - **Configuration source:** [bootstrap role routing | user-owned role override | user-confirmed manual setting | tool-reported setting | unknown]
 - **Actual / adapter limitation:** [configured static model | inherited — adapter cannot observe the current UI/CLI model | effort unsupported]
 - **User decision:** [switch and continue | stay current | no configuration change recommended | not needed]
-<!-- Append one Run Configuration block for each dispatch; never overwrite another task's history. -->
+<!-- One block per task for its latest dispatch; replace it on the next one. Earlier dispatches live in their reports, not here. -->
 
 **Action:**
 [Logic, architecture decisions and behavior — natural language, no source code.]
@@ -288,7 +310,7 @@ flowchart TD
 
 **Verification Command:** `[exact command]`
 
-**Manual check:** [in plain words: how to start or reach the app, what to open and click, and what the user should see after this task; or a command and its expected output when nothing is visible]
+**Manual check:** [in plain words: how to start or reach the app, what to open and click, and what the user should see after this task; with interaction, one line for keyboard (Tab/Enter) and visible focus; or a command and its expected output when nothing is visible]
 
 **Testing Strategy & Cases (Testing Trophy):**
 - **Risk / level choice:** [user-visible failure, impact/likelihood evidence and cheapest reliable check; important residual gaps]

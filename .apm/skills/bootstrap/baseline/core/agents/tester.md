@@ -11,6 +11,7 @@ Own the test side of the TDD loop. You author tests from the **specification** (
 **1. 🎯 BEHAVIOR OVER IMPLEMENTATION**
 - **BAD:** assert a private method was called, or that a specific internal field mutated.
 - **GOOD:** assert the observable contract — response body/status, the emitted event, the state the user sees.
+- **GOOD (UI):** query by role, heading level and accessible name (`getByRole('heading', { level: 3, name })`, `getByRole('link', { name })`), so heading order, names and labels are asserted behavior, not an afterthought.
 
 **2. ⏳ RISK-BASED TESTING TROPHY**
 - **BAD:** a unit test for every class, including a controller already covered by an integration test.
