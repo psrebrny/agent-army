@@ -39,8 +39,9 @@ it does not call an LLM or install a remote package.
 
 ## Interactive delivery
 
-`check.sh` compares the executor and architect Interaction Card fields/options and checks the
-Execution Progress and one-task authorization structure. `smoke.sh` checks these survive canonical
+`check.sh` compares the executor and architect Interaction Card fields/options and checks that the
+Task Roadmap is the only progress ledger, the `For you` sections, the Rule 9 correction tiers and the one-task
+authorization structure. `smoke.sh` checks these survive canonical
 profile generation for every target and native/degraded rendering where supported. These are structural
 and packaging checks, not proof of conversational behavior.
 

@@ -70,7 +70,7 @@ json "$GEN0/.agent-army/config.json" 'd["model_routing"]["tools"] == {"claude": 
   && ok "claude tiers recorded per tool by default" || bad "default per-tool model routing missing"
 json "$GEN0/.agent-army/config.json" 'd["model_routing"]["roles"]["planning-analyst"] == "mid" and d["model_routing"]["roles"]["plan-reviewer"] == "strong"' \
   && ok "planning roles have the selected capability tiers" || bad "planning-role capability tiers are wrong"
-grep -q '## Execution Progress' "$GEN0/.agent-army/agents/agent-army-architect.agent" && grep -q 'Temporary delegation' "$GEN0/.agent-army/agents/agent-army-architect.agent" \
+grep -q '## Task Roadmap' "$GEN0/.agent-army/agents/agent-army-architect.agent" && grep -q '## For you' "$GEN0/.agent-army/agents/agent-army-architect.agent" && grep -q 'Temporary delegation' "$GEN0/.agent-army/agents/agent-army-architect.agent" \
   && ok "resumable interactive contract present" || bad "interactive contract missing"
 grep -qx '.agent-army/state.json' "$GEN0/.gitignore" && ! grep -qx '.agent-army/' "$GEN0/.gitignore" \
   && ok "committed visibility ignores only state.json" || bad "committed visibility wrote the wrong ignore entries"
@@ -162,13 +162,13 @@ printf '# Existing repo specialization\n' > "$UPGRADE/AGENTS.md"
 printf '\n# PROFILE-SPECIALIZATION\n' >> "$UPGRADE/.agent-army/agents/agent-army-architect.agent"
 legacy_profile "$UPGRADE/.agent-army/config.json"
 (cd "$UPGRADE" && python3 "$GEN" --mode auto --dry-run --skip-apm > "$WORK/upgrade-plan.txt")
-grep -q 'legacy profile -> 0.5.1' "$WORK/upgrade-plan.txt" && ok "unversioned profile gets an incremental plan" || bad "incremental plan missing"
+grep -q 'legacy profile -> 0.5.4' "$WORK/upgrade-plan.txt" && ok "unversioned profile gets an incremental plan" || bad "incremental plan missing"
 grep -q 'Incremental Upgrade Review' "$WORK/upgrade-plan.txt" && grep -q 'new-skill' "$WORK/upgrade-plan.txt" && ok "unversioned profile previews package capabilities" || bad "upgrade review missing capabilities"
 grep -q 'agent-army:feedback-router:start' "$UPGRADE/AGENTS.md" && bad "incremental dry-run changed AGENTS.md" || ok "incremental dry-run preserves AGENTS.md"
 if (cd "$UPGRADE" && python3 "$GEN" --mode auto --skip-apm) >/dev/null 2>&1; then bad "incremental ran without a review outcome"; else ok "incremental needs the resolved review outcome"; fi
 (cd "$UPGRADE" && python3 "$GEN" --mode auto --upgrade-review-outcome applied --skip-apm >/dev/null)
 grep -q 'agent-army:feedback-router:start' "$UPGRADE/AGENTS.md" && ok "incremental migration adds managed feedback router" || bad "feedback router missing after migration"
-json "$UPGRADE/.agent-army/config.json" 'd["package"]["version"] == "0.5.1" and d["package"]["upgrade_review"]["status"] == "applied"' \
+json "$UPGRADE/.agent-army/config.json" 'd["package"]["version"] == "0.5.4" and d["package"]["upgrade_review"]["status"] == "applied"' \
   && ok "incremental migration records package version and review" || bad "package version or review not recorded"
 grep -q 'PROFILE-SPECIALIZATION' "$UPGRADE/.agent-army/agents/agent-army-architect.agent" && ok "incremental update preserves specialized agent" || bad "incremental update overwrote specialized agent"
 count="$(grep -c 'agent-army:feedback-router:start' "$UPGRADE/AGENTS.md")"
@@ -209,10 +209,10 @@ if (cd "$CONFLICT" && python3 "$GEN" --mode incremental --upgrade-review-outcome
   bad "modified managed block was overwritten"
 else ok "modified managed block blocks incremental migration"; fi
 cmp -s "$WORK/conflict-config-before.json" "$CONFLICT/.agent-army/config.json" && ok "conflicting migration preserves config" || bad "conflicting migration rewrote config"
-sed -i.bak 's/"version": "0.5.1"/"version": "9.0.0"/' "$UPGRADE/.agent-army/config.json"; rm -f "$UPGRADE/.agent-army/config.json.bak"
+sed -i.bak 's/"version": "0.5.4"/"version": "9.0.0"/' "$UPGRADE/.agent-army/config.json"; rm -f "$UPGRADE/.agent-army/config.json.bak"
 if (cd "$UPGRADE" && python3 "$GEN" --mode auto --skip-apm) >/dev/null 2>&1; then bad "newer profile downgrade was allowed"; else ok "newer profile downgrade is blocked"; fi
 
-printf '\n\033[1mGATE 1.6 · real 0.4.0 profile with native copies -> 0.5.1\033[0m\n'
+printf '\n\033[1mGATE 1.6 · real 0.4.0 profile with native copies -> 0.5.4\033[0m\n'
 PKG040="$WORK/pkg040"; mkdir -p "$PKG040"
 if git -C "$ROOT" archive 241499c .apm/skills 2>/dev/null | tar -x -C "$PKG040" 2>/dev/null; then
   for tool in claude windsurf; do
@@ -232,7 +232,7 @@ if git -C "$ROOT" archive 241499c .apm/skills 2>/dev/null | tar -x -C "$PKG040" 
       printf '\n# hand edit\n' >> "$M/$edited"
     fi
     (cd "$M" && python3 "$GEN" --mode auto --dry-run --skip-apm > "$WORK/040-$tool.txt" 2>&1)
-    grep -q '0.4.0 -> 0.5.1' "$WORK/040-$tool.txt" && grep -q "conflict: native role copies kept.*$edited" "$WORK/040-$tool.txt" \
+    grep -q '0.4.0 -> 0.5.4' "$WORK/040-$tool.txt" && grep -q "conflict: native role copies kept.*$edited" "$WORK/040-$tool.txt" \
       && ok "$tool: review lists the edited native copy as a conflict" || bad "$tool: review missed the edited copy"
     (cd "$M" && python3 "$GEN" --mode auto --upgrade-review-outcome applied --skip-apm >/dev/null 2>&1)
     [ ! -e "$M/$sample" ] && ok "$tool: identical native copies removed" || bad "$tool: identical native copy left behind"

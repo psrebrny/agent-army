@@ -212,7 +212,7 @@ PY
       && grep -q 'ready_for_human_review' "$f" \
       && grep -q 'one consequential question per turn' "$f" \
       && grep -q '## Planning Session' "$f" \
-      && grep -q 'Last confirmed action' "$f" \
+      && grep -q '## For you' "$f" && grep -q 'Latest plan change' "$f" \
       && grep -q 'Task status:\*\* \[open | in progress | in testing | in review | done | awaiting decision | blocked | conditional\]' "$f"; then
       ok "Delegation Contract, interactive planning and resumable status are explicit"
     else
@@ -516,8 +516,16 @@ try:
     for name, text in (('ship', ship), ('architect', architect)):
         left = [c for c in legacy if c in text.replace(LEGACY_LINE, '')]
         assert not left, f'{name} still lists removed checkpoints: {sorted(left)}'
-    progress = fields(architect, 'Execution Progress')
-    assert set(progress) == {'Milestones', 'Current milestone', 'Finish condition', 'Last map change', 'Deferred ideas'}, 'progress map contract changed or acquired a second status ledger'
+    # One progress ledger: the manifest's Task Roadmap; no PR-level Execution Progress section.
+    assert '## Task Roadmap' in architect and '\n## Execution Progress\n' not in architect, 'progress must come from the Task Roadmap, not a second ledger'
+    # Two readers: a plain-language section per file, and correction tiers that keep edits small.
+    assert architect.count('## For you\n') == 2, 'manifest and PR skeletons each need a For you section'
+    assert all(t in architect for t in ('**minor**', '**task**', '**core**', 'consistency check')), 'Rule 9 correction tiers or consistency check missing'
+    assert '**Small corrections stay small.**' in ship and 'Never ask the user to\n  approve the plan of a fix they just asked for.' in ship, 'ship lost the small-correction fast path'
+    reviewer = (root / '.apm/skills/bootstrap/baseline/core/agents/code-reviewer.md').read_text()
+    assert '**UI SEMANTICS**' in reviewer and '**ACCESSIBLE UI:**' in architect, 'UI accessibility basics missing from reviewer or architect'
+    session = fields(architect, 'Planning Session')
+    assert set(session) == {'Stage', 'Progress', 'Open question', 'Decisions', 'Evidence', 'Plan revision', 'Review', 'Next action'}, 'Planning Session fields changed'
     state = fields(architect, 'Execution State')
     assert 'Temporary delegation' in state, 'temporary authorization cannot survive resume'
     assert choices(state['Interaction policy'].split(' — ')[0] + ']') == {'autonomous', 'interactive', 'unset'}, 'unexpected third interaction mode'
@@ -533,7 +541,7 @@ except (AssertionError, IndexError) as exc:
     sys.exit(1)
 PY_CONTRACT
   then
-    ok "interaction cards agree; progress and bounded-delegation fields are present; mode rule names only known bottlenecks"
+    ok "interaction cards agree; roadmap is the only progress ledger; For you sections, correction tiers and delegation fields are present; mode rule names only known bottlenecks"
   else
     bad "interaction contract mismatch"
   fi
