@@ -4,6 +4,8 @@
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 GEN="$ROOT/.apm/skills/bootstrap/bootstrap.py"
+# The release under test; read it, never hard-code it (AGENTS.md "Changing a contract" rule 1).
+VER="$(sed -n 's/^PACKAGE_VERSION = "\(.*\)"/\1/p' "$ROOT/.apm/skills/bootstrap/armylib.py")"
 ARMY="$ROOT/.apm/skills/bootstrap/army.py"
 PASS=0; FAIL=0
 ok(){ printf '  \033[32m✓\033[0m %s\n' "$1"; PASS=$((PASS+1)); }
@@ -162,13 +164,13 @@ printf '# Existing repo specialization\n' > "$UPGRADE/AGENTS.md"
 printf '\n# PROFILE-SPECIALIZATION\n' >> "$UPGRADE/.agent-army/agents/agent-army-architect.agent"
 legacy_profile "$UPGRADE/.agent-army/config.json"
 (cd "$UPGRADE" && python3 "$GEN" --mode auto --dry-run --skip-apm > "$WORK/upgrade-plan.txt")
-grep -q 'legacy profile -> 0.5.4' "$WORK/upgrade-plan.txt" && ok "unversioned profile gets an incremental plan" || bad "incremental plan missing"
+grep -q "legacy profile -> $VER" "$WORK/upgrade-plan.txt" && ok "unversioned profile gets an incremental plan" || bad "incremental plan missing"
 grep -q 'Incremental Upgrade Review' "$WORK/upgrade-plan.txt" && grep -q 'new-skill' "$WORK/upgrade-plan.txt" && ok "unversioned profile previews package capabilities" || bad "upgrade review missing capabilities"
 grep -q 'agent-army:feedback-router:start' "$UPGRADE/AGENTS.md" && bad "incremental dry-run changed AGENTS.md" || ok "incremental dry-run preserves AGENTS.md"
 if (cd "$UPGRADE" && python3 "$GEN" --mode auto --skip-apm) >/dev/null 2>&1; then bad "incremental ran without a review outcome"; else ok "incremental needs the resolved review outcome"; fi
 (cd "$UPGRADE" && python3 "$GEN" --mode auto --upgrade-review-outcome applied --skip-apm >/dev/null)
 grep -q 'agent-army:feedback-router:start' "$UPGRADE/AGENTS.md" && ok "incremental migration adds managed feedback router" || bad "feedback router missing after migration"
-json "$UPGRADE/.agent-army/config.json" 'd["package"]["version"] == "0.5.4" and d["package"]["upgrade_review"]["status"] == "applied"' \
+json "$UPGRADE/.agent-army/config.json" "d[\"package\"][\"version\"] == \"$VER\" and d[\"package\"][\"upgrade_review\"][\"status\"] == \"applied\"" \
   && ok "incremental migration records package version and review" || bad "package version or review not recorded"
 grep -q 'PROFILE-SPECIALIZATION' "$UPGRADE/.agent-army/agents/agent-army-architect.agent" && ok "incremental update preserves specialized agent" || bad "incremental update overwrote specialized agent"
 count="$(grep -c 'agent-army:feedback-router:start' "$UPGRADE/AGENTS.md")"
@@ -209,10 +211,10 @@ if (cd "$CONFLICT" && python3 "$GEN" --mode incremental --upgrade-review-outcome
   bad "modified managed block was overwritten"
 else ok "modified managed block blocks incremental migration"; fi
 cmp -s "$WORK/conflict-config-before.json" "$CONFLICT/.agent-army/config.json" && ok "conflicting migration preserves config" || bad "conflicting migration rewrote config"
-sed -i.bak 's/"version": "0.5.4"/"version": "9.0.0"/' "$UPGRADE/.agent-army/config.json"; rm -f "$UPGRADE/.agent-army/config.json.bak"
+sed -i.bak "s/\"version\": \"$VER\"/\"version\": \"9.0.0\"/" "$UPGRADE/.agent-army/config.json"; rm -f "$UPGRADE/.agent-army/config.json.bak"
 if (cd "$UPGRADE" && python3 "$GEN" --mode auto --skip-apm) >/dev/null 2>&1; then bad "newer profile downgrade was allowed"; else ok "newer profile downgrade is blocked"; fi
 
-printf '\n\033[1mGATE 1.6 · real 0.4.0 profile with native copies -> 0.5.4\033[0m\n'
+printf '\n\033[1mGATE 1.6 · real 0.4.0 profile with native copies -> %s\033[0m\n' "$VER"
 PKG040="$WORK/pkg040"; mkdir -p "$PKG040"
 if git -C "$ROOT" archive 241499c .apm/skills 2>/dev/null | tar -x -C "$PKG040" 2>/dev/null; then
   for tool in claude windsurf; do
@@ -232,7 +234,7 @@ if git -C "$ROOT" archive 241499c .apm/skills 2>/dev/null | tar -x -C "$PKG040" 
       printf '\n# hand edit\n' >> "$M/$edited"
     fi
     (cd "$M" && python3 "$GEN" --mode auto --dry-run --skip-apm > "$WORK/040-$tool.txt" 2>&1)
-    grep -q '0.4.0 -> 0.5.4' "$WORK/040-$tool.txt" && grep -q "conflict: native role copies kept.*$edited" "$WORK/040-$tool.txt" \
+    grep -q "0.4.0 -> $VER" "$WORK/040-$tool.txt" && grep -q "conflict: native role copies kept.*$edited" "$WORK/040-$tool.txt" \
       && ok "$tool: review lists the edited native copy as a conflict" || bad "$tool: review missed the edited copy"
     (cd "$M" && python3 "$GEN" --mode auto --upgrade-review-outcome applied --skip-apm >/dev/null 2>&1)
     [ ! -e "$M/$sample" ] && ok "$tool: identical native copies removed" || bad "$tool: identical native copy left behind"
