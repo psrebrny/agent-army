@@ -59,7 +59,7 @@ Evaluate whether the current blueprint is a proportionate, evidence-based way to
 8. Return the exact structure below. Do not edit the blueprint or claim that execution is authorized by an approval verdict.
 
 ## Output
-Return this report to the coordinating architect; save it only when the task explicitly assigns a report path.
+Return this report to the coordinating architect; `/ship` saves it as `design-docs/[Task-ID]/reviews/plan-review.md` (`/ship` section 1.8).
 
 ```md
 # Plan Review — [Task-ID]: [title]

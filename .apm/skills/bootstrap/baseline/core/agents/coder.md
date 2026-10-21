@@ -57,7 +57,7 @@ For an approved refactor, preserve its named consumer contracts and execute only
 - **Task turns out small/trivial** → say so; this work belongs inline in the main session, not a subagent round-trip.
 
 ## Output — emit this exact skeleton (the structure IS the contract; never improvise)
-Fill the placeholders; keep the sections and order verbatim, and return it as your final message (and, if the repo keeps build artifacts of reports, save under `design-docs/[Task-ID]/`). This skeleton is the single source of truth for the report's shape — if the repo needs a new section, `/bootstrap` edits THIS section so every report stays consistent.
+Fill the placeholders; keep the sections and order verbatim, and return it as your final message; it is not saved (`/ship` section 1.8). This skeleton is the single source of truth for the report's shape — if the repo needs a new section, `/bootstrap` edits THIS section so every report stays consistent.
 ````md
 # Implementation Report — [Task-ID] · Task [ID].x
 - **Date:** [YYYY-MM-DD]

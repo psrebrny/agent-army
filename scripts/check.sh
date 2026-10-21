@@ -524,6 +524,11 @@ try:
     assert '**Small corrections stay small.**' in ship and 'Never ask the user to\n  approve the plan of a fix they just asked for.' in ship, 'ship lost the small-correction fast path'
     reviewer = (root / '.apm/skills/bootstrap/baseline/core/agents/code-reviewer.md').read_text()
     assert '**UI SEMANTICS**' in reviewer and '**ACCESSIBLE UI:**' in architect, 'UI accessibility basics missing from reviewer or architect'
+    assert '## 1.8 · WHERE ARTIFACTS GO' in ship and 'never cite `/tmp`' in ship, 'ship lost the artifact convention'
+    agents = root / '.apm/skills/bootstrap/baseline/core/agents'
+    for role in ('code-reviewer', 'security-auditor', 'perf-auditor', 'tester', 'coder', 'docs-writer', 'plan-reviewer', 'planning-analyst'):
+        assert '`/ship` section 1.8' in (agents / f'{role}.md').read_text(), f'{role} does not point at the artifact convention'
+    assert '**README AT FEATURE LEVEL**' in (agents / 'docs-writer.md').read_text(), 'docs-writer lost the README altitude rule'
     session = fields(architect, 'Planning Session')
     assert set(session) == {'Stage', 'Progress', 'Open question', 'Decisions', 'Evidence', 'Plan revision', 'Review', 'Next action'}, 'Planning Session fields changed'
     state = fields(architect, 'Execution State')

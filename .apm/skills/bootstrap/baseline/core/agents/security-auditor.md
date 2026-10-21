@@ -23,6 +23,7 @@ Hardcoded secrets/keys/tokens · SQL/command/template injection · unvalidated/u
 3. Classify findings; verify exploitability; draft minimal fixes.
 
 ## Output — emit this exact skeleton (the structure IS the contract; never improvise)
+Return it as your final message; `/ship` records it in the task's review file (`/ship` section 1.8). Run standalone, write it to `design-docs/[Task-ID]/reviews/[PR.task]-review.md`.
 Fill the placeholders; keep the sections and order verbatim. This skeleton is the single source of truth for the report's shape — if the repo needs a new section, `/bootstrap` edits THIS section so every report stays consistent. If nothing found: say so explicitly under `## Findings` and still list what you `## Checked`.
 ````md
 # Security Audit — [Task-ID]
