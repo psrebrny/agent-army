@@ -529,6 +529,8 @@ try:
     for role in ('code-reviewer', 'security-auditor', 'perf-auditor', 'tester', 'coder', 'docs-writer', 'plan-reviewer', 'planning-analyst'):
         assert '`/ship` section 1.8' in (agents / f'{role}.md').read_text(), f'{role} does not point at the artifact convention'
     assert '**README AT FEATURE LEVEL**' in (agents / 'docs-writer.md').read_text(), 'docs-writer lost the README altitude rule'
+    assert '| final | Whole-feature audit' in architect and '**Whole-feature audit.**' in ship and 'reviews/feature-review.md' in ship, 'whole-feature audit missing from plan or executor'
+    assert '**removals across the whole feature:**' in (agents / 'code-reviewer.md').read_text(), 'feature-mode removals check missing'
     session = fields(architect, 'Planning Session')
     assert set(session) == {'Stage', 'Progress', 'Open question', 'Decisions', 'Evidence', 'Plan revision', 'Review', 'Next action'}, 'Planning Session fields changed'
     state = fields(architect, 'Execution State')

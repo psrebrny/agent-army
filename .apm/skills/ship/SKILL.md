@@ -435,6 +435,7 @@ state; git keeps the history):
 |---|---|---|
 | `design-docs/[ID]/reviews/[PR.task]-review.md` | task-level audits | per audit run (code, security, perf when selected): verdict, then each finding as severity · what · `fixed` (how, file) / `open` (the question for the user) / `not a finding` (why) |
 | `design-docs/[ID]/reviews/PR[n]-review.md` | closure audits over the whole PR diff | the same shape |
+| `design-docs/[ID]/reviews/feature-review.md` | the whole-feature audit (section 4) | the same shape, plus the acceptance and removals lists |
 | `design-docs/[ID]/reviews/plan-review.md` | `plan-reviewer` | verdict, reviewed revision, findings and their resolution |
 | `design-docs/[ID]/planning-evidence.md` | `planning-analyst`, via the architect | confirmed facts and source paths the plan relies on |
 
@@ -525,6 +526,18 @@ selected PR is clean. In Interactive mode the loop also runs per task on that ta
 `implementing` and the task `in review`; a finding that needs a decision becomes the task review's question.
 At closure it then runs once over the whole PR diff for cross-task issues. With no finding, do not add a routine review/security pause; its evidence appears in
 the final-review card.
+
+**Whole-feature audit.** When every other `Task Roadmap` row is `done`, run the `final` row before calling the
+feature finished; never skip it because each slice was clean. Fresh contexts, strongest configured reviewers:
+`code-reviewer` in feature mode, `security-auditor` always, `perf-auditor` when the feature has lists, queries or
+a performance goal, all on the whole feature diff from the commit before its first task. The packet adds the
+manifest goal, finish condition, acceptance criteria and decisions in force; the removals check (every deleted
+file, export, branch, test and config key classified as intended, moved or lost) is mandatory. Then run the
+full verification (all package tests, types, lint). Repair in-scope findings through RED → fix → GREEN and
+re-run the affected audit; a finding that changes scope or the core is a decision. Write
+`reviews/feature-review.md` (section 1.8), mark the `final` row done, and close with one final-review card that
+leads with a manual walk through the whole user journey and names what could not be verified. For a feature of
+one PR this audit replaces that PR's closure pass, not both.
 
 ## 5 · DOCS + FINAL VERIFICATION
 Persist PR `docs` and `Active roles: docs-writer`; `docs-writer` runs once per PR at closure, not after every task, and updates only necessary, truthful docs.
