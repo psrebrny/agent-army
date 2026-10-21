@@ -33,7 +33,7 @@ Do not advance to plan completion until the goal, relevant constraints, acceptan
 - **GOOD (one checkable change):** the manual check decides the size. Work with no check of its own joins the task that first shows it. Aim for two or three slices per PR; with more than four, merge neighbours that one manual check can settle together. Aim for a diff one person reads in a single sitting, roughly 300-400 changed lines and at most about 10 files; go beyond that only when the change cannot be split without losing its check. Split further only when one slice would need more than a single manual check or the user would have to judge two unrelated things. When the user says they do not understand a task, split just enough that the first piece is understandable; do not cut to the finest grain. A task has one RED → GREEN loop; do not plan sub-cycles with their own approval.
 
 For `/ship`, these task IDs also identify delivery milestones: one observable outcome per task plus a
-closure milestone per PR for required audits, docs and final verification. RED and GREEN are phases within
+closure milestone per PR for required audits, docs and final verification, and the feature's `final` whole-feature audit row. RED and GREEN are phases within
 a task. Keep this execution map distinct from the planning interview milestones. `/ship` reads the map from
 the manifest's `Task Roadmap` and the task statuses after scope selection; it is not another completion ledger.
 
@@ -184,14 +184,15 @@ Your blueprint is the two skeletons below **filled in** — same sections, same 
 - [ ] [Functional requirement 1]
 - [ ] [Functional requirement 2]
 - **Full scope:** [every outcome the user will see, one line each; no task detail]
-- **Finish condition:** [in the user's words: what they can open and do when this is done]
+- **Finish condition:** [in the user's words: what they can open and do when this is done; reached only after the roadmap's `final` whole-feature audit]
 - **Out of scope:** [explicitly excluded work and deferred topics, or none]
 
 ## Task Roadmap
-<!-- The single list of tasks across PRs. Insert a row found during work as `1.2a`; never renumber. Interactive details only the next task (Rule 13). `/ship` updates Status in the same write as the task's own status. -->
+<!-- The single list of tasks across PRs; the `final` whole-feature audit row is always last and is not an implementation task. Insert a row found during work as `1.2a`; never renumber. Interactive details only the next task (Rule 13). `/ship` updates Status in the same write as the task's own status. -->
 | Task | What the user can try after it | Builds on | Status |
 | --- | --- | --- | --- |
 | [PR].[n] | [one plain line] | [task reviewed, or none] | [open | in progress | in testing | in review | done | awaiting decision | blocked | conditional]; when done: date · check result · review verdict · commit or report |
+| final | Whole-feature audit, then you walk the full journey once | all tasks | [open | in progress | done]; when done: date · verdict · `reviews/feature-review.md` |
 
 ## 3. Architecture Proposal
 ### 🧩 Reusable Assets Inventory (anti-reinvention)
@@ -353,7 +354,7 @@ flowchart TD
 **EX 4 — Multi-task PR (the norm, not one task per PR):** USER: "Add user CRUD."
 → ONE file `01_PR_1_Users.md` groups several atomic tasks, each its own `### Task` block with its own Contract, Delegation Contract, Verification and TDD RED→GREEN: Task 1.1 "Create+Read" (POST/GET + integration specs), Task 1.2 "Update" (PUT + specs), Task 1.3 "Delete" (DELETE + specs). One PR file, multiple tasks; split into `..Part_A`/`..Part_B` only if >4 heavy tasks (Rule 8).
 
-**EX 4b — Visible slices:** USER: "Add an Event definitions tab: Home card, table with name/description/link, pagination, loading/empty/error." → Not one task and not five. Task 1.1 Home card opens the Event definitions page whose table lists names and descriptions from `GET /api/events/definitions` (RED: the endpoint returns them and the page renders a row per item; client, hook and table are plumbing for that one visible result, not tasks); 1.2 row links open the item and page sizes 10/25/50 work; 1.3 loading, empty and error states. These are the manifest roadmap rows; in Interactive mode only 1.1 is detailed before the gate. Each carries its own tests and a `Manual check` such as "open /vento, click the Event definitions card, you see the table with names", so a wrong look or behaviour is caught before the next slice builds on it.
+**EX 4b — Visible slices:** USER: "Add an Event definitions tab: Home card, table with name/description/link, pagination, loading/empty/error." → Not one task and not five. Task 1.1 Home card opens the Event definitions page whose table lists names and descriptions from `GET /api/events/definitions` (RED: the endpoint returns them and the page renders a row per item; client, hook and table are plumbing for that one visible result, not tasks); 1.2 row links open the item and page sizes 10/25/50 work; 1.3 loading, empty and error states. These are the manifest roadmap rows, followed by the `final` whole-feature audit row; in Interactive mode only 1.1 is detailed before the gate. Each carries its own tests and a `Manual check` such as "open /vento, click the Event definitions card, you see the table with names", so a wrong look or behaviour is caught before the next slice builds on it.
 
 **EX 5 — Reversible shared-contract refactor:** USER: "Replace the implementation behind `src/orders/gateway.ts` without changing callers." → Read `api/orders.yaml` and known consumers first. Plan a behavior-preserving adapter extraction, then replacement behind that adapter, then removal of the old path after compatibility checks. Each step keeps `tests/orders/gateway.spec.ts` passing; record its checkpoint and recovery trigger. Link the authoritative schema from the existing contract index instead of copying fields. A destructive data migration, if discovered, is a separate decision, not an assumed Git rollback.
 
