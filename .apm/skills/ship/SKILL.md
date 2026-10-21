@@ -26,8 +26,8 @@ contract; do not restate it in a packet.
 - `python3 ../bootstrap/army.py locate --tool <tool>` prints all of this resolved (repo root, contract path
   and model per role, dispatch mode) when you want it deterministic instead of reading the files yourself.
 - Files of this skill, read only when named below: `references/routing.md` (scope profile, effort and
-  model routing), `references/legacy.md` (resuming an older blueprint), `scripts/removals.py` (the removal
-  list for an audit packet).
+  model routing), `references/legacy.md` (resuming an older blueprint), `references/delegation.md` (one-task delegation),
+  `references/closure.md` (PR closure, docs, whole-feature audit), `scripts/removals.py` (the removal list for an audit packet).
 
 ## 0.1 · RESOLVE THE EXECUTION SCOPE
 `/ship` is an executor, not the planning agent. It reads `design-docs/**/00_CORE_MANIFEST.md` and
@@ -67,7 +67,7 @@ If `Interaction policy` is `unset`, ask once and persist one of two user-visible
   `task plan` and wait only when it carries a question or something unexpected; then run RED,
   implementation, GREEN and the task-level audits that section 4 selects by risk, with in-scope repairs,
   as one loop without a routine pause; then pause once at `task review`, which also presents the next task's plan.
-  A recorded one-task delegation below lets the main session settle the task's in-scope choices itself; it
+  A recorded one-task delegation (below) lets the main session settle the task's in-scope choices itself; it
   never waives task review.
 
 When asking, give one recommendation with a one-line reason. Recommend **Interactive** if any selected task has `Bottleneck` `design_decision | multiple_approaches | unknown`, or a Verification Command that is not runnable (a manual evaluation such as scorecard rows does not count), and name those tasks. Otherwise recommend **Autonomous**. The user decides: the recommendation never sets the mode, adds no pause and is not repeated after the choice. In Interactive mode, once every remaining selected task would earn the Autonomous recommendation, the task-review card's `Review focus` says "remaining tasks qualify for autonomous"; the existing `switch to autonomous` option does the rest.
@@ -149,22 +149,9 @@ conversation; do not create a blueprint solely for a progress counter or claim f
 none exists.
 
 ### ONE-TASK DELEGATION
-"Do this part yourself" authorizes autonomous execution only for the current, unambiguous approved task
-through verification. If "part" is ambiguous, clarify the task boundary first. Keep `Interaction policy:
-interactive`; record `Temporary delegation` in `Execution State` with the task ID, the user's authorization,
-approved write scope and return point (`task review`). Include this authorization in a delegated coder's
-packet; the coder returns to `/ship` for verification/interactive review rather than owning the dialogue.
-It is a bounded exception, not a third mode.
-
-Within that task, preserve the usual RED/baseline evidence and the plan/write list, but settle the task's
-in-scope choices yourself with a recorded rationale instead of waiting at `task plan` or `behavior decision`.
-At verified completion clear the exception before presenting `task review` and wait. It never grants
-permission to start the next task, skip checks, change scope, cross a risk boundary, or bypass blueprint/final
-review/commit approval. Ordinary required stops still apply. Cancel the exception on user revocation, explicit
-mode switch, or a scope/risk/contract stop; save the stop reason and do not silently reinstate it. A normal
-verification failure permits in-scope repair under the existing stop rules, not unbounded retries. On resume,
-honor only a saved authorization for the same still-active task; expire it when that task is verified or the
-boundary no longer matches.
+When the user hands you the current task ("do this part yourself"), or a resumed `Execution State` has a
+`Temporary delegation` other than `none`, read `references/delegation.md` first. It is a bounded exception for
+one task, not a third mode, and never waives task review.
 
 ### INTERACTION CARD
 Every pause is durable: write this card into the selected PR file, set `Awaiting decision` to its exact
@@ -343,7 +330,7 @@ scope (task, PR, feature, plan); a re-run overwrites it (current state; git keep
 |---|---|---|
 | `design-docs/[ID]/reviews/[PR.task]-review.md` | task-level audits | one block per selected audit (code, security, perf): verdict, then each finding as severity · what · `fixed` (how, file) / `open` (the question for the user) / `not a finding` (why) |
 | `design-docs/[ID]/reviews/PR[n]-review.md` | closure audits over the whole PR diff | the same shape |
-| `design-docs/[ID]/reviews/feature-review.md` | the whole-feature audit (section 4) | the same shape, plus the acceptance and removals lists |
+| `design-docs/[ID]/reviews/feature-review.md` | the whole-feature audit (`references/closure.md`) | the same shape, plus the acceptance and removals lists |
 | `design-docs/[ID]/reviews/plan-review.md` | `plan-reviewer` | verdict, reviewed revision, findings and their resolution |
 | `design-docs/[ID]/planning-evidence.md` | `planning-analyst`, kept by the architect | confirmed facts and source paths the plan relies on |
 
@@ -435,32 +422,12 @@ Once in-scope repairs are verified, write the review file (section 1.8) with wha
 or what stays open. With no finding, do not add a routine review pause; its evidence appears in the task review
 or final-review card.
 
-**Closure, in this order, when every task of the PR is `done`:**
-1. the closure audits over the whole PR diff, for cross-task issues (`reviews/PR[n]-review.md`); for the
-   feature's last PR the whole-feature audit below takes their place, since it covers that diff too;
-2. in-scope repairs through RED → fix → GREEN, re-running the affected audit;
-3. docs (section 5);
-4. the full verification and one final-review card.
-
-**Whole-feature audit.** When every task row of the `Task Roadmap` is `done`, run the `final` row before calling the
-feature finished; never skip it because each slice was clean. `code-reviewer` in feature mode,
-`security-auditor` always, `perf-auditor` when the feature has lists, queries or a performance goal, all on the
-whole feature diff from the commit before its first task; the packet adds the manifest goal, finish condition,
-acceptance criteria and decisions in force, and the removal list is mandatory. A finding that changes scope or
-the core is a decision. Write `reviews/feature-review.md` (section 1.8). The final-review card leads with a
-manual walk through the whole user journey and names what could not be verified; the `final` row becomes done
-when the user accepts it.
+**Closure.** When every task of the PR is `done`, read `references/closure.md` and follow it: closure audits
+over the whole PR diff, repairs, docs, full verification and one final-review card; for the feature's last PR
+the whole-feature audit takes the closure audits' place.
 
 ## 5 · DOCS + FINAL VERIFICATION
-Persist PR `docs` and `Active roles: docs-writer`; `docs-writer` runs once per PR, after the closure audits and
-their repairs, and follows its own contract (README level, ADR trigger and template, plan sweep, work item).
-When it runs in the main thread, read its contract (`army.py role docs-writer`) first. An ADR stays `Proposed`
-until the user confirms the decision itself; "decide for me" is not a confirmation. Ask for it in the
-final-review card, not in a new pause.
-Run the configured full verification, record its output in `Execution State`, set `Active roles: none`,
-set the PR to `ready_for_human_review`, and write a final-review Interaction Card. Return a compact summary:
-scope, diff, tests, review verdict, security result, actual role configurations and any non-blocking
-assumptions. Final review is a pause in both modes: wait for the human response before any commit or merge.
+The docs pass and full verification are in `references/closure.md`. Final review is a pause in both modes: wait for the human response before any commit or merge.
 Propose a Conventional Commit but **DO NOT commit without approval**.
 
 The runtime hooks act independently as deterministic feedback. Whether pre-commit and CI are Agent Army barriers, user-owned controls, or disabled is recorded in `.agent-army/config.json`; never claim an external control is owned by this package.

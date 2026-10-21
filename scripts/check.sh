@@ -505,7 +505,10 @@ check_interaction_contract() {
   if python3 - "$ROOT" <<'PY_CONTRACT'
 import pathlib, re, sys
 root = pathlib.Path(sys.argv[1])
-ship = (root / '.apm/skills/ship/SKILL.md').read_text()
+ship_dir = root / '.apm/skills/ship'
+ship = (ship_dir / 'SKILL.md').read_text()
+# Rules moved to references/ still belong to the ship contract.
+ship_all = ship + ''.join(f.read_text() for f in sorted((ship_dir / 'references').glob('*.md')))
 architect = (root / '.apm/skills/bootstrap/baseline/core/agents/architect.md').read_text()
 
 def fields(text, heading):
@@ -543,10 +546,10 @@ try:
     for role in ('code-reviewer', 'security-auditor', 'perf-auditor', 'tester', 'coder', 'docs-writer', 'plan-reviewer', 'planning-analyst'):
         assert '`/ship` section 1.8' in (agents / f'{role}.md').read_text(), f'{role} does not point at the artifact convention'
     assert '**README AT FEATURE LEVEL**' in (agents / 'docs-writer.md').read_text(), 'docs-writer lost the README altitude rule'
-    assert '| final | Whole-feature audit' in architect and '**Whole-feature audit.**' in ship and 'reviews/feature-review.md' in ship, 'whole-feature audit missing from plan or executor'
+    assert '| final | Whole-feature audit' in architect and '**Whole-feature audit.**' in ship_all and 'reviews/feature-review.md' in ship_all, 'whole-feature audit missing from plan or executor'
     assert '**removals across the whole feature:**' in (agents / 'code-reviewer.md').read_text(), 'feature-mode removals check missing'
     # One closure order, a task is done at its accepted review, and every audit packet carries the removal list.
-    assert '**Closure, in this order, when every task of the PR is `done`:**' in ship, 'ship lost the single closure order'
+    assert '**Closure, in this order, when every task of the PR is `done`:**' in ship_all and 'references/closure.md' in ship, 'ship lost the single closure order'
     assert 'the task review accepted → `done`' in ' '.join(ship.split()), 'task done mapping must follow the accepted task review'
     assert 'scripts/removals.py' in ship, 'audit packets lost the removal list'
     session = fields(architect, 'Planning Session')
