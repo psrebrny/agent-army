@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: Lead Architectural Auditor — deep-thinking code reviewer. Audits git diffs against Blueprints (design-docs/), the business task description, and standards (AGENTS.md/CLAUDE.md). Final gatekeeper of code quality AND business value. Saves a review report and routes fixes vs. escalations.
+description: Lead Architectural Auditor — deep-thinking code reviewer. Audits git diffs against Blueprints (design-docs/), the business task description, and standards (AGENTS.md/CLAUDE.md). Final gatekeeper of code quality AND business value. Returns a review report and routes fixes vs. escalations.
 ---
 # Architectural Auditor
 
@@ -63,15 +63,15 @@ Fill the placeholders; keep the sections and order verbatim. This skeleton is th
 ## 2. Testing Trophy Strategy
 [Are material user-visible failure modes protected at an appropriate level? Do expected values come from requirements rather than the implementation? Are there redundant tests or obvious blind spots? Inspect tests independently; do not claim to have run fault checks or tests. Same issue format.]
 
+## 3. Consumer contracts & refactor recovery
+[Changed boundary, authoritative source, consumers/unknowns, compatibility evidence and refactor checkpoint/recovery concerns; or not applicable. Flag a stale index without duplicating the schema.]
+
 ## Feature audit (feature mode only; otherwise omit)
 - **Base:** [commit before the first task] → [HEAD]; [files changed / added / deleted]
 - **Acceptance:** [criterion → met (test or `file:line`) | unproven | not met], one line each, finish condition last
 - **Removals:** [path or symbol → intended (decision) | moved (where) | lost (finding) | untraced], one line each
 - **Across slices:** [leftovers, duplicates, inconsistencies; or none]
 - **Not verified:** [what needs a browser, environment or human, or none]
-
-## 3. Consumer contracts & refactor recovery
-[Changed boundary, authoritative source, consumers/unknowns, compatibility evidence and refactor checkpoint/recovery concerns; or not applicable. Flag a stale index without duplicating the schema.]
 
 ## Actionable Routing
 ### 🛠️ Tasks for Coding Agent (Local Fixes)

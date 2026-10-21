@@ -14,7 +14,9 @@ description: Resumable SDD executor — resolves a task, PR, feature or small fi
 The repo is the git root of the directory you were invoked from; its whole Army is `.agent-army/` there
 (this skill may be installed globally — never look for repo state next to it). Every role named below
 (`architect`, `tester`, `coder`, `code-reviewer`, …) is the contract `.agent-army/agents/agent-army-<role>.agent`.
-There are no native `agent-army-*` agents; never look for or spawn one.
+There are no native `agent-army-*` agents; never look for or spawn one. This file owns orchestration: who
+runs, when, which state is written and where the work pauses. Each role's own judgment lives in its
+contract; do not restate it in a packet.
 
 - **No `.agent-army/`:** say once that `/bootstrap` is recommended, then continue on the package's baseline
   roles (`../bootstrap/baseline/core/agents/<role>.md`, relative to this file) and the default policy.
@@ -23,6 +25,9 @@ There are no native `agent-army-*` agents; never look for or spawn one.
   session and record it under `Active roles`.
 - `python3 ../bootstrap/army.py locate --tool <tool>` prints all of this resolved (repo root, contract path
   and model per role, dispatch mode) when you want it deterministic instead of reading the files yourself.
+- Files of this skill, read only when named below: `references/routing.md` (scope profile, effort and
+  model routing), `references/legacy.md` (resuming an older blueprint), `scripts/removals.py` (the removal
+  list for an audit packet).
 
 ## 0.1 · RESOLVE THE EXECUTION SCOPE
 `/ship` is an executor, not the planning agent. It reads `design-docs/**/00_CORE_MANIFEST.md` and
@@ -43,15 +48,13 @@ one candidate exists. Users may invoke `architect` directly for planning or repl
 
 For new planning, the main session coordinates the planning roles; do not ask an architect subagent to spawn
 its own workers. Invoke `planning-analyst` only when a material cause, behavior, source conflict, or repository
-constraint is still unknown. A small and clear task may skip it; record the evidence-based reason in
-`Planning Session`. Keep the architect as the single user-facing plan author: relay its one-at-a-time question
-to the user, save the answer in the blueprint, and return the affected excerpt rather than a full plan dump.
-After the architect composes a blueprint, invoke `plan-reviewer` with a fresh, independent context. Its packet
-contains the approved goal, confirmed decisions, exact manifest/PR revision, and relevant raw source paths;
-exclude the architect transcript/self-review and analyst report. Persist the verdict and revision in
-`Planning Session`. If no independent context can be created, record `INSUFFICIENT_EVIDENCE` and stop at the
-blueprint gate unless the user explicitly chooses to proceed with that limitation. A review verdict never
-authorizes implementation.
+constraint is still unknown; a small and clear task may skip it, with the reason recorded in `Planning Session`.
+Keep the architect as the single user-facing plan author: relay its one-at-a-time question to the user, save
+the answer in the blueprint, and return the affected excerpt rather than a full plan dump. After the architect
+composes a blueprint, invoke `plan-reviewer` in a fresh context with the packet its contract defines; persist
+the verdict and revision in `Planning Session`. If no independent context can be created, record
+`INSUFFICIENT_EVIDENCE` and stop at the blueprint gate unless the user explicitly chooses to proceed with that
+limitation. A review verdict never authorizes implementation.
 
 ## 1 · EXECUTION POLICY
 Read the selected PR's `Execution State`. Interaction is selected **per PR**, never per role or command.
@@ -71,9 +74,8 @@ When asking, give one recommendation with a one-line reason. Recommend **Interac
 
 Never ask the user to choose raw `red`/`green`/`review` checkpoints. The user may say `switch to
 autonomous` or `switch to interactive` at any time; persist the new mode immediately and apply it at the
-next safe boundary. When resuming a legacy PR with `Interaction policy: supervised`, migrate it once to
-`interactive`, remove its `Checkpoints` selection, record `Last verified stage: legacy supervised policy
-migrated to interactive`, and continue under the Interactive rules. Do not replay or infer old checkpoints.
+next safe boundary. On `switch to autonomous`, detail and review the remaining selected tasks before
+continuing.
 
 At any mode, ask instead of guessing when a requirement is missing, the scope is ambiguous, or a change
 needs expanded authority. In both modes, pause with an Interaction Card before an external or irreversible
@@ -97,35 +99,34 @@ reference, never required reading. Internal labels (`Execution Profile`, `Bottle
 scope, plan revision, card field names) stay in the PR file unless the user asks or a card below requires them;
 then translate them into what they mean for the user.
 
-After scope approval, show the selected scope and goal, a short outcome map read from the manifest's
-`Task Roadmap`, the current milestone and approximate total, and the finish condition. Progress is derived from
-the roadmap and task statuses; there is no separate progress section to initialize.
-Use one milestone per selected atomic task plus one explicit closure milestone for audits, documentation
-and final verification. Count the selected tasks in the current PR, retaining earlier milestones on resume;
-for a multi-PR scope also show the current PR and remaining PRs from the existing scope, then clearly announce
-the next PR's map. RED, implementation and GREEN are phases within a milestone, not extra milestones.
+**Progress.** The outcome map is the manifest's `Task Roadmap`: one milestone per selected task, a closure
+milestone per PR, and the feature's `final` row; its finish condition is the manifest's. RED, implementation
+and GREEN are phases within a milestone. There is no other status list or progress section. After scope
+approval, show the selected scope and goal, the map, the current milestone and approximate total, and the
+finish condition; for a multi-PR scope also the current and remaining PRs, and announce the next PR's map when it
+starts. Keep the count on resume. At each interactive exchange show a
+compact progress line in the user's language (current step, verified work, current action, remaining outcomes,
+finish condition), with the Interaction Card when pausing. Link to diffs and results instead of dumping them.
+Label a GREEN task as verified and awaiting audit, not complete. Explain each map change once in the chat and
+record it in `Latest plan change`; a repair returns to its task's milestone and invalidates the affected
+evidence without adding a milestone. A new outcome changes the estimate only after the user agrees it is in
+scope; side ideas go to the manifest's `Out of scope` as deferred. Never promise a duration or message count.
 
-At each interactive exchange show a compact progress line in the user's language, together with the
-existing Interaction Card when pausing: current step, verified work, current action, remaining outcomes
-and finish condition. Link to detailed diffs and results instead of dumping reports or repeating the whole
-plan. Label a GREEN task as verified and awaiting audit, not fully complete; `Task status` and the evidence
-in `Execution State` remain authoritative. A card's progress line is a view, not separately maintained state.
-
-Before each task, the first one included, show its `task plan` in two or three lines: behavior, significant cases, verification and exact write list.
+**Task plan.** Before each task, the first one included, show its `task plan` in two or three lines: behavior, significant cases, verification and exact write list.
 A roadmap task that is not yet detailed is detailed first, by the architect role, inside the manifest's core and
-from the reviewed slices (its PR file is created when the PR's first task starts, carrying the current scope's interaction policy); this is not a new blueprint
-gate, but a write outside the approved scope or a new choice becomes a question. Never write tests for later
-roadmap tasks in advance. A topic found during work becomes an inserted roadmap row only when the user agrees it
-is in scope; a finding that the core is wrong stops the task for a core decision (architect Rule 13). On
-`switch to autonomous`, detail and review the remaining selected tasks before continuing.
-When nothing is open and the write list is inside approved scope, show it and continue; it is a heads-up, not
-an approval step. It waits only when it carries a question: a missing requirement, trade-off, scope choice or
-interpretation that would change the work, or something unexpected such as a needed write outside scope. Read
-discoverable facts and reuse confirmed decisions first. Ask one concrete question with a recommendation and
+from the reviewed slices (its PR file is created when the PR's first task starts, carrying the current scope's
+interaction policy); this is not a new blueprint gate. Never write tests for later roadmap tasks in advance. A
+topic found during work becomes an inserted roadmap row only when the user agrees it is in scope; a finding that
+the core is wrong stops the task for a core decision (architect Rule 13).
+When nothing is open and the write list is inside approved scope, show the plan and continue; it is a heads-up,
+not an approval step. It waits only when it carries a question: a missing requirement, trade-off, scope choice
+or interpretation that would change the work, or something unexpected such as a needed write outside scope.
+Read discoverable facts and reuse confirmed decisions first. Ask one concrete question with a recommendation and
 consequences, with `needs_input` and task `awaiting decision`. A gap found later, mid-task, is a
 `behavior decision` with the same shape. During the task the chat shows only `step X of ~Y` and what changed;
-RED/GREEN evidence and statuses go to the PR file. After resolution restore the appropriate execution stage without discarding prior evidence. This is delivery, not tutoring: never
-quiz the user, ask syntax questions, or make them rediscover an answer already supported by the contract.
+RED/GREEN evidence and statuses go to the PR file. After resolution restore the execution stage without
+discarding prior evidence. This is delivery, not tutoring: never quiz the user, ask syntax questions, or make
+them rediscover an answer already supported by the contract.
 - On "I don't know", explain the relevant consequence and recommend a resolution, without guided guessing.
 - On "decide for me", make the current in-scope choice and record its rationale; do not waive checkpoints.
 - After two consecutive exchanges on the same question without a new decision or evidence, name the
@@ -134,29 +135,18 @@ quiz the user, ask syntax questions, or make them rediscover an answer already s
   loop. Reset the count on new evidence/decision. Never infer required approval from silence or the count.
 - Save each resolved choice in the affected task contract/evidence before clearing its card, then act on it.
   Send the tester that settled behavior and acceptance criteria, not an implementation-derived expected value.
-- Put side ideas in the manifest's `Out of scope` as deferred; they do not change the execution scope. When finish criteria are met,
-  return the final review result rather than opening another round of improvements.
+- When finish criteria are met, return the final review result rather than opening another round of improvements.
 
-### EXECUTION PROGRESS AND RESUME
-The outcome map is the manifest's `Task Roadmap`; its finish condition is the manifest's. Reuse task IDs and
-the canonical task statuses; never create another status list or progress section. A map change is explained
-in the chat and recorded once, in `Latest plan change`.
+### RESUME
 On resume, read `Execution State`, task decisions/evidence, the pending card, the roadmap and any temporary
-delegation before acting. An older PR's `Execution Progress` section is read once and dropped on the next
-write (architect edge case "Older blueprint"), preserving already verified work and pending approvals. Initialize a missing temporary delegation
-to `none`. Missing evidence stays unknown: inspect or rerun the relevant check without replaying decisions.
-When the user returns after a break, open with one sentence on where the work stands (task, last verified
-result, the pending question or next step) before anything else. A PR paused at a legacy `RED acceptance`, `baseline acceptance` or `implementation acceptance` card resumes as `task plan`, keeping its saved tests,
-baseline and write list. Its saved `Awaiting decision` is still open: show that card once and wait; a request
-to "resume" is not its answer. The user's response continues to implementation.
-When a simple inline task has no PR file, keep the same compact state in the conversation; do not create a
-blueprint solely for a progress counter or claim file-backed resumption where none exists.
-
-Explain each material map change. A repair returns to its existing task milestone and invalidates affected
-verification/review evidence; it does not create a new milestone for every attempt. New or removed outcomes
-change the estimate only after the required scope decision; proposals stay deferred until accepted. Show
-why the end moved, without promising a duration or number of messages. Closure is verified only after all
-required audits, documentation and checks for the selected scope, ending at `ready_for_human_review`.
+delegation before acting. Initialize a missing temporary delegation to `none`. Missing evidence stays unknown:
+inspect or rerun the relevant check without replaying decisions. When the user returns after a break, open with
+one sentence on where the work stands (task, last verified result, the pending question or next step) before
+anything else. If the file has a shape older than the current skeletons (a `supervised` policy, a card at a
+checkpoint not in the list below, an `Execution Progress` section, Polish statuses, separate routing lines),
+read `references/legacy.md` first. When a simple inline task has no PR file, keep the same compact state in the
+conversation; do not create a blueprint solely for a progress counter or claim file-backed resumption where
+none exists.
 
 ### ONE-TASK DELEGATION
 "Do this part yourself" authorizes autonomous execution only for the current, unambiguous approved task
@@ -168,13 +158,13 @@ It is a bounded exception, not a third mode.
 
 Within that task, preserve the usual RED/baseline evidence and the plan/write list, but settle the task's
 in-scope choices yourself with a recorded rationale instead of waiting at `task plan` or `behavior decision`.
-At verified completion clear the exception
-before presenting `task review` and wait. It never grants permission to start the next task, skip checks,
-change scope, cross a risk boundary, or bypass blueprint/final review/commit approval. Ordinary required
-stops still apply. Cancel the exception on user revocation, explicit mode switch, or a scope/risk/contract
-stop; save the stop reason and do not silently reinstate it. A normal verification failure permits in-scope
-repair under the existing stop rules, not unbounded retries. On resume, honor only a saved authorization
-for the same still-active task; expire it when that task is verified or the boundary no longer matches.
+At verified completion clear the exception before presenting `task review` and wait. It never grants
+permission to start the next task, skip checks, change scope, cross a risk boundary, or bypass blueprint/final
+review/commit approval. Ordinary required stops still apply. Cancel the exception on user revocation, explicit
+mode switch, or a scope/risk/contract stop; save the stop reason and do not silently reinstate it. A normal
+verification failure permits in-scope repair under the existing stop rules, not unbounded retries. On resume,
+honor only a saved authorization for the same still-active task; expire it when that task is verified or the
+boundary no longer matches.
 
 ### INTERACTION CARD
 Every pause is durable: write this card into the selected PR file, set `Awaiting decision` to its exact
@@ -194,22 +184,31 @@ emit a bare `ok/fix` pause or make the user infer what to inspect.
 ```
 
 A `task plan` that waits names the behavior, significant cases, verification and exact write list, then its
-one question with a recommendation; a plan without a question is shown and not persisted as a pause. For an
-Interactive task-review card, include the decisive RED assertion and its failure reason (or the passing
-baseline for a refactor), the focused diff summary, GREEN command/result, known limitations, and the next
-planned task, in about one screen. Lead with the task's `Manual check` in plain words (how to start or
-reach the app, what to click, what should be visible) and ask whether it looks and works as the user wants;
-a "no" is a correction to this task before the next one builds on it. Include the task-level audit verdicts
-(and any audit skipped, with the reason) and the repairs already made. End with the next task's plan in plain words (what will be done and what
-the user will then see); `continue` accepts this task and starts that plan, and a correction to the plan is
-settled before it starts. The user reviews the task's code and tests together here, once. Because a task can be a few hundred lines, give a **review map** instead of a bare diff: (1) a reading order, normally tests first as the specification, then the core logic, then wiring such as barrels, mounts and schemas, each with file/line pointers; (2) the diff grouped in those stages, as separate commits or staged groups when the user has asked for commits; (3) three to five `where to look` points, the decisions and risks only a human can judge, such as naming, UX, an assumption or a trade-off; (4) what the task-level audits already covered and which were skipped and why, so the user does not repeat mechanical review; (5) the `Manual check`. Explain what the check cannot establish.
+one question with a recommendation; a plan without a question is shown and not persisted as a pause.
+
+**Task review** (Interactive), in about one screen:
+- Lead with the task's `Manual check` in plain words (how to start or reach the app, what to click, what
+  should be visible) and ask whether it looks and works as the user wants; a "no" is a correction to this
+  task before the next one builds on it. Explain what the check cannot establish.
+- Evidence: the decisive RED assertion and its failure reason (or the passing baseline for a refactor), the
+  focused diff summary, GREEN command/result, the task-level audit verdicts (any audit skipped, with the
+  reason), the repairs already made and known limitations.
+- A **review map** instead of a bare diff, because a task can be a few hundred lines: (1) a reading order,
+  normally tests first as the specification, then the core logic, then wiring such as barrels, mounts and
+  schemas, each with file/line pointers; (2) the diff grouped in those stages, as separate commits or staged
+  groups when the user has asked for commits; (3) three to five `where to look` points, the decisions and
+  risks only a human can judge, such as naming, UX, an assumption or a trade-off; (4) what the task-level
+  audits already covered, so the user does not repeat mechanical review.
+- End with the next task's plan in plain words (what will be done and what the user will then see).
+  `continue` accepts this task (it becomes `done`) and starts that plan; a correction to the plan is settled
+  before it starts. The user reviews the task's code and tests together here, once.
+
 For `behavior decision`, include the unknown, recommendation and consequence; do not pause when all are settled.
-A finding-decision card names the finding,
-its severity, the in-scope repair option, and any decision that needs the user. A final-review card names
-the full verification result, review/security verdicts, docs change, and the proposed (not executed) commit.
-For a plainly in-scope finding in Autonomous mode, record the same finding-decision card as evidence with
-`Question: none` and `Options: none`, then continue the repair immediately. If resolving the finding needs
-a decision, it becomes a pause in both modes.
+A finding-decision card names the finding, its severity, the in-scope repair option, and any decision that
+needs the user. For a plainly in-scope finding, record the same card as evidence with `Question: none` and
+`Options: none`, then continue the repair immediately; if resolving the finding needs a decision, it becomes a
+pause in both modes. A final-review card names the full verification result, audit verdicts, docs change, the
+ADRs awaiting confirmation and the proposed (not executed) commit.
 
 For an explicitly approved behavior-preserving refactor, the `task plan` names the preserved contract,
 refactor checkpoint/recovery and exact write list, and the task review shows the passing before-change checks;
@@ -225,7 +224,7 @@ the architect handoff. Persist an Interaction Card for the blueprint decision an
   adapter falls back to `inherit`;
 - `Last verified stage: blueprint path + acceptance criteria reviewed`;
 - `Awaiting decision: approve/revise blueprint; select scope` — add `switch and continue/stay current`
-  only for an `inherit` fallback whose main-session recommendation is material.
+  only for an `inherit` fallback whose main-session recommendation is material (`references/routing.md`).
 
 Then, in the chat and in the user's language, say that the plan is finished and nothing is built yet, and
 list in order the small steps the user will be able to try, one line each (the `Task Roadmap`), then the finish
@@ -251,7 +250,7 @@ any tester, coder or main-session implementation.
 For `all unfinished PRs`, carry that scope forward to the next unfinished PR only after the current PR
 reaches `ready_for_human_review`: Autonomous mode continues after the current final-review card, while
 Interactive mode asks in that card whether to proceed to the next PR. Then calculate and persist the Scope
-Profile below. Autonomous execution starts after the required decisions. A static role model is already
+Profile (section 1.4). Autonomous execution starts after the required decisions. A static role model is already
 selected by bootstrap; `/ship` never rewrites an agent file or changes the main-session model/effort during
 execution.
 
@@ -267,138 +266,46 @@ The task's user-visible `Task status` in its PR file uses this single planning v
 English tokens, whatever the conversation language): `open`, `in progress`, `in testing`, `in review`,
 `done`, `awaiting decision`, `blocked`, `conditional`. Map execution transitions as follows: `planned` →
 `open`; tester authoring and implementation → `in progress`; implementation complete and verification
-pending → `in testing`; GREEN complete and review pending/in progress → `in review`; all task criteria,
-required reviews, documentation and checks verified → `done`; `awaiting_approval` or `needs_input` →
-`awaiting decision`; `blocked` → `blocked`; out-of-scope until a stated condition → `conditional`. Record
-exact RED/GREEN command results and reviewer verdicts in `Last verified stage` or the task evidence, not as a
-second status. A role's Handoff `STATUS: done` alone never marks a blueprint task `done`.
-A blueprint written before 0.4.0 may carry the legacy Polish statuses. Accept the legacy value on read, mapped one-to-one (`do zrobienia` → `open`, `w trakcie` → `in progress`, `do testów` → `in testing`, `do review` → `in review`, `wykonane` → `done`, `czeka na decyzję` → `awaiting decision`, `zablokowane` → `blocked`, `warunkowe` → `conditional`), and write the English value on the next update of that task. Ignore `Capability`, `Deliberation` and `Routing rationale` lines in a legacy Execution Profile.
+pending → `in testing`; GREEN complete and task-level audits pending or in progress → `in review`; task
+criteria, selected task-level audits and focused checks verified and, in Interactive mode, the task review
+accepted → `done`; `awaiting_approval` or `needs_input` → `awaiting decision`; `blocked` → `blocked`;
+out-of-scope until a stated condition → `conditional`. Docs and the closure pass are PR-level and never hold
+a task back from `done`; a later repair of a `done` task is a task-tier correction (section 2) that sets it
+back to `in progress`. Record exact RED/GREEN command results and reviewer verdicts in `Last verified stage`
+or the task evidence, not as a second status. A role's Handoff `STATUS: done` alone never marks a blueprint
+task `done`.
 
 ## 1.4 · SCOPE-AWARE ROUTING
-Keep two profiles separate:
-
-- **Execution Profile** belongs to each atomic task and determines the cheapest adequate configuration
-  for that task's actual work.
-- **Scope Profile** belongs to the user-selected scope and determines only coordination burden for the
-  main `/ship` session, derived from the selected scope and its tasks' bottlenecks, never from a task
-  capability. It must never silently raise every worker to the strongest tier.
-
-Calculate and persist the Scope Profile after scope selection:
-
-| Selected scope | Coordinator recommendation | Worker recommendation |
-|---|---|---|
-| One task | that task's `Bottleneck`; coordination `low` | that task's Execution Profile |
-| One PR | the hardest `Bottleneck` among its unfinished tasks; coordination `low` for one task, otherwise `medium` | each task's own Execution Profile |
-| All unfinished PRs | the hardest `Bottleneck` matters only at cross-PR planning/replanning and final review; coordination `medium`, or `high` only for cross-PR dependencies, migrations, security risk, or an architectural pivot | each task's own Execution Profile |
-
-Record it in the PR file's `Routing` line, next to the selected scope; at the
-gate it is shown on `show details`. A whole feature therefore does not make a `retrieval` ping endpoint run on a stronger
-configuration; it only increases coordination when the dependency graph warrants it.
+The Scope Profile (coordination burden of the selected scope) is calculated after scope selection and
+recorded in the PR file's `Routing` line; the table and rules are in `references/routing.md`. A whole-feature
+scope raises coordination only; it never raises every worker's configuration.
 
 ## 1.5 · BOTTLENECK-AWARE EFFORT POLICY
-The `Execution Profile` is a recommendation backed by evidence, not a command to blindly use the
-strongest model or the highest effort. Before the first dispatch for a task, identify one dominant
-reasoning bottleneck and persist it in the task block as `Bottleneck`, `Bottleneck rationale` and
-`Escalation trigger`. Use these labels:
-
-| Bottleneck | First move | Escalate when |
-|---|---|---|
-| `retrieval` — a file, API, convention or fact is unknown | improve pointers, search scope and the clean packet | the missing fact cannot be resolved from approved paths |
-| `design_decision` — several valid designs or a non-trivial trade-off | raise effort by one step of the tool when it supports one, and compare explicit options | the extra effort does not resolve the choice, or the decision changes architecture/scope |
-| `capability_gap` — the task is outside the selected role/tier's demonstrated ability | route to the next adequate capability or the proper specialist | the next capability still cannot satisfy the contract |
-| `context_noise` — the packet is large or contains distractors | reduce the packet to pointers and relevant slices; usually lower effort | the cleaned packet still leaves a genuine reasoning problem |
-| `verification` — the result cannot be checked reliably | strengthen the smallest deterministic test/measurement first | the contract remains unverifiable or a new control needs approval |
-| `multiple_approaches` — independent strategies are plausible | run bounded independent attempts when safe, then compare | attempts disagree or require expanded scope |
-| `unknown` | start with the cheapest adequate profile and gather evidence | the first verified result shows a concrete bottleneck |
-
-Routing rules:
-
-- Prefer the cheapest role capability that is adequate for the contract. Within it, spend effort on
-  judgment, not on missing information. `high`, `xhigh` and `max` effort are justified by
-  architectural/security decisions, a hard reasoning problem or a failed lower setting — never by task
-  size alone.
-- Raise effort by at most one step of the tool per retry, when the tool supports it. If that does not
-  improve the verified result, stop repeating the same approach: improve context or route to a stronger
-  role or specialist. Effort is not a substitute for a missing capability.
-- A strong verifier (tests, type-checker, contract or measurement) permits a cheaper worker plus
-  another short repair loop. With no reliable verifier, invest in the verification step before buying
-  more effort.
-- Do not use a whole-feature scope as a reason to raise every task. Scope affects coordination; the
-  task bottleneck affects worker routing.
-- This policy does not fabricate or mutate a native model/effort setting. With `per_role_static`, use
-  the configured role model and record the bottleneck as rationale. With `inherit` or an
-  unsupported effort selector, write a `needs_input` configuration gap only when the recommendation is
-  material; the user changes the UI/CLI setting and `/ship` resumes at the next safe boundary.
-
-The escalation ladder is therefore: clean/retrieve context → adjust one effort step for a reasoning
-problem → route to a stronger role capability or specialist → ask for a decision/scope change. Never spend
-unbounded effort on retrieval, context noise or a repeated failed approach.
+Each task's `Bottleneck` comes from the architect. When a verified result is poor, escalate in this order:
+clean/retrieve context → adjust one effort step for a reasoning problem → route to a stronger role
+capability or specialist → ask for a decision/scope change. Never spend unbounded effort on retrieval, context
+noise or a repeated failed approach. Read `references/routing.md` for the first move and trigger per bottleneck.
 
 ## 1.6 · MODEL & EFFORT ROUTING
-Every atomic task has an `Execution Profile`: `Bottleneck`, `Bottleneck rationale` and `Escalation
-trigger`. It carries no capability, deliberation or vendor model ID, and `/ship` makes no per-task
-capability recommendation. Each role is routed from `model_routing` (bootstrap) or the tool default.
-Bootstrap records per-tool model tiers once in `.agent-army/config.json`; `army.py locate --tool <tool>`
-resolves them into `roles.<role>.model`. This is configuration, not an LLM decision.
-
-### Per-role static routing (`dispatch: subagent-with-prompt`)
-Pass the role's model (`model_routing.tools.<tool>.<capability>`, or the contract's own `model:` line,
-which wins; `army.py locate` resolves both as `roles.<role>.model`) as the subagent's model. `/ship` dispatches directly, including in autonomous mode: it does **not**
-pause or ask the user to switch at each role boundary. Record the model and its `model_source`
-(`profile`, `package-default` or `user-override`) in that dispatch's Run Configuration.
-
-### Main-thread fallback (`dispatch: main-thread`)
-Do not try to spawn a worker. Read the role's contract (`army.py role <role>`), execute that role in the
-main session, and record it as `Active roles`. The main-session model and effort remain unchanged.
-
-The portable defaults intentionally distinguish roles:
-
-| Capability | Roles | Purpose |
-|---|---|---|
-| `strong` | architect, plan-reviewer, code-reviewer, security-auditor | high-judgment planning and risk decisions |
-| `mid` | coder, perf-auditor, planning-analyst | implementation, bounded research, or measurement |
-| `light` | tester, docs-writer | focused RED/GREEN work or factual documentation |
-
-The task's Execution Profile remains the planner's evidence for coordination and escalation; it
-does not silently change a role's configured model mid-run. If a task demonstrably needs a model
-above the configured role profile, record a `needs_input` configuration gap at the mandatory gate and ask
-for an explicit re-bootstrap with that tool's real model IDs (`--tool <tool> --model-…`). Never fake a provider/model ID.
-
-### Inherit fallback
-When `roles.<role>.model` is null (the tool has no per-role model, or bootstrap lacks its three exact
-model IDs, or `model_routing.strategy` is `inherit`), the role inherits. The subagent uses the tool/session configuration and effort remains
-the tool default. `/ship` cannot observe that actual setting and must not claim it changed. Only then, when
-a material recommendation differs, pause at the mandatory gate and show:
-```
-Model & Effort Recommendation
-- Scope / role: [task ID / main session or role]
-- Recommended: [confirmed model or adapter-defined tier] / [confirmed effort or tool default]
-- Why: [task evidence]
-- Lower-cost alternative: [profile] — [trade-off]
-- Decision needed: switch and continue | stay current
-```
-The user changes the main-session model/effort in the UI/CLI, then tells `/ship` to continue. If the user
-chooses `stay current`, record that explicit decision and proceed. Never change a UI/CLI/API model or
-effort setting yourself. Persist it as the manual setting in `Routing` and in Run Configuration; do not ask again
-until the selected scope, next task profile, or contract materially changes. `subagent_effort: unsupported`
-always means effort inherits the tool default — do not present it as a role-level setting.
-
-`xhigh` and `max` are canonical portable labels where an adapter supports them. `ultra` is not a portable
-effort value: preserve it only as an adapter-specific execution mode, separate from effort, and never
-claim it was selected unless that adapter exposes and records such a mode.
+Each role is routed from `model_routing` (bootstrap) as `army.py locate` resolves it. With a role model
+(`dispatch: subagent-with-prompt`) dispatch directly with that model, without asking the user at role
+boundaries, and record it in the task's Run Configuration. With `dispatch: main-thread` read the role's
+contract (`army.py role <role>`) and execute it in the main session. Never change a UI/CLI/API model or effort
+setting yourself. For an `inherit` fallback (null role model), a task that needs more than its role's tier, or
+effort labels, follow `references/routing.md`.
 
 ## 1.7 · PERSIST EVERY ROLE TRANSITION
 `Execution State` is the resumable source of truth, not the Todo list or a chat message. Immediately
 before and after every role dispatch, rewrite the selected PR file: set `PR status`, `Current task`,
 `Active roles`, `Last verified stage`, the mapped user-visible task status, `Awaiting decision`, and any
 Interaction Card. Never leave the previous worker listed as active after it returns. Keep detailed execution
-evidence in `Last verified stage` and test/review reports; do not replace the task's planning status with
-the English execution-step label. Progress follows from this evidence and the roadmap, without a second completion ledger.
-Whenever a PR's status changes (first dispatch, `awaiting_approval`, `blocked`, `ready_for_human_review`), also
-refresh the manifest's Planning Session `Progress` (each PR's status in one line), `Next action` (the one next
-step) and `For you.Where it stands` (the same in plain words) in the same write, so the blueprint entry point
-never shows an older state than its PR files. Whenever a task's status changes, update its `Task Roadmap` row in
-that same write. Touch no other manifest field.
+evidence in `Last verified stage` and the review files (section 1.8); do not replace the task's planning status
+with the English execution-step label.
+Whenever a task's status changes, update its `Task Roadmap` row in that same write. Whenever a PR's status
+changes (first dispatch, `awaiting_approval`, `blocked`, `ready_for_human_review`), also refresh the manifest's
+Planning Session `Progress` (each PR's status in one line), `Next action` (the one next step) and
+`For you.Where it stands` (the same in plain words) in the same write, so the blueprint entry point never shows
+an older state than its PR files. Touch no other manifest field.
 
 - **Architect:** before → `planned`, active `architect`; after → `awaiting_approval`, active `none`,
   `Execution scope: unset`, Scope Profile `unset` in `Routing`, blueprint path, current Planning Session stage/revision,
@@ -417,27 +324,28 @@ that same write. Touch no other manifest field.
   task `in testing`, active `none`, and record the exact next verification.
 - **Tester GREEN:** before → active `tester`, task `in testing`; after a passing result → task `in review`,
   active `none`, persist the exact command and result. On failure, return to `in progress` with the failure
-  evidence and next corrective action. On verified completion clear any one-task delegation. In Interactive mode, write `task review` Interaction Card and wait.
-- **Review + security:** before → PR `review`, active `code-reviewer, security-auditor`; after →
-  active `none`, persist both verdicts. Keep `in review` until both required reviews pass; a confirmed
-  finding writes `finding decision` Interaction Card, then moves to `in progress` for an in-scope repair and
-  back to `in testing` before renewed review. Never skip the test status.
+  evidence and next corrective action. On verified completion clear any one-task delegation.
+- **Task-level audits:** before → PR stays `implementing`, active the selected auditors; after → active
+  `none`, persist each verdict. The task stays `in review` until every selected audit passes; a confirmed
+  finding moves it to `in progress` for an in-scope repair and back to `in testing` before the affected audit
+  re-runs. Never skip the test status. Then the task review (Interactive) or `done` (Autonomous).
+- **Closure audits:** before → PR `review`, active the selected auditors; after → active `none`, persist verdicts.
 - **Docs + final:** before → PR `docs`, active `docs-writer`; after full verification →
-  `ready_for_human_review`, active `none`, task `done`, final evidence and a `final review` Interaction Card.
+  `ready_for_human_review`, active `none`, final evidence and a `final review` Interaction Card.
   When the user accepts the final review, shrink the PR file to its done form (architect Rule 9).
 
 ## 1.8 · WHERE ARTIFACTS GO
-Workers return their reports as their final message; `/ship` alone decides what is saved, and only here.
-Saved files are committed with the blueprint, one per role run per scope, overwritten on a re-run (current
-state; git keeps the history):
+Workers return their reports as their final message; `/ship` decides what is saved and writes it, except
+`planning-evidence.md`, which the architect keeps. Saved files are committed with the blueprint, one file per
+scope (task, PR, feature, plan); a re-run overwrites it (current state; git keeps the history):
 
-| File | Written by `/ship` from | Content |
+| File | Written from | Content |
 |---|---|---|
-| `design-docs/[ID]/reviews/[PR.task]-review.md` | task-level audits | per audit run (code, security, perf when selected): verdict, then each finding as severity · what · `fixed` (how, file) / `open` (the question for the user) / `not a finding` (why) |
+| `design-docs/[ID]/reviews/[PR.task]-review.md` | task-level audits | one block per selected audit (code, security, perf): verdict, then each finding as severity · what · `fixed` (how, file) / `open` (the question for the user) / `not a finding` (why) |
 | `design-docs/[ID]/reviews/PR[n]-review.md` | closure audits over the whole PR diff | the same shape |
 | `design-docs/[ID]/reviews/feature-review.md` | the whole-feature audit (section 4) | the same shape, plus the acceptance and removals lists |
 | `design-docs/[ID]/reviews/plan-review.md` | `plan-reviewer` | verdict, reviewed revision, findings and their resolution |
-| `design-docs/[ID]/planning-evidence.md` | `planning-analyst`, via the architect | confirmed facts and source paths the plan relies on |
+| `design-docs/[ID]/planning-evidence.md` | `planning-analyst`, kept by the architect | confirmed facts and source paths the plan relies on |
 
 Nothing else is saved. RED/GREEN results live in `Last verified stage` (command, exit, counts, the decisive
 assertion); the docs result is the docs diff itself, summarized in the final-review card; coder and tester
@@ -446,15 +354,12 @@ evidence. The blueprint links only to these files. In-scope findings are repaire
 (section 4), so the review file shows what was found and how it was fixed, and the user reads one file per task.
 
 ## 2 · BLUEPRINT OR RESUME  → `architect`
-Architect writes `design-docs/[Task-ID]/00_CORE_MANIFEST.md` plus `0X_PR_*.md` (one PR per file) and
-never writes production code. Each atomic task has an API contract, a Delegation Contract, an Execution
-Profile and an Execution State. On a user correction, review escalation or manual change, architect applies
-Rule 9: the smallest tier that contains the change (minor, task or core), the result written as current state
-without "historical" leftovers, a consistency check across the manifest and touched PR files, and the change
-card in the chat. Only the core tier returns to the mandatory blueprint + scope gate. It never silently
-rewrites or falsifies completed work.
+The architect writes and corrects the blueprint (`00_CORE_MANIFEST.md` plus one `0X_PR_*.md` per PR) and never
+writes production code. A user correction, review escalation or manual change follows architect Rule 9 (the
+smallest tier, current state, consistency check, change card); only the core tier returns to the mandatory
+blueprint + scope gate. Completed work is never silently rewritten or falsified.
 
-**Small corrections stay small.** For a minor or task-tier correction of the active task (a user's comment,
+**Small corrections stay small.** For a minor or task-tier correction of the active or an accepted task (a user's comment,
 a manual-check "no", an in-scope review finding):
 - The user's explicit request for the correction is its go-ahead. Show the change card as information and
   continue; ask only for a real ambiguity, a write outside scope, or a risk boundary. Never ask the user to
@@ -466,9 +371,10 @@ a manual-check "no", an in-scope review finding):
   read directly.
 - Audits follow section 4's risk selection on the correction's diff (a presentational fix runs `code-reviewer`
   only). The result goes into the one task-review pause; there is no pause before RED or before the fix.
+
 For a new blueprint, ask the interaction policy before the architect composes, because it sets planning depth
 (architect Rule 13); with tasks not yet detailed, base the recommendation on the open planning decisions. Use the
-interactive Planning Session and planning-role orchestration from section 0.
+interactive Planning Session and planning-role orchestration from section 0.1.
 For a resumed blueprint, read its saved Planning Session first and continue at `Next action`; never restart
 resolved decisions. Every task starts as `open`. If a user decision is pending, set the task to
 `awaiting decision` only when the decision blocks that task, preserve the exact question in the Interaction Card,
@@ -479,72 +385,78 @@ A proposed configuration/adoption change still needs a concrete approved scope b
 
 ## 3 · IMPLEMENTATION per task — STRICT TDD `<auto_critic>` with `tester`
 _(The RED-first loop applies at `TEST_POLICY=strict`/`pragmatic`. At `light`: thin happy-path tests, no strict RED-first. At `none`: no authored tests; implement and check acceptance behavior, with required lint/security still active. The interaction and progress rules apply at every policy.)_
-For EACH task in the blueprint, first show its `task plan` and resolve only genuine behavior gaps as above.
-At `light`/`none`, when no RED or baseline exists, the `task plan` names the proposed check, smallest
-implementation plan and write list before coding. After implementation,
-record the actual policy-appropriate verification and, in Interactive mode, pause at task review, without inventing RED/GREEN
-evidence for a test that was not run.
-Use the tester's risk-based selection and test-confidence guidance. Required repository checks remain
-mandatory; additional fault checks are targeted experiments, not a new gate for every task. Run mutations
-only in the tester's permitted isolated subject; never pass a mutated failure off as final verification.
-For an explicitly approved behavior-preserving refactor, substitute its passing before-change checks
-for RED in steps 1–2, preserving the same write-scope and interaction gates.
-This exception does not let a bugfix or new feature claim success without demonstrating the required behavior.
-1. Persist PR `implementing`, task `in progress`, `Active roles: tester`, then **`tester` writes the tests (RED)** independently from the contract/acceptance criteria and proves they fail for the right reason. On return, persist `Active roles: none` and the exact RED result in `Last verified stage`; task status remains `in progress` while implementation is pending.
-2. Continue in both modes unless a decision condition applies. Persist task `in progress` and `Active roles: main session` or `coder`. The main session implements the smallest change; a delegated `coder` receives only the Delegation Contract, RED tests and approved read paths. It proceeds only within the `task plan` write list, and only when that list is wholly inside approved scope; anything else is a stop.
-3. After implementation, persist task `in testing`, `Active roles: tester` and the exact next command; **`tester` verifies (GREEN)**. A passing command moves the task to `in review` only after the GREEN result is saved. On failure, persist `in progress` with the failure evidence and correction. A required path outside scope, ambiguous/disproved contract, unapproved dependency/migration or repeated failed approach becomes `awaiting decision` or `blocked`, never silent expansion.
+For each task, first show its `task plan` and resolve only genuine behavior gaps (section 1). At `light`/`none`,
+when no RED or baseline exists, the `task plan` names the proposed check, smallest implementation plan and write
+list before coding; afterwards record the verification actually run, never invented RED/GREEN evidence.
+The tester applies its own contract (risk-based level, test budget, fault checks only in an isolated subject,
+refactor baseline instead of RED; that exception never lets a bugfix or new feature claim success without
+demonstrating the required behavior). When the main session writes the tests itself, it keeps the two rules that
+make them worth having: expected values come from the contract, never from the implementation, and RED fails
+for the stated reason. A required repository check stays mandatory.
+
+1. **RED:** `tester` writes the tests independently from the contract/acceptance criteria and proves they fail for the right reason (section 1.7 *Tester RED*). For an approved behavior-preserving refactor, the passing baseline replaces RED.
+2. **Implementation:** continue in both modes unless a decision condition applies. The main session implements the smallest change; a delegated `coder` receives only the Delegation Contract, the `task plan` write list, RED tests and approved read paths. Work stays within that write list, and only when it is wholly inside approved scope; anything else is a stop.
+3. **GREEN:** `tester` verifies. A required path outside scope, an ambiguous/disproved contract, an unapproved dependency/migration or a repeated failed approach becomes `awaiting decision` or `blocked`, never silent expansion.
+
 No batching without verification. *Exception:* for trivial tasks and small corrections (section 2) the main session does the whole Red→Green cycle inline, without a round-trip to a subagent (the default, not an option — see AGENTS.md "Cost & context discipline"). This does not remove an Interactive `task plan` or task-review card: it changes only who performs the work. Inside a task run only the focused tests of the changed area after each GREEN step; run the configured full verification (types, lint, package regression) once when the task is ready for review, and again at PR closure. Runtime hooks are feedback, while the user-selected pre-commit/CI controls provide repository enforcement.
-After every verified task in Interactive mode, clear any one-task delegation, run section 4 on that task's diff,
-repair plainly in-scope findings, detail the next roadmap task, then write the task-review Interaction Card and wait. In Autonomous
-mode, continue to the next planned task without a routine pause.
+After every verified task, clear any one-task delegation, run the task-level audits (section 4) on that task's
+diff and repair plainly in-scope findings. In Interactive mode, then detail the next roadmap task, write the
+task-review Interaction Card and wait. In Autonomous mode, mark the task `done` and continue to the next planned
+task without a routine pause.
 
 ## 4 · REVIEW + SECURITY  → independent read-only agents
-Select audits by risk. `code-reviewer` always runs. `security-auditor` runs when the diff touches authentication or authorization, secrets or configuration, network or user input, data storage or queries, file or shell access, or dependencies; a purely presentational change may skip it at task level with the reason recorded. `perf-auditor` runs only for lists, queries, large renders or a stated performance goal. The closure pass over the whole PR diff always runs `code-reviewer` and `security-auditor`, so a skipped task-level audit is never skipped for good. Persist PR `review` and the selected `Active roles`, then start a fresh reviewer
-context where the tool supports subagents; otherwise invoke the review role with a clean packet. The
-packet contains **only** the task contract, finished diff and human decisions, and lists the files and blocks the change deleted or overwrote (`git diff --diff-filter=D --stat` plus removed functions) so removals are not lost in a large diff. Do not include
-coder/tester reports, rationales or transcripts. Audit that packet against standards + business goal; if
-the contract is absent, label the result `Diff-Only Review`. Run a selected `security-auditor` independently against
-the finished diff at the same time. Neither auditor receives implementation/tester reports or transcripts.
-The change scope includes relevant committed, staged, unstaged and untracked files; provide the comparison
-base and source pointers so a branch-only diff cannot hide current changes. Authoritative schemas and
-contract indices are source context, not implementation reports. Keep the packet focused on affected boundaries.
+**Selection by risk.** `code-reviewer` always runs. `security-auditor` runs when the diff touches authentication
+or authorization, secrets or configuration, network or user input, data storage or queries, file or shell
+access, or dependencies; a purely presentational change may skip it at task level with the reason recorded.
+`perf-auditor` runs only for lists, queries, large renders or a stated performance goal. The closure pass always
+runs `code-reviewer` and `security-auditor`, so a skipped task-level audit is never skipped for good.
 
+**Packet.** Each selected auditor runs in a fresh context where the tool supports subagents (otherwise as a
+role with a clean packet), at the same time as the others. Its packet holds only: the task contract (or the
+manifest's goal and criteria at closure), the comparison base with source pointers so committed, staged,
+unstaged and untracked changes are all in scope, explicit human decisions, and the output of
+`python3 scripts/removals.py <base>` (relative to this file) so removals are not lost in a large diff. Authoritative schemas and contract
+indices are source context, not implementation reports; keep the packet focused on affected boundaries. Never
+include coder/tester reports, rationales or transcripts; each role's contract says how it audits that packet.
+
+**Findings.**
 - reviewer `CHANGES_REQUESTED` → `/ship` creates an in-scope Micro-Blueprint and writes a finding-decision
   Interaction Card. A plainly in-scope repair proceeds in both modes (Interactive reports it in the task
-  review); a repair that needs a decision waits. Repair only through RED → coder or main session → GREEN, then re-run both review
-  and security;
+  review); a repair that needs a decision waits. Repair only through RED → coder or main session → GREEN, then re-run the selected audits;
 - reviewer `ARCHITECTURAL_ALIGNMENT_NEEDED` → write a finding-decision Interaction Card, return the issue
   to architect for a targeted correction, then stop at the mandatory blueprint/scope gate; never route this
   verdict directly to coder;
 - every confirmed security finding → write a finding-decision Interaction Card. A plainly in-scope repair
-  follows RED → coder or main session → GREEN and then re-runs both audits, in both modes.
+  follows RED → coder or main session → GREEN and then re-runs the selected audits, in both modes.
   A finding that needs a new scope becomes `awaiting_approval` with the exact expansion in both modes;
 - proceed only after `APPROVED` and zero open confirmed security findings.
 
-After both reports return, persist `Active roles: none` and both verdicts; once in-scope repairs are verified, write the review file (section 1.8) with what was found and how it was fixed or what stays open. Repeat this loop until the
-selected PR is clean. In Interactive mode the loop also runs per task on that task's diff, keeping the PR
-`implementing` and the task `in review`; a finding that needs a decision becomes the task review's question.
-At closure it then runs once over the whole PR diff for cross-task issues. With no finding, do not add a routine review/security pause; its evidence appears in
-the final-review card.
+Once in-scope repairs are verified, write the review file (section 1.8) with what was found and how it was fixed
+or what stays open. With no finding, do not add a routine review pause; its evidence appears in the task review
+or final-review card.
 
-**Whole-feature audit.** When every other `Task Roadmap` row is `done`, run the `final` row before calling the
-feature finished; never skip it because each slice was clean. Fresh contexts, strongest configured reviewers:
-`code-reviewer` in feature mode, `security-auditor` always, `perf-auditor` when the feature has lists, queries or
-a performance goal, all on the whole feature diff from the commit before its first task. The packet adds the
-manifest goal, finish condition, acceptance criteria and decisions in force; the removals check (every deleted
-file, export, branch, test and config key classified as intended, moved or lost) is mandatory. Then run the
-full verification (all package tests, types, lint). Repair in-scope findings through RED → fix → GREEN and
-re-run the affected audit; a finding that changes scope or the core is a decision. Write
-`reviews/feature-review.md` (section 1.8), mark the `final` row done, and close with one final-review card that
-leads with a manual walk through the whole user journey and names what could not be verified. For a feature of
-one PR this audit replaces that PR's closure pass, not both.
+**Closure, in this order, when every task of the PR is `done`:**
+1. the closure audits over the whole PR diff, for cross-task issues (`reviews/PR[n]-review.md`); for the
+   feature's last PR the whole-feature audit below takes their place, since it covers that diff too;
+2. in-scope repairs through RED → fix → GREEN, re-running the affected audit;
+3. docs (section 5);
+4. the full verification and one final-review card.
+
+**Whole-feature audit.** When every task row of the `Task Roadmap` is `done`, run the `final` row before calling the
+feature finished; never skip it because each slice was clean. `code-reviewer` in feature mode,
+`security-auditor` always, `perf-auditor` when the feature has lists, queries or a performance goal, all on the
+whole feature diff from the commit before its first task; the packet adds the manifest goal, finish condition,
+acceptance criteria and decisions in force, and the removal list is mandatory. A finding that changes scope or
+the core is a decision. Write `reviews/feature-review.md` (section 1.8). The final-review card leads with a
+manual walk through the whole user journey and names what could not be verified; the `final` row becomes done
+when the user accepts it.
 
 ## 5 · DOCS + FINAL VERIFICATION
-Persist PR `docs` and `Active roles: docs-writer`; `docs-writer` runs once per PR at closure, not after every task, and updates only necessary, truthful docs.
-Before the task closes, `docs-writer` sweeps the plan for significant decisions without an ADR and proposes them (no new checkpoint).
-When `docs-writer` runs in the main thread, read its contract (`army.py role docs-writer`) before writing docs. An ADR
-uses that contract's template with every field, and stays `Proposed` until the user confirms the decision itself; "decide for me" is not a
-confirmation. Ask for it in the final-review card, not in a new pause.
+Persist PR `docs` and `Active roles: docs-writer`; `docs-writer` runs once per PR, after the closure audits and
+their repairs, and follows its own contract (README level, ADR trigger and template, plan sweep, work item).
+When it runs in the main thread, read its contract (`army.py role docs-writer`) first. An ADR stays `Proposed`
+until the user confirms the decision itself; "decide for me" is not a confirmation. Ask for it in the
+final-review card, not in a new pause.
 Run the configured full verification, record its output in `Execution State`, set `Active roles: none`,
 set the PR to `ready_for_human_review`, and write a final-review Interaction Card. Return a compact summary:
 scope, diff, tests, review verdict, security result, actual role configurations and any non-blocking
@@ -568,6 +480,14 @@ RED evidence, implement within its write list, verify, clear the exception and s
 start PAY.3 or turn the PR autonomous.
 
 **EX 3 — Resume and repair.** `design-docs/PAY/01_PR_1_Retry.md` has a saved legacy card awaiting RED
-approval and a legacy `Execution Progress` section. Open with one sentence on where it stands, read the map from
-the manifest's `Task Roadmap` and drop the legacy section on the next write, resume the card as `task plan` with its RED evidence and previous verification, and show the next action without restarting discovery. A later audit finding returns to the
-same task milestone; explain the repair and invalidate affected checks without increasing the total.
+approval and a legacy `Execution Progress` section. Open with one sentence on where it stands, follow
+`references/legacy.md` (the card resumes as `task plan` with its RED evidence; the section is dropped on the next
+write), read the map from the manifest's `Task Roadmap`, and show the next action without restarting discovery.
+A later audit finding returns to the same task milestone; explain the repair and invalidate affected checks
+without increasing the total.
+
+**EX 4 — A small fix to an accepted task.** During PR 2, the user says "the empty-state title in 1.2 should be
+an h3, not an h5". → Change card `· task`, task 1.2 back to `in progress`; the main session adds the
+`getByRole('heading', { level: 3, name })` assertion, sees it fail on the `h5`, fixes the component, runs the
+focused tests, runs `code-reviewer` only (presentational), and shows the result in one task review. No plan
+approval, no subagent, no pause before RED.

@@ -46,6 +46,15 @@ profile generation for every target and native/degraded rendering where supporte
 and packaging checks, not proof of conversational behavior.
 
 Use [the interactive ship fixtures](fixtures/ship-interaction/README.md) for manual conversation evaluations.
+
+## Contract hygiene
+
+`check.sh` also enforces `AGENTS.md` "Changing a contract": one package version in every file that names
+it; a version above main's whenever `.apm/skills` changed; no retired wording (removed checkpoints, "both
+audits", removed fields) in any shipped Markdown except `ship/references/legacy.md`; every skill
+`references/` and `scripts/` file named by its `SKILL.md` and every named one present; and the skill scripts
+compile, with `ship/scripts/removals.py` running. `check.sh` runs under macOS's bash 3.2: Python blocks go
+through `py_capture`, never a heredoc inside `"$(...)"`.
 They cover clear/ambiguous requirements, delegated choices, stalled discussion, RED resume, changed scope,
 one-task delegation, policy variants, closure/repair and autonomous regression. Give the actor only its
 request and assembled scratch repo; keep the expected behavior and follow-up turns with the evaluator.

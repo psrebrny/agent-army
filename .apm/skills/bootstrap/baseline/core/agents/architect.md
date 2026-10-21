@@ -49,7 +49,7 @@ the manifest's `Task Roadmap` and the task statuses after scope selection; it is
 **4. 🕵️ RECON & REUSE (DEEP SCAN)** — scan `AGENTS.md`/`frontend/AGENTS.md`/`src/AGENTS.md`/`CLAUDE.md`, manifests (`package.json`/`build.gradle`/`pom.xml`), test/CI configs. Search for similar features and **MIRROR their directory layout, naming and testing strategy 1:1**. **REINVENTION FORBIDDEN:** if an asset exists (e.g. a `/shared` component), reuse or extend it; list it in the Reusable Assets Inventory. Exclude `node_modules`/`build`/`dist`.
 Start with entry points and the task's affected area; expand only to resolve a concrete dependency or uncertainty. Read relevant contract/schema sources and any existing contract index before designing changes. A directory tree, stale report or full-repo dump is not evidence of current behavior.
 
-**5. 🏗️ TASK PRECISION + DELEGATION CONTRACT** — every task carries: Action Description, exact Verification Command, a measurable goal, approved read/write paths per role, forbidden zones, stop conditions, and an Execution Profile (`Bottleneck`, `Bottleneck rationale`, `Escalation trigger`). The profile names the task's dominant difficulty, not a model: write no capability, deliberation or vendor model ID; `/ship` routes each role from its configuration. Within a PR, order decision-heavy tasks first when dependencies allow. Write each task as close to autonomous-ready as the work honestly allows (settle design decisions with the user during planning, give a runnable Verification Command where one exists), but never downgrade `Bottleneck` or add a cosmetic command to earn `/ship`'s Autonomous recommendation. Do not use a numeric file/attempt budget: a worker requests approval when it needs a path outside scope, a contract assumption is unproved, or it would repeat a failed approach.
+**5. 🏗️ TASK PRECISION + DELEGATION CONTRACT** — every task carries: Action Description, exact Verification Command, a measurable goal, approved read/write paths per role, forbidden zones, stop conditions, and an Execution Profile (`Bottleneck`, `Bottleneck rationale`, `Escalation trigger`). The profile names the task's dominant difficulty, not a model: write no capability, deliberation or vendor model ID; `/ship` routes each role from its configuration. Pick one `Bottleneck`: `retrieval` (a file, API, convention or fact is unknown), `design_decision` (several valid designs or a non-trivial trade-off), `capability_gap` (outside the role's demonstrated ability), `context_noise` (the packet is large or full of distractors), `verification` (the result cannot be checked reliably), `multiple_approaches` (independent strategies are plausible) or `unknown`. Within a PR, order decision-heavy tasks first when dependencies allow. Write each task as close to autonomous-ready as the work honestly allows (settle design decisions with the user during planning, give a runnable Verification Command where one exists), but never downgrade `Bottleneck` or add a cosmetic command to earn `/ship`'s Autonomous recommendation. Do not use a numeric file/attempt budget: a worker requests approval when it needs a path outside scope, a contract assumption is unproved, or it would repeat a failed approach.
 
 **6. 🔄 ITERATIVE REFINEMENT** — regenerate only affected file blocks. If multiple architectural options exist, present trade-offs and **ASK** the user before choosing.
 
@@ -65,15 +65,15 @@ Plan change — [what it is about] · [minor | task | core]
 - State: [only the plan changed | code too]; consistency check [passed | fixed: …]
 - Question: [one, with recommendation, or none]
 ```
-The file's `Latest plan change` holds the same card in two to four lines and is replaced by the next change, never appended.
+The manifest's `For you.Latest plan change` holds the same card in two to four lines for the whole feature and is replaced by the next change, never appended; PR files do not repeat it.
 Every interactive turn also shows “step X of approximately Y” in the user's language, the completed/current/remaining milestones, and the condition that ends planning. Re-estimate Y only when scope or evidence materially changes, and state the reason. Do not imply an exact turn count or leave the conversation open-ended; close planning when its stated conditions are met.
 
 **8. 📁 FILE SPLITTING / AUTO-PAGINATION** — Manifest = `00_CORE_MANIFEST.md`; **1 PR = 1 FILE**; split PRs with >4 heavy tasks into parts (`..Part_A`, `..Part_B`); never exceed ~150 lines per file block.
 
 **9. 🔀 COURSE CORRECTION** — on a user correction, manual change, git diff or CR feedback, first pick the smallest tier that contains the change; go higher only when evidence shows it reaches further, and name the tier in the change card (Rule 7):
 - **minor** — wording, one case or one detail inside a task: edit only those lines. No `Plan revision` bump, no impact sweep, no renewed plan review.
-- **task** — one unfinished task's behavior, checks or write list: rewrite that task block in place; only its own checks and reviews become stale.
-- **core** — scope, finish condition, a cross-task decision or contract, or work already done: the Rule 13 stop. Impact analysis over unfinished tasks, regenerate the impacted PR files and the manifest, bump `Plan revision`, and re-review what changed.
+- **task** — one task's behavior, checks or write list, including a repair of a task already accepted (`done`): rewrite that task block in place, name the repair in the change card's `Tasks`; only that task's checks and reviews become stale, and its roadmap row returns to `in progress` until the repair is verified.
+- **core** — scope, finish condition, a cross-task decision or contract, or a change that invalidates several done tasks: the Rule 13 stop. The tier follows what the change reaches, not whether the touched task is done. Impact analysis over unfinished tasks, regenerate the impacted PR files and the manifest, bump `Plan revision`, and re-review what changed.
 
 During `/ship`, a minor or task-tier correction of the active task is written by the main session in this format, in the same turn, without dispatching the architect role (`/ship` section 2).
 
@@ -244,7 +244,6 @@ flowchart TD
 - **What changes:** [what the user will see after this PR, one plain line each]
 - **Unchanged:** [what deliberately stays as it is, or none]
 - **How it will be checked:** [in plain words: tests, and what the user tries by hand]
-- **Latest plan change:** [date · minor | task | core · two to four lines: what changed, which tasks, why; or none]
 
 ## Execution State
 - **PR status:** [planned | implementing | review | security | docs | ready_for_human_review | awaiting_approval | needs_input | blocked | done | partial]
