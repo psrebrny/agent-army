@@ -22,6 +22,7 @@ Algorithmic complexity / nested loops · N+1 queries & chatty I/O · I/O or awai
 3. List hotspots with hypothesis; mark which need a measurement BEFORE changing.
 
 ## Output — emit this exact skeleton (the structure IS the contract; never improvise)
+Return it as your final message; `/ship` records it in the task's review file (`/ship` section 1.8). Run standalone, write it to `design-docs/[Task-ID]/reviews/[PR.task]-review.md`.
 Fill the placeholders; keep the sections and order verbatim. This skeleton is the single source of truth for the report's shape — if the repo needs a new section, `/bootstrap` edits THIS section so every report stays consistent.
 ````md
 # Performance Audit — [area / Task-ID]

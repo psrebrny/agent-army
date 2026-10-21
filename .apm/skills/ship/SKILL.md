@@ -426,6 +426,24 @@ that same write. Touch no other manifest field.
   `ready_for_human_review`, active `none`, task `done`, final evidence and a `final review` Interaction Card.
   When the user accepts the final review, shrink the PR file to its done form (architect Rule 9).
 
+## 1.8 · WHERE ARTIFACTS GO
+Workers return their reports as their final message; `/ship` alone decides what is saved, and only here.
+Saved files are committed with the blueprint, one per role run per scope, overwritten on a re-run (current
+state; git keeps the history):
+
+| File | Written by `/ship` from | Content |
+|---|---|---|
+| `design-docs/[ID]/reviews/[PR.task]-review.md` | task-level audits | per audit run (code, security, perf when selected): verdict, then each finding as severity · what · `fixed` (how, file) / `open` (the question for the user) / `not a finding` (why) |
+| `design-docs/[ID]/reviews/PR[n]-review.md` | closure audits over the whole PR diff | the same shape |
+| `design-docs/[ID]/reviews/plan-review.md` | `plan-reviewer` | verdict, reviewed revision, findings and their resolution |
+| `design-docs/[ID]/planning-evidence.md` | `planning-analyst`, via the architect | confirmed facts and source paths the plan relies on |
+
+Nothing else is saved. RED/GREEN results live in `Last verified stage` (command, exit, counts, the decisive
+assertion); the docs result is the docs diff itself, summarized in the final-review card; coder and tester
+reports stay in the conversation. Do not store raw logs, and never cite `/tmp` or another session-only path as
+evidence. The blueprint links only to these files. In-scope findings are repaired before the file is written
+(section 4), so the review file shows what was found and how it was fixed, and the user reads one file per task.
+
 ## 2 · BLUEPRINT OR RESUME  → `architect`
 Architect writes `design-docs/[Task-ID]/00_CORE_MANIFEST.md` plus `0X_PR_*.md` (one PR per file) and
 never writes production code. Each atomic task has an API contract, a Delegation Contract, an Execution
@@ -502,7 +520,7 @@ contract indices are source context, not implementation reports. Keep the packet
   A finding that needs a new scope becomes `awaiting_approval` with the exact expansion in both modes;
 - proceed only after `APPROVED` and zero open confirmed security findings.
 
-After both reports return, persist `Active roles: none` and both verdicts. Repeat this loop until the
+After both reports return, persist `Active roles: none` and both verdicts; once in-scope repairs are verified, write the review file (section 1.8) with what was found and how it was fixed or what stays open. Repeat this loop until the
 selected PR is clean. In Interactive mode the loop also runs per task on that task's diff, keeping the PR
 `implementing` and the task `in review`; a finding that needs a decision becomes the task review's question.
 At closure it then runs once over the whole PR diff for cross-task issues. With no finding, do not add a routine review/security pause; its evidence appears in

@@ -60,6 +60,7 @@ not prove the side effect occurred exactly once. These are delivery facts, not t
 6. **Residual risk:** report remaining behavior gaps and unperformed checks with their impact and reason, not a wishlist of tests for every file.
 
 ## Output — emit this exact skeleton (the structure IS the contract; never improvise)
+Return it as your final message; it is not saved. `/ship` keeps the command, exit, counts and decisive assertion in `Last verified stage` (`/ship` section 1.8).
 Fill the placeholders; keep the sections and order verbatim. This skeleton is the single source of truth for the report's shape — if the repo needs a new section, `/bootstrap` edits THIS section so every report stays consistent.
 ````md
 # Test Report — [Task-ID] · Task [ID].x
