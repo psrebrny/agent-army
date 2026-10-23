@@ -465,7 +465,9 @@ At `light`/`none`, when no RED or baseline exists, the `task plan` names the pro
 implementation plan and write list before coding. After implementation,
 record the actual policy-appropriate verification and, in Interactive mode, pause at task review, without inventing RED/GREEN
 evidence for a test that was not run.
-Use the tester's risk-based selection and test-confidence guidance. Required repository checks remain
+Use the tester's risk-based selection and test-confidence guidance. A task plan's cases are behaviors to protect,
+not one test per changed file: name the existing tests that already detect each regression and add a new case
+only for a behavior or independent boundary they miss, including a guard a higher layer masks. Required repository checks remain
 mandatory; additional fault checks are targeted experiments, not a new gate for every task. Run mutations
 only in the tester's permitted isolated subject; never pass a mutated failure off as final verification.
 For an explicitly approved behavior-preserving refactor, substitute its passing before-change checks
@@ -489,6 +491,8 @@ the finished diff at the same time. Neither auditor receives implementation/test
 The change scope includes relevant committed, staged, unstaged and untracked files; provide the comparison
 base and source pointers so a branch-only diff cannot hide current changes. Authoritative schemas and
 contract indices are source context, not implementation reports. Keep the packet focused on affected boundaries.
+The review judges test excess as well as gaps: a duplicated or implementation-coupled test is an in-scope
+finding. Removing or merging it needs no RED; rerun the focused suite and confirm the behavior stays covered.
 
 - reviewer `CHANGES_REQUESTED` → `/ship` creates an in-scope Micro-Blueprint and writes a finding-decision
   Interaction Card. A plainly in-scope repair proceeds in both modes (Interactive reports it in the task
