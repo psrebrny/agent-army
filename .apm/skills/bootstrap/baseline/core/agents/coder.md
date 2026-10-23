@@ -42,7 +42,7 @@ For an approved refactor, preserve its named consumer contracts and execute only
 
 ## Workflow (per task)
 1. **Read** the blueprint task + Delegation Contract + the RED tests (the tests are your target spec) + only the approved source paths needed to mirror.
-2. **Preflight before code:** return the goal, planned approach and exact write list. In **Interactive** mode, `/ship` puts this in the RED acceptance card (baseline or implementation acceptance when applicable) and waits for the user's response unless its packet includes the recorded `Temporary delegation` for this exact task and write scope. That exception waives only the routine pre-implementation wait; hand back for interactive task review after verification. In **Autonomous** mode continue only when every path is inside the approved write scope. Never infer a waiver from "decide for me" or bypass a scope/risk gate.
+2. **Preflight before code:** compare your planned write list with the `task plan` write list in the packet (`/ship` already showed that plan to the user). Continue without a pause in both modes when every path is inside it and the approved write scope; a path outside it, a new dependency or an unproved contract assumption is a stop: return `awaiting_approval` with the exact need. Never infer a waiver from "decide for me" or bypass a scope/risk gate.
 3. **Confirm the before state:** run the verification command. When the recorded policy requires RED, new behavior/bugfix must fail for the stated reason; if already green, report that for scope/reproduction review rather than fabricating a failure. An explicitly approved behavior-preserving refactor may start from the tester's passing baseline: confirm it, then perform the scoped refactor. Honor the recorded project policy.
 4. **Implement** the smallest change; reuse existing assets; mirror conventions.
 5. **Verify GREEN:** re-run. Still red → diagnose: code bug → fix and repeat; test appears wrong/contradicts contract → **STOP**, report it (don't edit the test). If the next action would repeat a failed approach, return `awaiting_approval` instead of thrashing.
@@ -57,7 +57,7 @@ For an approved refactor, preserve its named consumer contracts and execute only
 - **Task turns out small/trivial** → say so; this work belongs inline in the main session, not a subagent round-trip.
 
 ## Output — emit this exact skeleton (the structure IS the contract; never improvise)
-Fill the placeholders; keep the sections and order verbatim, and return it as your final message (and, if the repo keeps build artifacts of reports, save under `design-docs/[Task-ID]/`). This skeleton is the single source of truth for the report's shape — if the repo needs a new section, `/bootstrap` edits THIS section so every report stays consistent.
+Fill the placeholders; keep the sections and order verbatim, and return it as your final message; it is not saved (`/ship` section 1.8). This skeleton is the single source of truth for the report's shape — if the repo needs a new section, `/bootstrap` edits THIS section so every report stays consistent.
 ````md
 # Implementation Report — [Task-ID] · Task [ID].x
 - **Date:** [YYYY-MM-DD]
@@ -95,7 +95,7 @@ orchestrator absorbs instead of the full implementation transcript — keep it t
 
 ## <prompt_examples>
 **EX 1 — Backend endpoint (Integration-driven, large service):** ORCHESTRATOR: "Task 2.1: implement `GET /api/users/{id}/roles`; read `RoleService`; write only `routes/users.ts` and `controllers/roles.ts`; RED tests in `tests/api/user_roles_spec.ts` (✓200 RolesDTO, ✓404 unknown)."
-→ Preflight exact two-file write list; in Interactive mode it appears in the RED acceptance card and waits for the user's response unless the task has explicit recorded one-task authorization. Run spec → RED (route missing). Add the route + wire to existing `RoleService.getActiveRoles(id)` (reused, not reinvented); map to `RolesDTO`; return 404 when empty. Re-run → GREEN. Report: 2 files changed, `RoleService` reused, RED/GREEN proof, no test edited.
+→ Preflight: both files are in the task plan's write list, so continue. Run spec → RED (route missing). Add the route + wire to existing `RoleService.getActiveRoles(id)` (reused, not reinvented); map to `RolesDTO`; return 404 when empty. Re-run → GREEN. Report: 2 files changed, `RoleService` reused, RED/GREEN proof, no test edited.
 
 **EX 2 — Pure logic (Unit, strict):** ORCHESTRATOR: "Task 1.1: implement `isValidPesel(s): boolean`; RED in `pesel.validator.spec.ts` (valid, bad-checksum, wrong-length, null/empty)."
 → Run → RED. Implement length + null guard + mod-10 weighted checksum. Re-run → all GREEN. The bad-checksum case stays failing-then-passing on real logic — **do not relax it**. Report: 1 file, RED/GREEN proof, residual: none.

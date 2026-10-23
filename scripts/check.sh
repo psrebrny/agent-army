@@ -15,6 +15,19 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BASE="$ROOT/.apm/skills/bootstrap/baseline"
 SKILLS_DIR="$ROOT/.apm/skills"
 
+# bash 3.2 (macOS) cannot parse a quoted heredoc inside "$(...)" when its body holds backticks or
+# unbalanced quotes, so Python blocks run through this helper: the heredoc feeds the function's stdin,
+# stdout lands in PY_OUT, and the exit status is returned. --merge also captures stderr.
+py_capture() {
+  local merge=0 tmp rc
+  if [ "${1:-}" = --merge ]; then merge=1; shift; fi
+  tmp="$(mktemp)"
+  if [ "$merge" = 1 ]; then python3 - "$@" >"$tmp" 2>&1; else python3 - "$@" >"$tmp"; fi
+  rc=$?
+  PY_OUT="$(cat "$tmp")"; rm -f "$tmp"
+  return $rc
+}
+
 # --target-dir <dir> retargets the agent checks at a GENERATED tool dir
 # (e.g. <repo>/.claude). Default: validate the source baseline. Parsed early so the
 # rest of the script just reads BASE/AGENTS_DIR.
@@ -51,7 +64,7 @@ if [ -n "$TARGET_DIR" ] && [ "$V2_TARGET" = 0 ] && command -v python3 >/dev/null
   # Basename-as-tool-name (.opencode -> opencode) holds for most tools, but NOT Copilot
   # (config_root .github, tool name copilot) — so reverse-lookup by dirs.config_root first;
   # basename convention is the fallback for tools that follow it.
-  DESC_FILE="$(python3 - "$TOOLS_DIR" "$DIR_BASENAME" <<'PY'
+  py_capture "$TOOLS_DIR" "$DIR_BASENAME" <<'PY'
 import sys, glob, os, yaml
 tools_dir, want = sys.argv[1], sys.argv[2]
 for f in sorted(glob.glob(os.path.join(tools_dir, '*.yml'))):
@@ -63,7 +76,7 @@ for f in sorted(glob.glob(os.path.join(tools_dir, '*.yml'))):
         print(f)
         break
 PY
-)"
+  DESC_FILE="$PY_OUT"
   [ -n "$DESC_FILE" ] || DESC_FILE="$TOOLS_DIR/$DIR_BASENAME.yml"
   [ -f "$DESC_FILE" ] || DESC_FILE="$TOOLS_DIR/_default.yml"
   TOOL_NAME="$(basename "$DESC_FILE" .yml)"
@@ -72,18 +85,7 @@ PY
     # feature or a careless PR could put shell metacharacters in a tools/<tool>.yml value).
     # Emit tab-delimited KEY<TAB>VALUE lines and assign via a `case` on the key, so a value can
     # never be interpreted as shell syntax, only ever stored as a plain string.
-    while IFS="$(printf '\t')" read -r _k _v; do
-      case "$_k" in
-        DESC_AGENTS_SUB)    DESC_AGENTS_SUB="$_v" ;;
-        DESC_AGENT_SUFFIX)  DESC_AGENT_SUFFIX="$_v" ;;
-        DESC_HOOKS_SUB)     DESC_HOOKS_SUB="$_v" ;;
-        DESC_ACCEPTS_TOOLS) DESC_ACCEPTS_TOOLS="$_v" ;;
-        DESC_SUBAGENTS)     DESC_SUBAGENTS="$_v" ;;
-        DESC_HOOK_MECH)     DESC_HOOK_MECH="$_v" ;;
-        DESC_HOOKS_LIVE)    DESC_HOOKS_LIVE="$_v" ;;
-      esac
-    done <<PYOUT
-$(python3 - "$DESC_FILE" <<'PY'
+    py_capture "$DESC_FILE" <<'PY'
 import sys, yaml
 d = yaml.safe_load(open(sys.argv[1]))
 def g(*path):
@@ -109,8 +111,17 @@ rows = [
 for k, v in rows:
     print(f"{k}\t{v}")
 PY
-)
-PYOUT
+    while IFS="$(printf '\t')" read -r _k _v; do
+      case "$_k" in
+        DESC_AGENTS_SUB)    DESC_AGENTS_SUB="$_v" ;;
+        DESC_AGENT_SUFFIX)  DESC_AGENT_SUFFIX="$_v" ;;
+        DESC_HOOKS_SUB)     DESC_HOOKS_SUB="$_v" ;;
+        DESC_ACCEPTS_TOOLS) DESC_ACCEPTS_TOOLS="$_v" ;;
+        DESC_SUBAGENTS)     DESC_SUBAGENTS="$_v" ;;
+        DESC_HOOK_MECH)     DESC_HOOK_MECH="$_v" ;;
+        DESC_HOOKS_LIVE)    DESC_HOOKS_LIVE="$_v" ;;
+      esac
+    done <<<"$PY_OUT"
     [ -n "$DESC_AGENTS_SUB" ] && AGENTS_DIR="$BASE/$DESC_AGENTS_SUB"
   fi
 fi
@@ -271,7 +282,7 @@ check_tools_descriptors() {
   local f name
   for f in "$TOOLS_DIR"/*.yml; do
     name="$(basename "$f")"
-    RC="$(python3 - "$f" <<'PY'
+    py_capture "$f" <<'PY'
 import sys, yaml
 req = {"dirs", "frontmatter", "capabilities", "model_control", "hooks_live"}
 try:
@@ -293,7 +304,7 @@ allowed = {"per_spawn", "per_role_static", "inherit", "unsupported"}
 invalid = {k: v for k, v in mc.items() if k in need_mc and v not in allowed}
 print(f"MODEL_CONTROL_INVALID {invalid}" if invalid else "OK")
 PY
-)"
+    RC="$PY_OUT"
     case "$RC" in
       OK) ok "$name: valid YAML, all required keys present" ;;
       PARSE_ERROR*) bad "$name: $RC" ;;
@@ -303,7 +314,7 @@ PY
     esac
   done
   # bootstrap.py reads dirs.skills with a dependency-free line parser; it must agree with YAML.
-  RC="$(PYTHONDONTWRITEBYTECODE=1 python3 - "$ROOT/.apm/skills/bootstrap/bootstrap.py" "$TOOLS_DIR" <<'PY'
+  PYTHONDONTWRITEBYTECODE=1 py_capture "$ROOT/.apm/skills/bootstrap/bootstrap.py" "$TOOLS_DIR" <<'PY'
 import importlib.util, pathlib, sys, yaml
 spec = importlib.util.spec_from_file_location("agent_army_bootstrap", sys.argv[1])
 module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
@@ -315,7 +326,7 @@ for f in sorted(pathlib.Path(sys.argv[2]).glob("*.yml")):
         wrong.append(f"{f.stem}: {got} != {want}")
 print("WRONG " + "; ".join(wrong) if wrong else "OK")
 PY
-)"
+  RC="$PY_OUT"
   [ "$RC" = OK ] && ok "bootstrap.py skills_dir() matches dirs.skills in every descriptor" || bad "bootstrap.py skills_dir() disagrees with descriptors: ${RC#WRONG }"
 }
 
@@ -419,42 +430,45 @@ check_skill() {
   [ -n "$(yaml_key "$f" name)" ] && ok "has name" || bad "missing 'name:'"
   [ -n "$(yaml_key "$f" description)" ] && ok "has description" || bad "missing 'description:'"
   if [ "$base" = "ship" ]; then
-    if grep -q 'RESOLVE THE EXECUTION SCOPE' "$f" \
-      && grep -q 'no argument → resume the single unfinished task or PR only when exactly one exists' "$f" \
-      && grep -q 'MODEL & EFFORT ROUTING' "$f" \
-      && grep -q 'MANDATORY BLUEPRINT + ROUTING + SCOPE GATE' "$f" \
-      && grep -q 'SCOPE-AWARE ROUTING' "$f" \
-      && grep -q 'Per-role static routing' "$f" \
-      && grep -q 'Inherit fallback' "$f" \
-      && grep -q 'Autonomous' "$f" \
-      && grep -q 'Interactive' "$f" \
-      && grep -q 'INTERACTION CARD' "$f" \
-      && grep -q 'Interaction policy: supervised' "$f" \
-      && grep -q 'migrated to interactive' "$f" \
-      && grep -q 'resumes as `task plan`' "$f" \
-      && grep -q 'task-review Interaction Card' "$f" \
-      && grep -q 'behavior, significant cases, verification and exact write list' "$f" \
-      && grep -q 'focused diff summary, GREEN' "$f" \
-      && grep -q 'PERSIST EVERY ROLE TRANSITION' "$f" \
-      && grep -q 'switch and continue | stay current' "$f" \
-      && grep -q 'then re-run both review' "$f" \
-      && grep -q 'verdict directly to coder' "$f" \
-      && grep -q 'Final review is a pause in both modes' "$f" \
-      && grep -q 'ready_for_human_review' "$f" \
-      && grep -q 'Never change a' "$f" \
-      && grep -q 'UI/CLI/API model' "$f" \
-      && grep -q 'legacy value on read' "$f" \
-      && grep -q '`do zrobienia` → `open`, `w trakcie` → `in progress`, `do testów` → `in testing`, `do review` → `in review`, `wykonane` → `done`, `czeka na decyzję` → `awaiting decision`, `zablokowane` → `blocked`, `warunkowe` → `conditional`' "$f" \
-      && [ "$(grep -cE 'do zrobienia|w trakcie|do testów|wykonane|czeka na decyzję|zablokowane|warunkowe' "$f")" -eq 1 ]; then
+    # The skill folder is one contract: SKILL.md plus the reference files it reads on demand.
+    local g; g="$(mktemp)"; cat "$f" "$(dirname "$f")"/references/*.md > "$g"
+    if grep -q 'RESOLVE THE EXECUTION SCOPE' "$g" \
+      && grep -q 'no argument → resume the single unfinished task or PR only when exactly one exists' "$g" \
+      && grep -q 'MODEL & EFFORT ROUTING' "$g" \
+      && grep -q 'MANDATORY BLUEPRINT + ROUTING + SCOPE GATE' "$g" \
+      && grep -q 'SCOPE-AWARE ROUTING' "$g" \
+      && grep -q 'Per-role static routing' "$g" \
+      && grep -q 'Inherit fallback' "$g" \
+      && grep -q 'Autonomous' "$g" \
+      && grep -q 'Interactive' "$g" \
+      && grep -q 'INTERACTION CARD' "$g" \
+      && grep -q 'Interaction policy: supervised' "$g" \
+      && grep -q 'migrated to interactive' "$g" \
+      && grep -q 'resumes as `task plan`' "$g" \
+      && grep -q 'task-review Interaction Card' "$g" \
+      && grep -q 'behavior, significant cases, verification and exact write list' "$g" \
+      && grep -q 'focused diff summary, GREEN' "$g" \
+      && grep -q 'PERSIST EVERY ROLE TRANSITION' "$g" \
+      && grep -q 'switch and continue | stay current' "$g" \
+      && grep -q 'then re-run the selected audits' "$g" \
+      && grep -q 'verdict directly to coder' "$g" \
+      && grep -q 'Final review is a pause in both modes' "$g" \
+      && grep -q 'ready_for_human_review' "$g" \
+      && grep -q 'Never change a' "$g" \
+      && grep -q 'UI/CLI/API model' "$g" \
+      && grep -q 'legacy value on read' "$g" \
+      && grep -q '`do zrobienia` → `open`, `w trakcie` → `in progress`, `do testów` → `in testing`, `do review` → `in review`, `wykonane` → `done`, `czeka na decyzję` → `awaiting decision`, `zablokowane` → `blocked`, `warunkowe` → `conditional`' "$g" \
+      && [ "$(grep -cE 'do zrobienia|w trakcie|do testów|wykonane|czeka na decyzję|zablokowane|warunkowe' "$g")" -eq 1 ]; then
       ok "ship interaction modes, routing and closure loop are explicit"
     else
       bad "ship missing resolve, routing or closure-loop rule"
     fi
+    rm -f "$g"
   fi
   if [ "$base" = "adapt-army" ]; then
     if grep -q 'Army Improvement Proposal' "$f" \
       && grep -q 'state.json' "$f" \
-      && grep -q 'live relevant `.agents/skills' "$f" \
+      && grep -q 'live relevant `<skill>/SKILL.md`' "$f" \
       && grep -q 'no raw user message, secret, blueprint path or `design-docs` reference' "$f" \
       && grep -q '/new-skill' "$f" \
       && grep -q 'Never silently mutate' "$f"; then
@@ -491,7 +505,10 @@ check_interaction_contract() {
   if python3 - "$ROOT" <<'PY_CONTRACT'
 import pathlib, re, sys
 root = pathlib.Path(sys.argv[1])
-ship = (root / '.apm/skills/ship/SKILL.md').read_text()
+ship_dir = root / '.apm/skills/ship'
+ship = (ship_dir / 'SKILL.md').read_text()
+# Rules moved to references/ still belong to the ship contract.
+ship_all = ship + ''.join(f.read_text() for f in sorted((ship_dir / 'references').glob('*.md')))
 architect = (root / '.apm/skills/bootstrap/baseline/core/agents/architect.md').read_text()
 
 def fields(text, heading):
@@ -524,6 +541,17 @@ try:
     assert '**Small corrections stay small.**' in ship and 'Never ask the user to\n  approve the plan of a fix they just asked for.' in ship, 'ship lost the small-correction fast path'
     reviewer = (root / '.apm/skills/bootstrap/baseline/core/agents/code-reviewer.md').read_text()
     assert '**UI SEMANTICS**' in reviewer and '**ACCESSIBLE UI:**' in architect, 'UI accessibility basics missing from reviewer or architect'
+    assert '## 1.8 · WHERE ARTIFACTS GO' in ship and 'never cite `/tmp`' in ship, 'ship lost the artifact convention'
+    agents = root / '.apm/skills/bootstrap/baseline/core/agents'
+    for role in ('code-reviewer', 'security-auditor', 'perf-auditor', 'tester', 'coder', 'docs-writer', 'plan-reviewer', 'planning-analyst'):
+        assert '`/ship` section 1.8' in (agents / f'{role}.md').read_text(), f'{role} does not point at the artifact convention'
+    assert '**README AT FEATURE LEVEL**' in (agents / 'docs-writer.md').read_text(), 'docs-writer lost the README altitude rule'
+    assert '| final | Whole-feature audit' in architect and '**Whole-feature audit.**' in ship_all and 'reviews/feature-review.md' in ship_all, 'whole-feature audit missing from plan or executor'
+    assert '**removals across the whole feature:**' in (agents / 'code-reviewer.md').read_text(), 'feature-mode removals check missing'
+    # One closure order, a task is done at its accepted review, and every audit packet carries the removal list.
+    assert '**Closure, in this order, when every task of the PR is `done`:**' in ship_all and 'references/closure.md' in ship, 'ship lost the single closure order'
+    assert 'the task review accepted → `done`' in ' '.join(ship.split()), 'task done mapping must follow the accepted task review'
+    assert 'scripts/removals.py' in ship, 'audit packets lost the removal list'
     session = fields(architect, 'Planning Session')
     assert set(session) == {'Stage', 'Progress', 'Open question', 'Decisions', 'Evidence', 'Plan revision', 'Review', 'Next action'}, 'Planning Session fields changed'
     state = fields(architect, 'Execution State')
@@ -558,8 +586,8 @@ launch-readiness product"
 # names its stage, and embeds no copy; the stores.json example parses and never allows `delete`.
 # Size is printed for information only (D17).
 check_advisor_contract() {
-  local out
-  if out="$(python3 - "$SKILLS_DIR" $PRODUCT_SKILLS 2>&1 <<'PY_ADVISOR'
+  local out rc
+  py_capture --merge "$SKILLS_DIR" $PRODUCT_SKILLS <<'PY_ADVISOR'
 import json, pathlib, re, sys
 skills = pathlib.Path(sys.argv[1]); product = sys.argv[2:]
 contract = skills / 'product' / 'advisor-contract.md'
@@ -618,7 +646,8 @@ for e in errors:
 print(f'COUNT {count}')
 sys.exit(1 if errors else 0)
 PY_ADVISOR
-)"; then
+  rc=$?; out="$PY_OUT"
+  if [ "$rc" -eq 0 ]; then
     ok "advisor contract shared by ${out##*COUNT } product skills (pointer, stage, objective, ≤ 12 rules)"
     case "$out" in *SIZE*) local size="${out#*SIZE }"; printf '    contract file: %s\n' "${size%%$'\n'*}" ;; esac
   else
@@ -631,8 +660,8 @@ PY_ADVISOR
 # The interaction-pace:v1 paragraph is copied verbatim into the advisor contract, /ship and
 # the baseline AGENTS.md. Every copy that exists must match the contract's.
 check_interaction_pace() {
-  local out
-  if out="$(python3 - "$ROOT" 2>&1 <<'PY_PACE'
+  local out rc
+  py_capture --merge "$ROOT" <<'PY_PACE'
 import pathlib, sys
 root = pathlib.Path(sys.argv[1])
 OPEN, CLOSE = '<!-- interaction-pace:v1 -->', '<!-- /interaction-pace:v1 -->'
@@ -659,7 +688,8 @@ for e in errors:
 print(f'COUNT {len(copies)}')
 sys.exit(1 if errors else 0)
 PY_PACE
-)"; then
+  rc=$?; out="$PY_OUT"
+  if [ "$rc" -eq 0 ]; then
     ok "interaction-pace:v1 identical in ${out##*COUNT } present copies"
   else
     while IFS= read -r line; do
@@ -671,8 +701,8 @@ PY_PACE
 # One ADR dialect per target repo: the docs-writer skeleton and the advisor contract carry the
 # same field names and the same status set (PR 6, Task 6.2).
 check_adr_parity() {
-  local out
-  if out="$(python3 - "$ROOT" 2>&1 <<'PY_ADR'
+  local out rc
+  py_capture --merge "$ROOT" <<'PY_ADR'
 import pathlib, re, sys
 root = pathlib.Path(sys.argv[1])
 srcs = {'docs-writer': '.apm/skills/bootstrap/baseline/core/agents/docs-writer.md',
@@ -698,7 +728,8 @@ for e in errors:
     print(e)
 sys.exit(1 if errors else 0)
 PY_ADR
-)"; then
+  rc=$?; out="$PY_OUT"
+  if [ "$rc" -eq 0 ]; then
     ok "ADR template identical in docs-writer and advisor contract"
   else
     while IFS= read -r line; do bad "$line"; done <<<"$out"
@@ -715,7 +746,7 @@ PY_ADR
 # (f) WARN when a product skill's SKILL.md hash or contract tag differs from its latest SCORECARDS row.
 check_package_rules() {
   local out line
-  out="$(python3 - "$ROOT" $PRODUCT_SKILLS 2>&1 <<'PY_PACKAGE'
+  py_capture --merge "$ROOT" $PRODUCT_SKILLS <<'PY_PACKAGE'
 import ast, hashlib, pathlib, re, sys
 root = pathlib.Path(sys.argv[1]); product = sys.argv[2:]
 apm = root / '.apm'
@@ -902,7 +933,7 @@ else:
 if unevaluated:
     emit('INFO', 'no SCORECARDS row yet: ' + ', '.join(unevaluated))
 PY_PACKAGE
-)"
+  out="$PY_OUT"
   while IFS=$'\t' read -r kind line; do
     case "$kind" in
       OK) ok "$line" ;;
@@ -910,6 +941,119 @@ PY_PACKAGE
       WARN) warn "$line" ;;
       INFO) printf '    %s\n' "$line" ;;
       *) [ -n "$kind$line" ] && bad "package rules: $kind $line" ;;
+    esac
+  done <<<"$out"
+}
+
+# Contract hygiene (AGENTS.md "Changing a contract"). Each rule prints one ok/bad/warn line:
+# (a) every place that names the package version agrees with armylib.PACKAGE_VERSION;
+# (b) a branch that changes shipped content (.apm/skills) carries a version above its base's;
+# (c) retired wording appears in no shipped contract (only the legacy reference may name it);
+# (d) a skill's reference/script files and the paths its SKILL.md names match both ways;
+# (e) helper scripts compile and removals.py runs.
+check_contract_hygiene() {
+  local out kind line
+  py_capture --merge "$ROOT" <<'PY_HYGIENE'
+import pathlib, re, subprocess, sys
+root = pathlib.Path(sys.argv[1]); skills = root / '.apm/skills'
+def emit(kind, msg): print(f'{kind}\t{msg}')
+def git(*a):
+    r = subprocess.run(['git', '-C', str(root), *a], capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else None
+
+# (a) one version everywhere
+ver = re.search(r'PACKAGE_VERSION = "([^"]+)"', (skills / 'bootstrap/armylib.py').read_text()).group(1)
+places = {
+    'apm.yml': (root / 'apm.yml', r'^version: (\S+)'),
+    'bootstrap.py docstring': (skills / 'bootstrap/bootstrap.py', r'\(package (\S+), profile schema'),
+    'bootstrap SKILL.md': (skills / 'bootstrap/SKILL.md', r'Agent Army v(\d[\w.]*)\.'),
+    'AGENTS.md': (root / 'AGENTS.md', r'deterministic (\S+) generator'),
+}
+wrong = []
+for name, (path, rx) in places.items():
+    m = re.search(rx, path.read_text(), re.M)
+    if not m or m.group(1) != ver:
+        wrong.append(f'{name}: {m.group(1) if m else "missing"}')
+emit('BAD' if wrong else 'OK', f'version {ver} disagrees in ' + ', '.join(wrong) if wrong else f'version {ver} is the same in armylib, apm.yml, bootstrap and AGENTS.md')
+
+# (b) shipped change => bumped version
+base = None
+for ref in ('origin/main', 'main'):
+    base = git('merge-base', 'HEAD', ref)
+    if base:
+        break
+if not base:
+    emit('WARN', 'no main branch to compare the version with; skipped the bump check')
+else:
+    changed = subprocess.run(['git', '-C', str(root), 'diff', '--quiet', base, '--', '.apm/skills'], capture_output=True).returncode != 0
+    old = git('show', f'{base}:.apm/skills/bootstrap/armylib.py') or ''
+    m = re.search(r'PACKAGE_VERSION = "([^"]+)"', old)
+    old_ver = m.group(1) if m else None
+    key = lambda v: tuple(int(x) for x in re.findall(r'\d+', v))
+    if not changed:
+        emit('OK', 'no shipped content changed since main; no version bump needed')
+    elif old_ver and key(ver) <= key(old_ver):
+        emit('BAD', f'.apm/skills changed since main but the version is still {ver} (main: {old_ver}); bump it, or installed repos keep the old contracts')
+    else:
+        emit('OK', f'shipped content changed and the version moved {old_ver} -> {ver}')
+
+# (c) retired wording
+RETIRED = {
+    'RED acceptance': 'removed checkpoint (folded into task plan)',
+    'baseline acceptance': 'removed checkpoint',
+    'implementation acceptance': 'removed checkpoint',
+    'both review': 'audits are selected by risk; say "the selected audits"',
+    'both audits': 'audits are selected by risk; say "the selected audits"',
+    'both required reviews': 'audits are selected by risk',
+    'Last confirmed action': 'removed Planning Session field',
+    'Deferred ideas': 'side ideas go to the manifest Out of scope',
+    'Last manual configuration': 'merged into the Routing line',
+}
+LEGACY_OK = {skills / 'ship/references/legacy.md'}
+contracts = [p for p in skills.rglob('*.md') if p not in LEGACY_OK]
+hits = []
+for p in contracts:
+    for n, line in enumerate(p.read_text().splitlines(), 1):
+        if 'Older blueprint' in line:
+            continue  # the architect's migration edge case names legacy fields on purpose
+        for phrase, why in RETIRED.items():
+            if phrase in line:
+                hits.append(f'{p.relative_to(root)}:{n} "{phrase}" ({why})')
+emit('BAD' if hits else 'OK', 'retired wording still in contracts: ' + '; '.join(hits) if hits else f'no retired wording in {len(contracts)} shipped Markdown files')
+
+# (d) reference files <-> SKILL.md
+bad = []
+for skill in sorted(d for d in skills.iterdir() if (d / 'SKILL.md').is_file()):
+    text = (skill / 'SKILL.md').read_text()
+    named = set(re.findall(r'`((?:references|scripts)/[\w./-]+)`', text))
+    for rel in named:
+        if not (skill / rel).is_file():
+            bad.append(f'{skill.name}: names missing {rel}')
+    for sub in ('references', 'scripts'):
+        for f in sorted((skill / sub).glob('*')) if (skill / sub).is_dir() else []:
+            if f.is_file() and f'{sub}/{f.name}' not in named:
+                bad.append(f'{skill.name}: {sub}/{f.name} is never named in SKILL.md')
+emit('BAD' if bad else 'OK', '; '.join(bad) if bad else 'every skill reference/script file is named by its SKILL.md and exists')
+
+# (e) helper scripts
+errs = []
+for f in sorted(skills.glob('*/scripts/*.py')):
+    try:
+        compile(f.read_text(), str(f), 'exec')
+    except SyntaxError as e:
+        errs.append(f'{f.relative_to(root)}: {e}')
+r = subprocess.run([sys.executable, str(skills / 'ship/scripts/removals.py'), 'HEAD'], cwd=root, capture_output=True, text=True)
+if r.returncode != 0 or '# Removals since' not in r.stdout:
+    errs.append('ship/scripts/removals.py HEAD failed: ' + (r.stderr.strip() or r.stdout[:80]))
+emit('BAD' if errs else 'OK', '; '.join(errs) if errs else 'skill scripts compile and removals.py runs')
+PY_HYGIENE
+  out="$PY_OUT"
+  while IFS=$'\t' read -r kind line; do
+    case "$kind" in
+      OK) ok "$line" ;;
+      BAD) bad "$line" ;;
+      WARN) warn "$line" ;;
+      *) [ -n "$kind$line" ] && bad "contract hygiene: $kind $line" ;;
     esac
   done <<<"$out"
 }
@@ -965,6 +1109,8 @@ if [ "$do_skills" = 1 ] && [ -z "$TARGET_DIR" ]; then
   check_adr_parity
   printf '\n\033[1m• package rules\033[0m\n'
   check_package_rules
+  printf '\n\033[1m• contract hygiene\033[0m\n'
+  check_contract_hygiene
 fi
 if [ "$do_pack" = 1 ]; then
   printf '\n\033[1m• package (apm)\033[0m\n'

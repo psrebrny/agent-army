@@ -25,7 +25,8 @@ No build step, no test suite, no installer script — apm is the install mechani
 - `.apm/README.md` — the user-facing catalog: stage model, record stores, every skill, the `/ship` boundary table, ADRs.
 - `.apm/SOURCES.md` — attribution for borrowed methods (repo · file · commit · license). Source repo only: APM installs just the skill folders, so each skill also names its source and license inline.
 - `.apm/commands/` — thin command wrappers for tools that surface a `command/` dir rather than `skills/`; each just points at the matching `.agents/skills/<skill>/SKILL.md`. Claude does not use them: there the skills are native in `.claude/skills`. The skills may be installed globally or per repo; `/bootstrap` never copies them. (apm's own placement varies by tool/version; when a native command isn't registered, invoke the skill directly by its `.agents/skills/…/SKILL.md` path.)
-- `.apm/skills/bootstrap/bootstrap.py` — deterministic 0.5.4 generator/migrator (profile schema v3, no target): `python3 bootstrap.py [--visibility committed|gitignore|exclude] [--mode auto|incremental|full] [--runtime-hooks …] [--git-precommit …] [--ci …] [--tool <tool>]`. It creates `.agent-army/agents/*.agent` role contracts (the only copy), `.agent-army/config.json` with per-tool `model_routing.tools`, optional `.agent-army/runtime.py` and `.apm/hooks` (rendered through APM only with `--tool`). Migrating a 0.3/0.4 profile removes the native role copies those versions rendered when identical to the contract. `assemble.sh` is a no-APM compatibility wrapper.
+- `.apm/skills/bootstrap/bootstrap.py` — deterministic 0.6.1 generator/migrator (profile schema v3, no target): `python3 bootstrap.py [--visibility committed|gitignore|exclude] [--mode auto|incremental|full] [--runtime-hooks …] [--git-precommit …] [--ci …] [--tool <tool>]`. It creates `.agent-army/agents/*.agent` role contracts (the only copy), `.agent-army/config.json` with per-tool `model_routing.tools`, optional `.agent-army/runtime.py` and `.apm/hooks` (rendered through APM only with `--tool`). Migrating a 0.3/0.4 profile removes the native role copies those versions rendered when identical to the contract. `assemble.sh` is a no-APM compatibility wrapper.
+- `.apm/skills/ship/` — `SKILL.md` (orchestration every run needs), `references/routing.md` and `references/legacy.md` (read on demand), `scripts/removals.py` (the removal list for audit packets).
 - `.apm/skills/bootstrap/army.py` — read-only resolver every skill can call relative to itself (`../bootstrap/army.py`): `locate [--cwd DIR] [--army-root DIR]` prints the Git `repo_root`, the selected `army_root`, profile (`specialized`/`baseline`), dispatch mode and per-role contract + model for a tool; `role <name>` prints a contract with the same selection. Path and scope rules: `bootstrap/references/repository-context.md`; regression suite: `bootstrap/tests/test_army.py` (run by `smoke.sh`). Shared constants live in `armylib.py`.
 - `.apm/skills/bootstrap/baseline/` — **the single source of truth** for everything `/bootstrap` installs:
   - `core/agents/` — nine source role definitions + `_STANDARD.md`; bootstrap materializes them as `.agent-army/agents/*.agent`, and skills use them directly as baseline roles in a repo without a profile.
@@ -66,7 +67,7 @@ scripts/check.sh --target-dir <dir>   # validate a MATERIALIZED tool dir (e.g. a
 ```
 **Advisor evaluation — `.claude/skills/advisor-eval/SKILL.md`** (maintainer tool, never shipped). It runs one product skill (arm N) against a plain session (arm K) through the scenario fixtures in `tests/fixtures/advisors/`, with a simulated user and a blind judge, and appends one row to `tests/fixtures/advisors/SCORECARDS.md`. Claude Code calls it as `/advisor-eval <advisor> --scenario <id>`; any other tool follows that `SKILL.md` by path and runs `python3 .claude/skills/advisor-eval/run.py <advisor> --scenario <id>` (first with `--plan-only`; it needs the `claude` CLI). **Rule: any change to a product skill → re-run `advisor-eval` for that advisor; any change to the shared `product/advisor-contract.md` → re-run it for all fourteen**; `check.sh` warns while a skill's fingerprint (its `SKILL.md` plus the shared contract) or the contract tag differs from its latest row. See `tests/GUIDE.md` for the protocol.
 
-**Releasing a new version:** bump `PACKAGE_VERSION` in `armylib.py` and `version` in `apm.yml` together; `scripts/smoke.sh` migrates a real profile made by the previous release's generator (extracted from its commit).
+**Releasing a new version:** bump `PACKAGE_VERSION` in `armylib.py` and `version` in `apm.yml` together; `scripts/smoke.sh` migrates a real profile made by the previous release's generator (extracted from its commit). When to bump: see "Changing a contract" rule 1.
 
 **Generator preview — `python3 .apm/skills/bootstrap/bootstrap.py --mode auto --dry-run`** prints what the profile would create or migrate.
 
@@ -87,6 +88,48 @@ frontmatter with justified `model` choice, Role & Purpose, Principles (BAD/GOOD 
 Scope, Workflow, Output, Edge cases, ≥2 concrete `<prompt_examples>` with real paths.
 
 Model tiers: `opus` = hard reasoning/planning; `sonnet` = review/test; `haiku` = cheap/high-volume.
+
+## Changing a contract
+
+A contract is any shipped file under `.apm/skills/` that tells an agent what to do: a role in
+`baseline/core/agents/`, a skill's `SKILL.md`, the baseline `AGENTS.md`, a blueprint skeleton. These rules
+exist because each was broken once and reached `main` unnoticed.
+
+1. **Every merge that changes shipped content bumps the version.** `bootstrap.py --mode auto` treats a
+   profile with the same version as current and migrates nothing, so an unbumped change never reaches an
+   installed repo. Bump minor when a blueprint/state shape, status, checkpoint or profile field changes,
+   patch otherwise, and update every place that names the version (`armylib.py`, `apm.yml`, `bootstrap.py`
+   docstring, bootstrap `SKILL.md` description, this file; `smoke.sh` reads it). `check.sh` fails when
+   `.apm/skills` changed since main and the version did not move, or when these places disagree.
+2. **One owner per rule.** A rule lives in the contract of the role that performs it; `ship` holds only
+   orchestration: who runs, when, which state is written, where it pauses. `ship` points to a role rule
+   (`code-reviewer` feature mode) instead of restating it. Before adding a rule, grep whether it already
+   exists elsewhere; change that copy instead of adding a second one. A skeleton holds each fact in one field.
+3. **Removing or narrowing is a sweep, not an edit.** When a field, status, checkpoint, section or role is
+   removed or renamed, or a step becomes conditional (an audit selected by risk), grep `.apm/`, `tests/`
+   and `scripts/` for the old name and for wording that assumes the old behavior (`both audits`, `always`,
+   the old card name), and fix every hit, including other roles, examples, fixtures and frontmatter
+   `description`. Then add the old wording to `RETIRED` in `check.sh` (contract hygiene), which scans every
+   shipped Markdown file; only `ship/references/legacy.md` and the architect's "Older blueprint" edge case may
+   name it.
+4. **Walk the lifecycle before committing a flow change.** A change to statuses, pauses, stage order or
+   closure is checked on paper against one scenario: Interactive, one feature of two PRs, a task accepted at
+   task review, a small correction of that accepted task, a review finding, PR closure, the final
+   whole-feature audit and commit. Each status transition and each pause must happen exactly once, in an order
+   every contract agrees on. Name the scenario result in the PR body.
+5. **Checks run, or the gap is fixed.** Run `scripts/check.sh` and `scripts/smoke.sh` before every commit.
+   `check.sh` must parse with macOS's default bash 3.2: run a Python block through `py_capture`, never as a
+   heredoc inside `"$(...)"`. If a check cannot run, fix the runner in the same
+   change; never work around it silently, and say in the PR body which checks ran.
+6. **Keep `SKILL.md` to what every run needs.** A skill folder is installed whole, so put content needed only
+   in some runs (a rare fallback, migration of old formats, long tables) in `references/<topic>.md`, and a
+   step a program can do exactly (listing removals, resolving paths) in `scripts/<name>.py` (stdlib only,
+   read-only unless the skill says otherwise). `SKILL.md` names each file with the condition for reading or
+   running it, e.g. "read `references/legacy.md` when the PR file has an older shape"; `check.sh` fails on an
+   unnamed or missing file. A role contract stays one file: a subagent receives only that file's text.
+7. **Review the whole diff against the base before merge**, including removed lines (`git diff
+   <base>...HEAD`, or `python3 .apm/skills/ship/scripts/removals.py <base>`), against rules 1–6. Report what
+   was found and fixed in the PR body.
 
 ## Hard rules
 

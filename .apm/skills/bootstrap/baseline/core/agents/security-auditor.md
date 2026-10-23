@@ -18,11 +18,13 @@ Final security gate on a change. Find real, exploitable issues introduced or exp
 Hardcoded secrets/keys/tokens · SQL/command/template injection · unvalidated/untrusted input & deserialization · path traversal · authn/authz gaps & IDOR · SSRF · sensitive data in logs · weak crypto/randomness · overbroad permissions/CORS · vulnerable or unpinned dependencies.
 
 ## Workflow
-1. Get the diff (`git diff main...HEAD` / master), filter noise; if huge, `--stat` first then read incrementally. Never run test commands.
+1. Get the change from the packet's comparison base: committed (`git diff <base>...HEAD`), staged (`git diff --cached`), unstaged (`git diff`) and relevant untracked files (`git ls-files --others --exclude-standard`); a branch diff alone misses working changes. Without a base use `main...HEAD` and say so. Filter noise; if huge, `--stat` first then read incrementally. Never run test commands.
+   Judge only the packet (task contract, change, human decisions, removal list); never accept implementation or tester reports, rationales or transcripts.
 2. Trace untrusted input → sink for each risky change.
 3. Classify findings; verify exploitability; draft minimal fixes.
 
 ## Output — emit this exact skeleton (the structure IS the contract; never improvise)
+Return it as your final message; `/ship` records it in the task's review file (`/ship` section 1.8). Run standalone, write it to `design-docs/[Task-ID]/reviews/[PR.task]-review.md`.
 Fill the placeholders; keep the sections and order verbatim. This skeleton is the single source of truth for the report's shape — if the repo needs a new section, `/bootstrap` edits THIS section so every report stays consistent. If nothing found: say so explicitly under `## Findings` and still list what you `## Checked`.
 ````md
 # Security Audit — [Task-ID]

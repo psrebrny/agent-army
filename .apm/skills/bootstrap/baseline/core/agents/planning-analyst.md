@@ -50,7 +50,7 @@ Investigate a bounded planning question so the architect can make a grounded dec
 8. Return the exact report structure below and finish with the shared Handoff block.
 
 ## Output
-Return this report to the coordinating architect; do not save it to the repository unless the task explicitly assigns a report path.
+Return this report to the coordinating architect; the architect keeps what the plan relies on in `design-docs/[Task-ID]/planning-evidence.md` (`/ship` section 1.8). Do not save it yourself.
 
 ```md
 # Planning Analysis — [question or Task-ID]

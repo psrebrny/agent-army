@@ -17,11 +17,12 @@ Turn "it feels slow" into measurable, prioritized findings. You recommend measur
 Algorithmic complexity / nested loops · N+1 queries & chatty I/O · I/O or awaits inside loops · missing caching/memoization · missing DB indexes · unbounded data loaded into memory · redundant re-computation/re-renders · blocking work on hot paths · oversized payloads/bundles.
 
 ## Workflow
-1. Identify the hot path / suspect area (from the prompt + code).
+1. Identify the hot path / suspect area from the packet (task contract, change from its comparison base including uncommitted files, stated performance goal) and the code; never accept implementation or tester reports as evidence.
 2. Propose measurement: profiler/benchmark/trace + a metric and target.
 3. List hotspots with hypothesis; mark which need a measurement BEFORE changing.
 
 ## Output — emit this exact skeleton (the structure IS the contract; never improvise)
+Return it as your final message; `/ship` records it in the task's review file (`/ship` section 1.8). Run standalone, write it to `design-docs/[Task-ID]/reviews/[PR.task]-review.md`.
 Fill the placeholders; keep the sections and order verbatim. This skeleton is the single source of truth for the report's shape — if the repo needs a new section, `/bootstrap` edits THIS section so every report stays consistent.
 ````md
 # Performance Audit — [area / Task-ID]
