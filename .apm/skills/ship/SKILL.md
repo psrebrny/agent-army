@@ -35,6 +35,12 @@ There are no native `agent-army-*` agents; never look for or spawn one.
 - no argument → resume the single unfinished task or PR only when exactly one exists; when none or
   several exist, present the candidates and ask what to start or resume.
 
+PR review comments become one correction scope, settled with the user per comment. A comment that asks for
+tests ("add tests for this hook?") is not a mandate for a test file per unit: before proposing, find the
+existing tests that already detect each relevant regression and propose only the cases they miss, with their
+level and count. When a page or integration test already covers the unit, propose replying to the reviewer
+with that test's name instead of adding one. The accepted case list is the tester's budget for that comment.
+
 Never select the most recently edited plan merely because it is recent. If no blueprint exists for a
 feature/ticket, invoke `architect` to create one, then stop at the mandatory blueprint + routing + scope
 gate below. Do not auto-select a task or PR from a new or materially revised blueprint, even when only
@@ -442,7 +448,9 @@ a manual-check "no", an in-scope review finding):
   approve the plan of a fix they just asked for.
 - The main session does the whole loop itself, by default and not as an option: update the task block and
   `Latest plan change`, write or adjust the test, RED, fix, GREEN. Do not dispatch architect, planning-analyst,
-  tester or coder, and do not re-read standards, skills or contracts already read in this session. Dispatch a
+  tester or coder, and do not re-read standards, skills or contracts already read in this session. Tests
+  written inline still follow the tester contract's behavior and test-budget principles: read
+  `army.py role tester` once if this session has not, then reuse existing coverage before adding a case. Dispatch a
   role only for a core-tier change, a diff that outgrows one sitting, or missing context the session cannot
   read directly.
 - Audits follow section 4's risk selection on the correction's diff (a presentational fix runs `code-reviewer`
@@ -476,7 +484,7 @@ This exception does not let a bugfix or new feature claim success without demons
 1. Persist PR `implementing`, task `in progress`, `Active roles: tester`, then **`tester` writes the tests (RED)** independently from the contract/acceptance criteria and proves they fail for the right reason. On return, persist `Active roles: none` and the exact RED result in `Last verified stage`; task status remains `in progress` while implementation is pending.
 2. Continue in both modes unless a decision condition applies. Persist task `in progress` and `Active roles: main session` or `coder`. The main session implements the smallest change; a delegated `coder` receives only the Delegation Contract, RED tests and approved read paths. It proceeds only within the `task plan` write list, and only when that list is wholly inside approved scope; anything else is a stop.
 3. After implementation, persist task `in testing`, `Active roles: tester` and the exact next command; **`tester` verifies (GREEN)**. A passing command moves the task to `in review` only after the GREEN result is saved. On failure, persist `in progress` with the failure evidence and correction. A required path outside scope, ambiguous/disproved contract, unapproved dependency/migration or repeated failed approach becomes `awaiting decision` or `blocked`, never silent expansion.
-No batching without verification. *Exception:* for trivial tasks and small corrections (section 2) the main session does the whole Red→Green cycle inline, without a round-trip to a subagent (the default, not an option — see AGENTS.md "Cost & context discipline"). This does not remove an Interactive `task plan` or task-review card: it changes only who performs the work. Inside a task run only the focused tests of the changed area after each GREEN step; run the configured full verification (types, lint, package regression) once when the task is ready for review, and again at PR closure. Runtime hooks are feedback, while the user-selected pre-commit/CI controls provide repository enforcement.
+No batching without verification. *Exception:* for trivial tasks and small corrections (section 2) the main session does the whole Red→Green cycle inline, without a round-trip to a subagent (the default, not an option — see AGENTS.md "Cost & context discipline"), applying the tester contract's test principles. This does not remove an Interactive `task plan` or task-review card: it changes only who performs the work. Inside a task run only the focused tests of the changed area after each GREEN step; run the configured full verification (types, lint, package regression) once when the task is ready for review, and again at PR closure. Runtime hooks are feedback, while the user-selected pre-commit/CI controls provide repository enforcement.
 After every verified task in Interactive mode, clear any one-task delegation, run section 4 on that task's diff,
 repair plainly in-scope findings, detail the next roadmap task, then write the task-review Interaction Card and wait. In Autonomous
 mode, continue to the next planned task without a routine pause.
