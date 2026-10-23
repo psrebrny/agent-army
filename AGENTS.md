@@ -10,8 +10,9 @@
 repo is the source, distributed as an **apm package**. `apm install` deploys only skills and
 templates (globally with `-g`, or per repo); `/bootstrap` writes one tool-neutral profile into the target
 repo's `.agent-army/` and has the user choose where it lives in git and whether runtime hooks, git
-pre-commit and CI are owned by Agent Army, external, or disabled. Skills find that profile from the git
-root they are invoked in; there are no native agent copies.
+pre-commit and CI are owned by Agent Army, external, or disabled. Skills find that profile with
+`army.py locate`: the nearest `.agent-army/` from the task directory up to the git root (an existing
+package-local team in a monorepo wins), or one selected with `--army-root`; there are no native agent copies.
 
 No build step, no test suite, no installer script — apm is the install mechanism.
 
@@ -25,7 +26,7 @@ No build step, no test suite, no installer script — apm is the install mechani
 - `.apm/SOURCES.md` — attribution for borrowed methods (repo · file · commit · license). Source repo only: APM installs just the skill folders, so each skill also names its source and license inline.
 - `.apm/commands/` — thin command wrappers for tools that surface a `command/` dir rather than `skills/`; each just points at the matching `.agents/skills/<skill>/SKILL.md`. Claude does not use them: there the skills are native in `.claude/skills`. The skills may be installed globally or per repo; `/bootstrap` never copies them. (apm's own placement varies by tool/version; when a native command isn't registered, invoke the skill directly by its `.agents/skills/…/SKILL.md` path.)
 - `.apm/skills/bootstrap/bootstrap.py` — deterministic 0.5.4 generator/migrator (profile schema v3, no target): `python3 bootstrap.py [--visibility committed|gitignore|exclude] [--mode auto|incremental|full] [--runtime-hooks …] [--git-precommit …] [--ci …] [--tool <tool>]`. It creates `.agent-army/agents/*.agent` role contracts (the only copy), `.agent-army/config.json` with per-tool `model_routing.tools`, optional `.agent-army/runtime.py` and `.apm/hooks` (rendered through APM only with `--tool`). Migrating a 0.3/0.4 profile removes the native role copies those versions rendered when identical to the contract. `assemble.sh` is a no-APM compatibility wrapper.
-- `.apm/skills/bootstrap/army.py` — read-only resolver every skill can call relative to itself (`../bootstrap/army.py`): `locate` prints the repo root, profile (`specialized`/`baseline`), dispatch mode and per-role contract + model for a tool; `role <name>` prints a contract. Shared constants live in `armylib.py`.
+- `.apm/skills/bootstrap/army.py` — read-only resolver every skill can call relative to itself (`../bootstrap/army.py`): `locate [--cwd DIR] [--army-root DIR]` prints the Git `repo_root`, the selected `army_root`, profile (`specialized`/`baseline`), dispatch mode and per-role contract + model for a tool; `role <name>` prints a contract with the same selection. Path and scope rules: `bootstrap/references/repository-context.md`; regression suite: `bootstrap/tests/test_army.py` (run by `smoke.sh`). Shared constants live in `armylib.py`.
 - `.apm/skills/bootstrap/baseline/` — **the single source of truth** for everything `/bootstrap` installs:
   - `core/agents/` — nine source role definitions + `_STANDARD.md`; bootstrap materializes them as `.agent-army/agents/*.agent`, and skills use them directly as baseline roles in a repo without a profile.
   - `runtime.py` — the only barrier runtime. It accepts structured `{cwd, argv}` commands and never sources or evaluates project configuration.

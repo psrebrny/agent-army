@@ -14,9 +14,10 @@ install live agents, hooks or CI. `/bootstrap` has two distinct jobs:
 Do not let the first mechanical job displace the second. A profile with generic prompts is not a
 successful bootstrap.
 
-The profile has no target tool. Role contracts live only in `.agent-army/agents`; every skill reads
-them from the git root it was invoked in (or via `army.py locate`) and runs them as a subagent or in the main
-thread, whichever the running tool supports. Bootstrap never writes `.claude/agents`, `.codex/agents`
+The profile has no target tool. Role contracts live only in `.agent-army/agents`; engineering workflows
+resolve their selected profile with `army.py locate` (including existing package-local teams) and run
+roles as a subagent or in the main thread, whichever the running tool supports.
+Bootstrap never writes `.claude/agents`, `.codex/agents`
 or any other native copy.
 
 ## Update detection — incremental before full recon
@@ -84,6 +85,11 @@ BOOTSTRAP_DIR="<directory of the SKILL.md you are following, e.g. ~/.claude/skil
 Run the program next to the SKILL.md the tool loaded (`$BOOTSTRAP_DIR`), wherever the package is installed
 (globally or in the repo). It works on the git root of the current directory. There is no target to detect:
 one profile serves every tool. Do not read `.opencode/skills` or `apm_modules` as instructions.
+
+Existing package-local Armies can be used by workflows through `army.py`:
+see [repository-context.md](references/repository-context.md). This generator still creates/migrates
+only the Git-root profile. Do not invoke it as an updater for a selected nested Army or silently create
+a root team in place of that team; a scoped installation/control migration needs separate approval.
 
 **Visibility.** Ask where the profile (`.agent-army/`) should live in git:
 

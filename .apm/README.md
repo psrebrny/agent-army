@@ -8,6 +8,18 @@ Call a skill as a slash command (`/product`) where your tool offers installed sk
 Code does); otherwise ask the agent to follow the skill's `SKILL.md` in your tool's skill folder
 (`.agents/skills/<name>/` or, for Claude, `.claude/skills/<name>/`).
 
+## Package-local teams in monorepos
+
+Engineering workflows can use an existing Army such as `plugins/vento/.agent-army/`.
+The read-only `bootstrap/army.py` resolver selects the nearest profile on the task directory's path
+to the Git root, never a sibling/descendant team. To select it from the monorepo root, pass
+`locate --cwd <git-root> --army-root plugins/vento`; pass the same selection to `role <name>`.
+Git root and Army root are reported separately. Root/nested instructions and repository quality
+controls still apply; writes stay in the approved package scope. Legacy `.agent.md` contracts are
+readable without migration; unavailable metadata requires confirming policy rather than ignoring it.
+This does not add nested installation: `bootstrap.py` still generates only Git-root profiles.
+See [the scope and path contract](skills/bootstrap/references/repository-context.md).
+
 ## Not sure where to start? Run `/product`
 
 `/product` reads your product records and shows where you stand on a 12-stage journey, which earlier

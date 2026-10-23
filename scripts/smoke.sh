@@ -287,5 +287,12 @@ else
   ok "apm not installed; hook render gate skipped"
 fi
 
+printf '\n\033[1mGATE · package-local Army discovery (test_army.py)\033[0m\n'
+if python3 "$ROOT/.apm/skills/bootstrap/tests/test_army.py" >"$WORK/test_army.txt" 2>&1; then
+  ok "nested/explicit Army selection, isolation and path-escape checks pass"
+else
+  bad "test_army.py failed (see $WORK/test_army.txt)"
+fi
+
 printf '\n\033[1mResult: %d passed, %d failed\033[0m\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

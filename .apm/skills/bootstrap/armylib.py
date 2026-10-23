@@ -64,7 +64,9 @@ def read_profile(root: Path) -> dict[str, Any]:
         profile = json.loads((root / PROFILE_DIR / "config.json").read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {}
-    return profile if isinstance(profile, dict) and profile.get("version") in READABLE_SCHEMA_VERSIONS else {}
+    if not isinstance(profile, dict) or type(profile.get("version")) is not int:
+        return {}
+    return profile if profile["version"] in READABLE_SCHEMA_VERSIONS else {}
 
 
 def descriptor_value(tool: str, section: str, key: str) -> str | None:

@@ -11,9 +11,11 @@ description: Resumable SDD executor — resolves a task, PR, feature or small fi
 > scale the tests down. Security barriers stay on at every level.
 
 ## 0 · THE REPO'S ARMY
-The repo is the git root of the directory you were invoked from; its whole Army is `.agent-army/` there
-(this skill may be installed globally — never look for repo state next to it). Every role named below
-(`architect`, `tester`, `coder`, `code-reviewer`, …) is the contract `.agent-army/agents/agent-army-<role>.agent`.
+Read [repository-context.md](../bootstrap/references/repository-context.md) and resolve the task's Git
+root independently of its Army root. Use the nearest ancestor `.agent-army/`, or explicitly select the
+intended package's team with `--army-root`; nested teams in monorepos are supported without migration.
+This skill may be installed globally — never look for repo state next to it. Every role named below
+(`architect`, `tester`, `coder`, `code-reviewer`, …) uses the resolver's exact `contract_path`.
 There are no native `agent-army-*` agents; never look for or spawn one.
 
 - **No `.agent-army/`:** say once that `/bootstrap` is recommended, then continue on the package's baseline
@@ -21,8 +23,10 @@ There are no native `agent-army-*` agents; never look for or spawn one.
 - **Dispatch:** in Claude Code, run a role as a general-purpose subagent whose prompt is the full contract,
   then `---`, then the task brief. In a tool without such a subagent call, execute the contract in the main
   session and record it under `Active roles`.
-- `python3 ../bootstrap/army.py locate --tool <tool>` prints all of this resolved (repo root, contract path
-  and model per role, dispatch mode) when you want it deterministic instead of reading the files yourself.
+- Run `python3 "<installed-bootstrap-directory>/army.py" locate --cwd "<task-directory>" --tool <tool>`
+  (with `--army-root` for explicit selection). Reuse its `army_root` for profile/state paths and its
+  `repo_root` for existing repository-relative plans and quality command working directories.
+  Keep writes package-scoped and honor root plus nested instructions and repository controls.
 
 ## 0.1 · RESOLVE THE EXECUTION SCOPE
 `/ship` is an executor, not the planning agent. It reads `design-docs/**/00_CORE_MANIFEST.md` and
