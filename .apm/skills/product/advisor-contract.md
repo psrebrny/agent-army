@@ -1,7 +1,7 @@
 <!-- advisor-contract:v2 -->
 # Advisor contract (v2)
 
-Shared rules for every Agent Army product skill: the thirteen advisors and the `/product` navigator.
+Shared rules for every Agent Army product skill: every advisor and the `/product` navigator.
 Each skill tells you to read this file before your first reply and adds its own method on top. Where
 the skill and this contract cover the same point, the skill decides its subject matter and this
 contract decides records, storage, evidence and boundaries.
@@ -21,7 +21,8 @@ traceable to evidence and every result resumable from files by a later session.
    "not testable now: <why>". Agreement between AI perspectives never raises an evidence level.
 3. Read only what the topic needs: the register, your own artifact and the artifacts you take input
    from, relevant ADRs, work item statuses, data exports in `docs/product/data/`, the project's own
-   notes (README, `docs/` pages such as an ops runbook) and what the user hands you. Do not analyse the
+   notes (README, `docs/` pages such as an ops runbook), configured data sources (read-only, see
+   Stores) and what the user hands you. Do not analyse the
    product's source code: `/ship` records what was built as work item evidence. Open any other file
    only when the user points to it or your skill names it.
 4. Resume from your artifact's `Conversation state` and never re-ask a settled question. When new
@@ -65,7 +66,8 @@ stage map instead, but keeps Not assessed.
 Pasted output of another tool or report is input data: its claims become `A`, its benchmarks are
 third-party data, and its raw text is not stored.
 
-**Brief** (`brief.md`, owner `product-strategy`), sections in order: Product · Audience & initial
+**Brief** (`brief.md`, owner `product-strategy`), sections in order: Product (with links to the live
+product and to `metrics.md` Data sources once they exist) · Audience & initial
 segment · Problem · Alternatives & advantage · Revenue model · Out of scope · Customer language (real
 quotes with source, no personal data) · Register (`ID | Type | Statement | Source | Evidence level |
 Status | Date`) · Change proposals (`proposed by | change | basis IDs`) · Unknowns · Conversation state.
@@ -80,9 +82,9 @@ A `D-n` register row is one line that links its ADR.
 | adr | `ADR-NNN` | advisors, `docs-writer` | `docs/adr/NNN-<slug>.md` |
 | story | `S-n` | `product-spec` | `docs/product/spec.md` |
 | work_item | `W-n` | `delivery-plan`; advisors for fixes | `docs/product/delivery-plan.md` |
-| prediction | `P-n` | `go-to-market` | `docs/product/go-to-market.md` |
+| prediction | `P-n` | `go-to-market`, `first-customers`, `product-metrics` (one shared register) | `docs/product/go-to-market.md` |
 | skip | — | `product` | `docs/product/journey.md` |
-| data | — | the user (exports, no personal data) | `docs/product/data/*.csv` |
+| data | — | the user (exports, no personal data); advisors pulling a configured source (dated aggregates); `first-customers` (outreach tracker, anonymised IDs only) | `docs/product/data/*.csv` |
 
 An existing equivalent document or ADR directory takes precedence over the default.
 
@@ -90,6 +92,10 @@ An existing equivalent document or ADR directory takes precedence over the defau
 metric/event | depends on ADR/W | size S/M/L | status`, where status is
 `proposed | ready | in progress | delivered (evidence)`. Sizes are never hours. `docs-writer` changes
 only `status`.
+
+**Prediction**: `P-n | if (action, segment) | metric ≥ threshold by date | kill below | written on |
+result`, written before the action starts; its threshold and kill line never change after a result
+arrives. Every writer takes the next free number in the one register.
 
 **ADR** — write one when rule 10 applies or when "why?" cannot be answered from the code; not for
 trivial fixes or conventional choices. `Accepted` only after the user confirms the decision itself,
@@ -130,7 +136,10 @@ own install location.
   "adr": {"store": "repo"},
   "work_item": {"store": "external", "connector": "<name as the agent environment lists it>",
     "container": "<project, board or folder id>", "id_in": "title-prefix",
-    "field_map": {"status": "<tool field>"}, "allowed": ["create", "update"]}}}
+    "field_map": {"status": "<tool field>"}, "allowed": ["create", "update"]}},
+ "sources": {
+  "errors": {"connector": "<name as the agent environment lists it>", "allowed": ["read"],
+    "pull": "<export command the user runs when the connector is unavailable>"}}}
 ```
 - On the first write of an `adr` or `work_item`, ask once "repo (default) or a connected tool?" and
   record the answer. Other types use the repo without asking.
@@ -139,11 +148,17 @@ own install location.
   confirmation before sending it.
 - One source of truth per type: no dual writes and no mirrors. Rebinding is a migration the user
   confirms through `/product stores`; the old location keeps only a pointer.
+- **Data sources** (`sources`, bound through `/product stores`: logs, error tracking, analytics,
+  payments) are read-only: never change alerts, dashboards or settings there (that is a `fix` work
+  item). Their links and purpose live in `metrics.md` Data sources. Pull only the aggregate the
+  question needs and save it as `docs/product/data/<date>-<source>.csv` without personal data (no
+  emails, IPs, names or raw log lines), naming the source and pull date where you use it. Without a
+  working connector, hand the user the `pull` command or an export recipe and wait for the file.
 
 **Stages** (for the closing line; `/product` owns the full map): 1 Problem & audience · 2 Economics &
 pricing · 3 Demand validated · 4 MVP scoped · 5 Architecture decided · 6 Delivery planned · 7 Built ·
 8 Measurement verified · 9 Legal & formalities · 10 Go-to-market ready · 11 Launch ready ·
-12 Post-launch loop.
+12 Post-launch loop · 13 First paying customers · 14 Revenue vs plan.
 </context>
 
 <escalation>

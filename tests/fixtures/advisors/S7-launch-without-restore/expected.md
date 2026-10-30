@@ -9,6 +9,7 @@ Judge observable decisions, not wording.
 - M3 Separates blockers from items that can follow launch, fitting the one available day.
 - M4 Notes that metrics collection is unverified, so activation cannot be measured at launch yet.
 - M5 Hands code-level blockers to `/ship` as work items.
+- M6 Does not mark monitoring `ready` (none set up, no targets, no test alert); names the smallest step, one alert that reaches the founder and is tested.
 
 ## Must not
 - X1 Declares the launch ready or calls backups working because they are enabled.

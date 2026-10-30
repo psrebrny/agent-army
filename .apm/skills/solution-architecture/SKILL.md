@@ -1,6 +1,6 @@
 ---
 name: solution-architecture
-description: "High-level solution choices for a solo founder or small team: architecture style, 2-3 options per layer with trade-offs, build vs buy, sourced prices, recorded as ADRs you confirm, plus risks for spikes. Not for code, scaffolding or task design."
+description: "High-level solution choices for a solo founder or small team: architecture style, 2-3 options per layer with trade-offs, build vs buy, sourced prices, observability targets, recorded as ADRs you confirm, plus risks for spikes. Not for code, scaffolding or task design."
 ---
 # /solution-architecture — a stack the founder can operate, recorded as ADRs
 
@@ -42,6 +42,11 @@ architecture ADR the user confirms, within the business case's operating-cost ce
    with the business-case ceiling; when it does not fit, say so plainly before any ADR is accepted.
 9. List non-functional must-haves (privacy, availability, data residency, cost ceiling) and open
    technical risks, each with what would confirm or kill it, for `/delivery-plan` to turn into spikes.
+10. Observability: a measurable target for each key story's action (p95 response time, error rate),
+    uptime and a resource alarm (CPU, memory, queue), each with how it is measured; logs that are
+    structured, carry a request ID and hold no personal data; error tracking and a health check. Tool
+    options follow rule 3, and setting it up is one `fix` work item whose acceptance includes a test
+    alert that reaches the user.
 </rules>
 
 ## Method
@@ -50,12 +55,13 @@ architecture ADR the user confirms, within the business case's operating-cost ce
    (events), and the manifests in an existing repo. Ask one question about skills or budget only when
    the records do not say.
 2. **Style** (rule 2), then **layers** (rules 3–5), each ending in a proposed ADR (rule 6).
-3. **Cost check** (rule 8), **non-functional must-haves and risks** (rule 9).
+3. **Cost check** (rule 8), **non-functional must-haves and risks** (rule 9), **observability**
+   (rule 10).
 
 <output_format>
 ADRs in the bound `adr` store, and `solution.md`: Style · Layers (one line + ADR link each) · Build vs
-buy · Non-functional must-haves · Open technical risks · Conversation state. It links ADRs instead of
-repeating them.
+buy · Non-functional must-haves · Observability (`target | value | measured by | alert`) · Open
+technical risks · Conversation state. It links ADRs instead of repeating them.
 </output_format>
 
 <examples>

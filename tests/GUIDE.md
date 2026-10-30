@@ -66,13 +66,13 @@ No model-evaluation runs are checked in with these fixtures.
 
 ## Advisor evaluation
 
-The fourteen product skills are prose, so `check.sh` can only prove their structure (frontmatter,
+The sixteen product skills are prose, so `check.sh` can only prove their structure (frontmatter,
 the pointer to the shared `product/advisor-contract.md`, a stage, an objective, at most 12 rules, links, description length). Their behavior is
 measured by `advisor-eval`, a maintainer tool in `.claude/skills/advisor-eval/` that is never shipped.
-Each run calls models and costs money (observed: roughly $1–9 per advisor × scenario, both arms plus the persona and judge), so it is not part of
+Each real run calls models (Claude has incurred multi-dollar costs; API billing depends on the provider), so it is not part of
 `check.sh` or `smoke.sh`.
 
-- **Fixtures:** [`fixtures/advisors/`](fixtures/advisors/README.md) holds synthetic scenarios S1–S17
+- **Fixtures:** [`fixtures/advisors/`](fixtures/advisors/README.md) holds synthetic scenarios S1–S22
   (which advisor each one evaluates is in that README). Each has `request.md` (session 1),
   `resume.md` (session 2 in a fresh context over the same files), `user.md` (the simulated-user
   persona), `expected.md` (the oracle, seen only by the judge), an optional `repo/` overlay and an
@@ -80,7 +80,28 @@ Each run calls models and costs money (observed: roughly $1–9 per advisor × s
 - **Run:** `python3 .claude/skills/advisor-eval/run.py <advisor> --scenario <id> --plan-only` first
   (assembles each scratch repo outside this repo and checks isolation without a model), then the same
   command without `--plan-only`. Claude Code can call it as `/advisor-eval`; the protocol is in its
-  `SKILL.md`. It needs the `claude` CLI.
+  `SKILL.md`. The default `--backend claude` needs the `claude` CLI; `--backend api` runs actor and
+  persona over stdlib HTTP with `AUX_BASE_URL` and `AUX_API_KEY` from the environment or the source
+  repo's ignored private `.env` (loaded only on API; environment wins), no shell evaluation, and the
+  model pinned as `API_MODEL` in `run.py`. The judge stays on Claude `sonnet` (one call per scenario)
+  unless `--judge-backend api`.
+  The API base includes `/v1` or the provider's equivalent prefix; the runner appends `/chat/completions`.
+  Fixture contents are sent to the configured provider; never put keys in prompts, files or commands
+  checked into Git. Keep the optional `.env` at mode `600` and never paste its contents in chat.
+  Pin one hosted model with tool support and verify its free quota independently.
+  Do not use a local model, web session, `auto` router or a multi-model combo.
+- **API calibration and batch:** first run `product-metrics --scenario S22` and `positioning-offer
+  --scenario S18` with `--backend api --parallel --max-turns 70 --no-ledger`. Compare the actual
+  decisions to the Opus rows (S18 was a pre-fix `fix-contract`); only then run
+  `python3 .claude/skills/advisor-eval/run.py --all --backend api --parallel --max-turns 70`
+  (first with `--plan-only`). `--all` means one representative per product skill, 16 cases; it starts
+  with S22/S18, includes S15/S7 and excludes the manual S8/S17. Run S10 separately via
+  `product-metrics --scenario S10`. An omitted scenario for a named advisor now selects its
+  representative, not every fixture. Arms can run concurrently, scenarios cannot.
+  API errors, safety stops, `fix-contract` and `rethink` halt the batch with a nonzero exit;
+  incomplete/invalid runs get no ledger row. Existing real rows remain append-only, so retry remaining
+  advisors explicitly instead of assuming `--all` will skip completed work.
+  Timeouts/retries/token budget and optional judge JSON mode are documented in the maintainer skill.
 - **Arms:** N runs the candidate skill, K runs a plain session with the same messages, always in the
   same run, so every verdict has its own control. P (an optional pinned third-party reference) runs
   only from a checkout the maintainer prepares outside this repo.
@@ -93,12 +114,32 @@ Each run calls models and costs money (observed: roughly $1–9 per advisor × s
   [`fixtures/advisors/SCORECARDS.md`](fixtures/advisors/SCORECARDS.md) (date, advisor, contract tag,
   `SKILL.md` sha256 prefix, arms, scores, verdict, a one-line note per arm). The ledger is append-only.
   **Scorecards only, no transcripts:** transcripts stay in the printed scratch dir and are never
-  committed; a row is committed only with the maintainer's approval.
+  committed; a row is committed only with the maintainer's approval. Notes record backend, actor,
+  persona and judge models. API cost is assumed $0 (not verified billing), time is measured and turns
+  count completion rounds including tools. Do not directly compare its cost score with Claude's.
 - **Staleness warning:** `check.sh` warns `advisor changed since last eval` when a product skill's
   fingerprint (sha256 of its `SKILL.md` plus the shared `product/advisor-contract.md`) or contract tag
   differs from its latest row, and lists skills with no row yet. Any
   change to a product skill or to the contract means re-running `advisor-eval` for the affected
   advisors before a release.
-- **Limits:** one synthetic product per scenario, the maintainer knows the arms, and the actor's
-  file tools are not sandboxed. The gate detects large differences only; it does not prove an advisor
-  is good, and a `pass` is not a guarantee.
+- **Limits:** one synthetic product per scenario; the maintainer knows the arms. Claude actors'
+  tools are not sandboxed. API actors' file tools are confined to scratch (path traversal, protected
+  directories and links rejected; bounded calls/output), with no shell, web or connector access.
+  API S9 is offline even if the fixture requests web. API measures the injected skill text, not Claude
+  skill loading, and free-model calibration does not prove production Opus quality. Provider rate/
+  daily quotas may halt the batch. The gate detects large differences only; `pass` is not a guarantee.
+
+### Offline runner regression tests
+
+```bash
+python3 -m py_compile .claude/skills/advisor-eval/run.py .claude/skills/advisor-eval/api_backend.py
+python3 -m unittest discover -s tests -p test_advisor_eval.py -v
+```
+
+`tests/test_advisor_eval.py` checks model routing (including Claude persona/judge), exact safety caps,
+shared judge parsing, retries/Retry-After/timeouts, credential-safe errors and scratch traversal/link
+rejection, and private `.env` parsing without shell evaluation or leaking values in errors.
+A scripted loopback HTTP server exercises real tool calls, fresh-session file resume, a
+tool-free persona, blind judge bundles, parallel arms and all 16 representatives with `--no-ledger`.
+It needs permission to bind `127.0.0.1`, but no external network, key, paid provider, Claude or local
+model. Synthetic test scores never enter the ledger and are not behavioral evaluation evidence.

@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: Evidence-led setup and safe incremental migration of a tailored Agent Army v0.6.1. One tool-neutral profile in .agent-army serves every tool; it preserves existing user controls and never renders native agent copies.
+description: Evidence-led setup and safe incremental migration of a tailored Agent Army v0.7.1. One tool-neutral profile in .agent-army serves every tool; it preserves existing user controls and never renders native agent copies.
 ---
 # /bootstrap — own controls, then author a real team
 
@@ -51,7 +51,7 @@ the user chooses. After applying selected/all local diffs, rerun the generator w
 mechanical migration then updates only versioned, managed fragments and runs targeted validation. New shared
 role contracts appear in the inventory delta: `apply` adds missing role files while preserving every existing
 specialization; `skip` preserves the current local roster and role contracts. New product skills (from 0.4.0:
-`/product` and the thirteen product advisors) are capabilities only: list them under new capabilities, as
+`/product` and the thirteen product advisors; from 0.7.0: `/positioning-offer` and `/first-customers`) are capabilities only: list them under new capabilities, as
 optional and callable on their own; they need no local file, role contract or native agent. Each generator line
 `recommended local diff: <template> -> <local contract>` names a changed baseline role template (for 0.4.0, the
 `docs-writer` ADR rules): show the package change applied to that local specialized contract, merged into the
@@ -87,7 +87,7 @@ Run the program next to the SKILL.md the tool loaded (`$BOOTSTRAP_DIR`), whereve
 one profile serves every tool. Do not read `.opencode/skills` or `apm_modules` as instructions.
 
 Existing package-local Armies can be used by workflows through `army.py`:
-see [repository-context.md](references/repository-context.md). This generator still creates/migrates
+read `references/repository-context.md` when a task selects or meets a package-local Army. This generator still creates/migrates
 only the Git-root profile. Do not invoke it as an updater for a selected nested Army or silently create
 a root team in place of that team; a scoped installation/control migration needs separate approval.
 

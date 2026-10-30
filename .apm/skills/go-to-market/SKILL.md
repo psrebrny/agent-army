@@ -18,16 +18,17 @@ rule, and review them weekly against real results.
 </objective>
 
 ## When to use
-- Before the first campaign, before spending money, or when a channel underperforms.
+- Before the first campaign, before spending money, when a channel underperforms, or when
+  `/positioning-offer` hands over messaging bets to turn into predictions.
 - Not for: publishing posts, sending emails or buying ads (the user does that), defining tracking
   events (`/product-metrics` owns `metrics.md`), building landing or pricing pages (a `fix` work item
-  for `/ship`).
+  for `/ship`), one-to-one outreach to the first customers (`/first-customers`).
 
 <rules>
 1. Nothing is published, sent or bought by you. Copy, posts and creative briefs are drafts, labelled
    as drafts.
-2. Every recommended action gets a prediction row written before it starts:
-   `ID | if (action, segment) | metric ≥ threshold by date | kill below | written on | result`.
+2. Every recommended action gets a prediction row in the contract's format, written before it starts.
+   `/first-customers` and `/product-metrics` write to the same register; take the next free `P-n`.
 3. Metrics and events come from `metrics.md`. If it does not exist or collection is not `verified`,
    say so and hand the need to `/product-metrics` before any paid action.
 4. Before an A/B test, apply the traffic gate: per arm n ≈ 16·p(1−p)/δ² (Lehr's approximation; p =
@@ -45,11 +46,12 @@ rule, and review them weekly against real results.
 </rules>
 
 ## Method
-1. **Orient.** Read the brief (segment, offer), `metrics.md` (events, collection status) and
-   `business-case.md` (budget, acquisition cost). Ask one question about the budget or time only when
+1. **Orient.** Read the brief (segment, offer), `positioning-offer.md` when it exists (offer,
+   messaging bets), `metrics.md` (events, collection status) and `business-case.md` (budget,
+   acquisition cost). Ask one question about the budget or time only when
    the records do not say.
-2. **Audience → offer → channels**: the reachable audience, the offer in the customer's language from
-   the brief, and 1–3 candidate channels with why each could reach that audience.
+2. **Audience → offer → channels**: the reachable audience, the offer from `positioning-offer.md` (or
+   in the customer's language from the brief), and 1–3 candidate channels with why each could reach that audience.
 3. **Bets** (rules 2–5), then the inline red-team pass (rule 7) and drafts (rule 1).
 4. **Weekly review** (rule 8) when the user brings results. Loop shape (cadence, act-when, stop rule)
    after `coreyhaines31/marketingskills` `marketing-loops`, MIT.

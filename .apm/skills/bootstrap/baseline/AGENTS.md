@@ -52,10 +52,10 @@ agent "Follow `<SKILLS_DIR>/<name>/SKILL.md` for: <request>." All are optional a
   `new-agent` (add a local role) · `new-skill` (add a local workflow) · `adapt-army` (turn a recurring
   problem into a targeted improvement).
 - **Product (conversation + docs in `docs/product/` and `docs/adr/`; anything that becomes code is a
-  work item `W-n` for `ship`):** `product` (where am I on the 12-stage journey, one next step; start
+  work item `W-n` for `ship`):** `product` (where am I on the 14-stage journey, one next step; start
   here when unsure) · `product-strategy` · `product-red-team` · `market-research` · `business-case` ·
   `validate-product` · `product-spec` · `solution-architecture` · `delivery-plan` · `go-to-market` ·
-  `product-metrics` · `ux-review` · `legal-review` · `launch-readiness`. Where each record type lives
+  `positioning-offer` · `first-customers` · `product-metrics` · `ux-review` · `legal-review` · `launch-readiness`. Where each record type lives
   (repo by default, or a connected tool) is recorded in `.agent-army/stores.json`.
 
 ## The team (delegate by role)

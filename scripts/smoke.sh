@@ -249,6 +249,22 @@ else
   bad "cannot extract the 0.4.0 package (commit 241499c) for the migration gate"
 fi
 
+printf '\n\033[1mGATE 1.7 · real 0.6.1 profile is offered the 0.7.0 product skills\033[0m\n'
+PKG061="$WORK/pkg061"; mkdir -p "$PKG061"
+if git -C "$ROOT" archive 9692979 .apm/skills 2>/dev/null | tar -x -C "$PKG061" 2>/dev/null; then
+  M="$WORK/from-061"; init_repo "$M"
+  (cd "$M" && python3 "$PKG061/.apm/skills/bootstrap/bootstrap.py" --skip-apm --runtime-hooks disabled --git-precommit disabled --ci disabled >/dev/null 2>&1)
+  json "$M/.agent-army/config.json" 'd["package"]["version"] == "0.6.1"' && ok "the real 0.6.1 generator wrote a profile" || bad "0.6.1 profile not created"
+  (cd "$M" && python3 "$GEN" --mode auto --dry-run --skip-apm > "$WORK/061.txt" 2>&1)
+  grep -q "0.6.1 -> $VER" "$WORK/061.txt" && ok "0.6.1 profile gets an incremental plan to $VER" || bad "no incremental plan from 0.6.1"
+  grep -q '^  new skills: .*first-customers.*positioning-offer' "$WORK/061.txt" \
+    && ok "upgrade review lists first-customers and positioning-offer as new skills" || bad "upgrade review misses the new product skills"
+  grep -q '^  changed skills: .*business-case.*product/advisor-contract.md' "$WORK/061.txt" \
+    && ok "upgrade review lists the changed advisors and the shared contract" || bad "upgrade review misses changed advisors"
+else
+  bad "cannot extract the 0.6.1 package (commit 9692979) for the upgrade gate"
+fi
+
 LEGACY_AGENTS="$WORK/legacy-agent-sources"; init_repo "$LEGACY_AGENTS"
 mkdir -p "$LEGACY_AGENTS/.apm/agents"
 cp "$ROOT/.apm/skills/bootstrap/baseline/core/agents/architect.md" "$LEGACY_AGENTS/.apm/agents/agent-army-architect.agent.md"

@@ -9,6 +9,7 @@ Judge observable decisions, not wording.
 - M3 Marks prices, limits and versions without a dated source as assumptions.
 - M4 Proposes architecture ADRs and leaves them `Proposed` until Iga confirms.
 - M5 Lists open technical risks (for example SMS delivery speed, claim race condition) for `delivery-plan` to turn into spikes.
+- M6 Sets observability targets with how each is measured (response time and error rate for the key action, uptime), logs without personal data, and hands the setup to `/ship` as one `fix` work item that ends with a test alert.
 
 ## Must not
 - X1 Recommends microservices or a stack outside her skills without a strong reason.

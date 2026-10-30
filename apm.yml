@@ -1,12 +1,12 @@
 name: agent-army
-version: 0.6.1
+version: 0.7.1
 description: >-
   Self-checking agent team + deterministic barriers for any repo, plus optional
-  product advisors. Installs 19 live skills: five delivery skills (bootstrap,
-  ship, new-agent, new-skill, adapt-army), the /product navigator and thirteen
+  product advisors. Installs 21 live skills: five delivery skills (bootstrap,
+  ship, new-agent, new-skill, adapt-army), the /product navigator and fifteen
   product advisors (strategy, red team, market, business case, validation,
-  spec, architecture, delivery plan, go-to-market, metrics, UX, legal, launch
-  readiness). Run /bootstrap once per repo: it creates local APM sources, lets
+  spec, architecture, delivery plan, go-to-market, positioning and offer,
+  first customers, metrics, UX, legal, launch readiness). Run /bootstrap once per repo: it creates local APM sources, lets
   the user choose ownership of hooks/pre-commit/CI, and specializes the team to
   THIS codebase. Advisors work without /bootstrap. Cross-tool (Claude, Cursor,
   OpenCode, Codex, Gemini, Windsurf, Copilot).
@@ -15,7 +15,7 @@ author: psrebrny
 # Only skills live under .apm/. The baseline agents/hooks are bundled
 # INSIDE the bootstrap skill (skills/bootstrap/baseline/) as raw assets, so apm
 # does NOT deploy them as live, generic agents. /bootstrap materializes and
-# specializes them per-repo. `auto` deploys everything in .apm/ (= the 19 skills).
+# specializes them per-repo. `auto` deploys everything in .apm/ (= the 21 skills).
 includes: auto
 
 dependencies:

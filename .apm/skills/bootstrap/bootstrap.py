@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create and incrementally migrate an Agent Army profile (package 0.6.1, profile schema v3).
+"""Create and incrementally migrate an Agent Army profile (package 0.7.1, profile schema v3).
 
 This is intentionally deterministic.  The chat skill decides *what the project
 needs*; this program owns filesystem layout and ownership boundaries.  It never
@@ -42,7 +42,8 @@ TOOLS_DIR = BASE / "tools"
 # The neutral skill location older bootstraps wrote into the router block.
 SHARED_SKILLS_DIR = ".agents/skills"
 PLANNING_ROLES = ("planning-analyst", "plan-reviewer")
-# The 0.3.1 core identifies an Agent Army install; the product skills joined in 0.4.0.
+# The 0.3.1 core identifies an Agent Army install; the product skills joined in 0.4.0,
+# positioning-offer and first-customers in 0.7.0.
 CORE_SKILLS = ("bootstrap", "ship", "new-agent", "new-skill", "adapt-army")
 PRODUCT_SKILLS = (
     "product",
@@ -55,6 +56,8 @@ PRODUCT_SKILLS = (
     "solution-architecture",
     "delivery-plan",
     "go-to-market",
+    "positioning-offer",
+    "first-customers",
     "product-metrics",
     "ux-review",
     "legal-review",

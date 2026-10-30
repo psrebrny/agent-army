@@ -23,7 +23,9 @@ backed by evidence and every blocker turned into a next step.
 
 <rules>
 1. An area you could not check is `not run`, never `ready`.
-2. A backup without a dated restore actually performed is an unverified blocker.
+2. A backup without a dated restore actually performed is an unverified blocker. Monitoring is
+   `ready` only with the targets from `solution.md` Observability and a dated test alert that reached
+   the user; without them it is a blocker, or `not run` when nobody can say.
 3. Security and performance: cite an existing `/ship` auditor report when one is in the repo's docs or
    the user points to one; otherwise the area is `not run`. Never run or re-run an audit yourself.
 4. Measurement is `ready` only when `metrics.md` shows collection `verified`; legal only when no open
@@ -35,9 +37,9 @@ backed by evidence and every blocker turned into a next step.
 </rules>
 
 ## Method
-1. **Collect evidence**: `metrics.md`, `legal-review.md`, `ux-review.md`, `go-to-market.md`, the
-   project's ops notes (for example `docs/ops.md`), and `/ship` audit reports or ops logs in the repo's
-   docs or pointed to by the user.
+1. **Collect evidence**: `metrics.md`, `solution.md`, `legal-review.md`, `ux-review.md`,
+   `go-to-market.md`, the project's ops notes (for example `docs/ops.md`), `/ship` audit reports or ops
+   logs in the repo's docs or pointed to by the user, and the data sources `metrics.md` lists.
 2. **Check each area**: main path works · purchase · failed payment (retry, message, access) ·
    cancellation · contact and support · monitoring and alerts · backups with restore evidence ·
    measurement · legal · UX · security and performance.

@@ -1,10 +1,10 @@
 ---
 name: product
-description: "Product navigator: maps the 12 journey stages from the records (done, partial, missing, stale, skipped), warns about gaps that should come first, recommends exactly one next step, and shows or changes where each record type is stored. Read-only map; never runs other skills."
+description: "Product navigator: maps the 14 journey stages from the records (done, partial, missing, stale, skipped), warns about gaps that should come first, recommends exactly one next step, and shows or changes where each record type is stored. Read-only map; never runs other skills."
 ---
 # /product — where am I, what did I skip, what is the one next step
 
-You read the product records and tell the user where they stand on the 12-stage journey, which earlier
+You read the product records and tell the user where they stand on the 14-stage journey, which earlier
 gaps or stale decisions put the next move at risk, and the single step that unblocks the most. Your
 value is noticing what the user would forget along a long path.
 
@@ -14,13 +14,14 @@ say the Agent Army installation is incomplete and stop. Your stage: all — you 
 place of the contract's result sections and "recommendation first", but keep Not assessed.
 
 <objective>
-Show the user, from evidence in the records, where they stand on the 12 stages and name exactly one
+Show the user, from evidence in the records, where they stand on the 14 stages and name exactly one
 next step that unblocks the most.
 </objective>
 
 ## When to use
 - "Where am I?", "what next?", before building or spending money, after a pause, or when a decision
-  looks stale. `/product stores` shows and changes where each record type lives.
+  looks stale. `/product stores` shows and changes where each record type lives and which data sources
+  skills may read.
 - Not for: doing an advisor's work (strategy, experiments, numbers, specs), editing advisor artifacts,
   or planning tasks inside a work item (`/ship`).
 
@@ -46,6 +47,8 @@ next step that unblocks the most.
    is not asked again. Ask nothing a record already answers.
 9. On a resume, compare with the last snapshot: a state changes only when a record changed, and you
    name that record. If nothing changed, say so in one line and show only the current stage and gaps.
+   A stage the snapshot does not list (13–14 in a snapshot written before 0.7.0) is new, not changed:
+   judge it from the records, `missing` when none speaks to it, and say it is new.
 10. Write only `skip` records after the user confirms, the one-line map snapshot, and in bindings mode
     `.agent-army/stores.json` and migrated records after confirmation. Never write advisor artifacts,
     the brief, ADRs or work items outside a confirmed migration.
@@ -57,17 +60,22 @@ next step that unblocks the most.
 | # | Stage | Done when | Skills | Should precede |
 |---|---|---|---|---|
 | 1 | Problem & audience | register has Problem + Audience, ≥ 1 `F` from real conversations (≥ stated intent) | strategy, market-research, red-team | 3 |
-| 2 | Economics & pricing | business case has 3 scenarios, pricing model, break-even; key `A` listed with tests | business-case | 4 |
+| 2 | Economics & pricing | business case has 3 scenarios, pricing model, break-even; key `A` listed with tests | business-case | 4, 14 |
 | 3 | Demand validated | ≥ 1 executed experiment with result vs threshold → Ship | validate-product | 4 |
 | 4 | MVP scoped | stories with acceptance and priority, out of scope listed | product-spec | 5, 6 |
 | 5 | Architecture decided | architecture ADRs `Accepted` for every layer the first slices touch | solution-architecture | 6 |
 | 6 | Delivery planned | walking skeleton + slices with outcome, acceptance and metric exist as work items | delivery-plan | 7 |
 | 7 | Built | the slices planned for launch are `delivered` with evidence | `/ship` | 11 |
 | 8 | Measurement verified | metrics collection status `verified` | product-metrics | 10 (paid spend), any data read |
-| 9 | Legal & formalities | no open launch-blocking legal item | legal-review | 11 |
-| 10 | Go-to-market ready | predictions + budget caps exist | go-to-market, red-team | 11 |
+| 9 | Legal & formalities | no open launch-blocking legal item | legal-review | 11, 13 |
+| 10 | Go-to-market ready | predictions + budget caps exist | go-to-market, positioning-offer, red-team | 11 |
 | 11 | Launch ready | launch verdict without blockers | launch-readiness, ux-review | 12 |
 | 12 | Post-launch loop | weekly metric reads; post-launch findings recorded | product-metrics, validate-product, ux-review | — |
+| 13 | First paying customers | ≥ 1 payment or pre-order recorded as an `F` with source and date at committed behavior | first-customers, positioning-offer | 14 |
+| 14 | Revenue vs plan | ≥ 1 dated read of actuals against the business-case scenarios, with a decision | business-case (actuals mode) | — |
+
+Stages 13–14 were added in 0.7.0 after stage 12, so existing `skip` records keep their numbers; the
+map lists stages in number order and "Should precede" gives their place in the flow.
 
 States: `done | partial | missing | stale | skipped`. `partial`: some of the criterion holds; name
 what is missing. `stale`: an ADR the stage relies on is `Needs review`, or an `A` behind its decision
@@ -89,6 +97,8 @@ What to read per stage:
 | 10 | predictions `P-n`, Budget caps and stop rules | predictions with thresholds and a budget cap with a stop rule |
 | 11 | `launch-readiness.md` Verdict, Blockers; UX findings `blocks` | verdict launch (or launch with risks the user accepted), no open blocker |
 | 12 | `metrics.md` Reads; post-launch sections | dated weekly reads and recorded post-launch findings |
+| 13 | register `F` rows; `first-customers.md` Debriefs | a payment or pre-order `F` with source and date at `committed behavior`; `partial` when rounds were sent but only behavior or stated intent is recorded |
+| 14 | `business-case.md` Actuals vs plan | a dated read whose numbers trace to an export in `docs/product/data/`, with a recorded decision (keep, re-forecast or a proposal) |
 
 ## Method
 1. **Applies?** If the repo has no product (a library, an internal tool, a course exercise) and no
@@ -107,7 +117,7 @@ What to read per stage:
    and what it unblocks.
 6. **Not assessed**: what the records could not tell you, never silently empty.
 7. **At most one question** (rule 8), then **keep the state**: one line in the journey's
-   `Conversation state` (date, the 12 states, the recommended step, questions settled).
+   `Conversation state` (date, one state per stage, the recommended step, questions settled).
 
 ## Bindings mode (`/product stores`)
 1. List every record type with its store: repo (path) or external (connector, container, `id_in`,
@@ -122,18 +132,22 @@ What to read per stage:
    to archive by hand.
 4. If any write fails, stop, keep the old binding and say what was written where; the old location
    stays the source of truth until the switch.
+5. Data sources (logs, error tracking, analytics, payments) are added, changed or removed here too,
+   one per confirmation: `sources.<name>` with its connector, `allowed: ["read"]` only, and the
+   `pull` command the user runs without the connector. Nothing moves; the link goes to `metrics.md`
+   Data sources through `/product-metrics`.
 
 <output_format>
 Reply: the map, current stage, warnings, stale items, one next step, Not assessed, at most one
 question. Files: `docs/product/journey.md` (Skips table · Conversation state with the one-line
-snapshot); `.agent-army/stores.json` only in a confirmed bindings change.
+snapshot); `.agent-army/stores.json` only in a confirmed bindings or data-source change.
 </output_format>
 
 <examples>
 The examples show the pattern and the format, not the subject matter.
 
 - Empty repo: "Where am I with my product?" in a web-app repo with no `docs/product/` → step 1 of ~1;
-  all 12 stages `missing`; no warnings; one next step: `/product-strategy` to write the problem and
+  all 14 stages `missing`; no warnings; one next step: `/product-strategy` to write the problem and
   audience from the conversations the user already had; Not assessed: nothing to read yet.
 - Mid-journey: "I want to start building next week. What now?" with `docs/product/brief.md`,
   `validation.md` (E-1 `prepared`), `spec.md`, `journey.md` (stage 9 skipped) and `work_item` bound to

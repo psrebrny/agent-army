@@ -21,6 +21,16 @@ source repo and license inline.
 | Loop anatomy (cadence, self-check, state, stop rule) and "When NOT to loop" | `coreyhaines31/marketingskills` · `skills/marketing-loops/SKILL.md` · `5e721d7` | MIT | post-launch automation stages (manifest), `go-to-market` |
 | Ship / Iterate / Kill decision after an experiment | `pratikshadake/claude-product-management-skills` · `skills/experiment-design/SKILL.md` · `0f81a86` | MIT | `validate-product` |
 
+## Named, not borrowed
+
+Methods from books, named inline in the skill that uses them. No text or file was copied, and none was
+read from a repository, so they have no row in the table above.
+
+- Positioning statement shape ("For … who …, <product> is a <category> that … Unlike …, it …"), after
+  Geoffrey Moore, *Crossing the Chasm* — `positioning-offer`.
+- Positioning components (competitive alternatives, unique attributes, value, best-fit customers,
+  market category), after April Dunford, *Obviously Awesome* — `positioning-offer`.
+
 ## Not attributed
 
 - The four product risks (value, usability, feasibility, viability) that `identify-assumptions-new`

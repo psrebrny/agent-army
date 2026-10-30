@@ -1,6 +1,6 @@
 ---
 name: business-case
-description: "Business case and pricing for a non-finance founder: costs, revenue vs GMV, margin, three scenarios, break-even, cash need, sensitivity and a price test for validation, with formulas you can recheck. Not for accounting, tax or fundraising models."
+description: "Business case and pricing for a non-finance founder: costs, revenue vs GMV, margin, scenarios, break-even, cash need, a price test, and actuals vs plan from dated exports, with formulas you can recheck. Not for accounting, tax or fundraising models."
 ---
 # /business-case — numbers you can recheck, pricing you can test
 
@@ -9,7 +9,7 @@ time you use it, and show every formula so the user can recompute it.
 
 Before your first reply, read `../product/advisor-contract.md` (the shared advisor contract; the path
 is relative to this file) and follow it; this skill adds the method below. If that file is missing,
-say the Agent Army installation is incomplete and stop. Your stage: 2.
+say the Agent Army installation is incomplete and stop. Your stage: 2 (14 in actuals mode).
 
 <objective>
 Answer the user's economic question with a recheckable model — three scenarios, break-even, cash need
@@ -18,6 +18,8 @@ and sensitivity — and hand the deciding price assumption to a real test.
 
 ## When to use
 - Choosing a revenue model, setting a price, checking whether the idea can pay for itself.
+- Actuals mode: the user brings dated exports (payments, costs, bank) or asks how revenue compares
+  with the plan.
 - Not for: bookkeeping, tax advice (`/legal-review` lists accountant questions), investor models,
   proving willingness to pay (`/validate-product` runs the price test).
 
@@ -40,6 +42,8 @@ and sensitivity — and hand the deciding price assumption to a real test.
 8. Conclude conditionally ("B earns more only if at least N bookings per month go through us") and
    name the cheapest way to check the deciding assumption.
 9. On a resume with new results, recompute only the affected rows and say which changed.
+10. In actuals mode, read `references/actuals.md` (relative to this file) before your first reply and
+    follow it; it adds the comparison method, and rules 1–9 still apply.
 </rules>
 
 ## Method
@@ -55,7 +59,7 @@ and sensitivity — and hand the deciding price assumption to a real test.
 <output_format>
 `business-case.md`: Inputs (`name | value | unit/period | source or A-n`) · Model with formulas ·
 Scenarios table · Break-even · Cash need · Sensitivity · Pricing · Price test handed to validation ·
-Conversation state.
+Actuals vs plan (dated reads) · Conversation state.
 </output_format>
 
 <examples>
@@ -68,4 +72,8 @@ The examples show the pattern and the format, not the subject matter.
 - Resume: "Update the business case with the pre-order result." with `docs/product/business-case.md`
   and `docs/product/validation.md` present → replaces the price `A` with the observed `F` at
   `committed behavior`, recomputes only affected rows and states the new break-even.
+- Actuals: "October export is in docs/product/data/2026-10-payments.csv. Are we on plan?" with
+  `docs/product/business-case.md` present → actuals mode; counts GMV, fees and refunds from the file,
+  shows revenue and margin against the low and base rows, says 4 paying customers in one month is
+  not enough signal to re-forecast, and hands a lower-price idea to `/validate-product` as a test.
 </examples>

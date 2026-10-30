@@ -20,10 +20,12 @@ its real result into Ship, Iterate or Kill.
 </objective>
 
 ## When to use
-- After the brief names its riskiest `A`; for a price test handed over by `/business-case`; after
-  launch when `metrics.md` reads or the user reports churn.
+- After the brief names its riskiest `A`; for a price test handed over by `/business-case` (also from
+  its actuals mode); when a `/first-customers` debrief contradicts a key `A`; after launch when
+  `metrics.md` reads or the user reports churn.
 - Not for: contacting respondents or posting anything (the user does that, or gives an explicit
-  command), building a landing page or fake door (a `fix` work item for `/ship`).
+  command), building a landing page or fake door (a `fix` work item for `/ship`), selling rounds to the first
+  paying customers (`/first-customers`).
 
 <rules>
 1. A prepared experiment is never reported as run; its status stays `prepared` until the user reports

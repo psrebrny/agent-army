@@ -33,3 +33,8 @@ Layout: `shared/` is copied into every scratch repo; each `S<n>-<slug>/` holds
 | S15 greenfield stack | `solution-architecture` | options per layer, modular monolith, sourced or assumed prices, ADRs proposed |
 | S16 slicing | `delivery-plan` | walking skeleton, vertical slices, spike for the riskiest ADR assumption; re-plan touches open items only |
 | S17 external store | any `work_item` writer | preview, `W-n` per `id_in`, update not duplicate, no delete, stop without connector (manual, PR 5) |
+| S18 positioning and offer | `positioning-offer` | every claim traced to `F`/`A`; no invented testimonials; price from the business case; page as a `fix` work item; bets to GTM |
+| S19 first customers | `first-customers` | send cards with rules not verified and a `P-n` before sending; nothing sent; anonymised tracker; debrief with evidence levels and "not enough signal" |
+| S20 revenue vs plan | `business-case` (actuals mode) | GMV, revenue, margin and profit apart; counts from the export; no LTV; price change only as a proposal |
+| S21 journey with new stages | `product` | 14-stage map on an old journey; stage 13 done from a register pre-order; 14 missing; skip honoured; new stages named as new |
+| S22 product health | `product-metrics` | `P-n` expectation before the funnel read; unavailable connectors → pull command; raw logs aggregated without personal data; health vs `solution.md` targets; no alert changes |

@@ -129,7 +129,7 @@ the PR policy explicitly. Progress, pending questions and temporary delegation p
 in the PR; older PRs derive missing progress from existing task evidence without
 restarting. Existing `supervised` PRs still migrate to `interactive` on resume.
 
-## The 19 skills
+## The 21 skills
 
 Every skill is optional and callable on its own; none runs another. Not sure where to start with a
 product? Run `/product`. The full catalog, with inputs, outputs, examples and what reaches `/ship`, is
@@ -142,16 +142,18 @@ product? Run `/product`. The full catalog, with inputs, outputs, examples and wh
 | `/new-agent` | add a specialised local role |
 | `/new-skill` | add a reusable local workflow |
 | `/adapt-army` | turn a recurring workflow problem into a targeted improvement |
-| `/product` | where am I on the 12-stage product journey, and the one next step |
+| `/product` | where am I on the 14-stage product journey, and the one next step |
 | `/product-strategy` | audience, problem, advantage, features, revenue model, out of scope |
 | `/product-red-team` | attack a plan: "Fails if …", cheapest test, kill criterion |
 | `/market-research` | competitors, alternatives and prices with dated sources |
-| `/business-case` | costs, scenarios, break-even and pricing you can recheck |
+| `/business-case` | costs, scenarios, break-even and pricing you can recheck; actual revenue vs plan |
 | `/validate-product` | falsifiable experiments and reading their results, incl. post-launch churn |
 | `/product-spec` | MVP goal, stories with acceptance and priority |
 | `/solution-architecture` | architecture style and stack per layer, recorded as ADRs |
 | `/delivery-plan` | walking skeleton and vertical slices as work items for `/ship` |
 | `/go-to-market` | channels as written predictions with budget caps |
+| `/positioning-offer` | positioning, offer, objections and DRAFT page copy traced to evidence |
+| `/first-customers` | the first paying customers: send cards you send, anonymised tracker, debriefs |
 | `/product-metrics` | decision questions, events, collection checks, honest reads |
 | `/ux-review` | heuristic review of the paths that matter |
 | `/legal-review` | applicability, dated sources, lawyer and accountant questions |

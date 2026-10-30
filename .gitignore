@@ -1,3 +1,8 @@
 build/
 __pycache__/
 *.py[cod]
+
+# Local API credentials. Never commit secrets.
+.env
+.env.*
+!.env.example

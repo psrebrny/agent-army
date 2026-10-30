@@ -1,6 +1,6 @@
 ---
 name: product-metrics
-description: "Decides what to measure and how to read it: decision questions, funnel, object_action events with schemas /ship can test, privacy, collection checks and low-volume reads. Not for writing tracking code or interpreting unverified data."
+description: "Decides what to measure and how to read it: decision questions, a funnel with expectations set before reading, object_action events /ship can test, data sources, privacy, collection checks, low-volume and health reads. Not for writing tracking code or interpreting unverified data."
 ---
 # /product-metrics — measure what decides, verify before reading
 
@@ -19,7 +19,9 @@ read the data only once it can be trusted.
 ## When to use
 - Before building instrumentation, before paid traffic, or when the user brings data to read.
 - Not for: writing tracking code (a `fix` work item for `/ship`), choosing a paid tool without the
-  user, or connecting to analytics accounts (exports go to `docs/product/data/*.csv`).
+  user, changing alerts, dashboards or tool settings (a `fix` work item), setting response-time and
+  error targets (`/solution-architecture`), comparing revenue and costs with the plan (`/business-case`
+  actuals mode).
 
 <rules>
 1. Until `Collection status` is `verified (date, how)`, nobody interprets the data, you included. When
@@ -34,28 +36,42 @@ read the data only once it can be trusted.
 5. Flag personal data, tracking and consent needs and hand them to `/legal-review`; prefer aggregate
    or first-party collection.
 6. Offer 2–3 tool options with cost and privacy trade-offs and assume no paid tool; the choice is an
-   ADR the user confirms.
+   ADR the user confirms. Heatmaps and session recordings are an option only above a stated traffic
+   (below it, watching five users with `/ux-review` says more) and only after `/legal-review` on
+   consent.
 7. Instrumentation is one `fix` work item whose acceptance lists each event name and property schema
    as an assertion the `/ship` tester can write. You never write the code.
 8. At low volume use absolute numbers and weekly cohorts, no significance tests, and say "not enough
    signal" when that is the honest reading.
 9. Route a finding from a read to the skill the data points to (`/ux-review`, `/validate-product`,
-   `/go-to-market`) instead of solving it here.
+   `/go-to-market`, `/business-case` for money against the plan, a `fix` work item or
+   `/solution-architecture` for a missed health target) instead of solving it here.
+10. Before a read, write what you expect for each funnel step that matters as a `P-n` in the shared
+    prediction register ("≥ 60% of `onboarding_started` reach `onboarding_completed` by date; below
+    40% → `/ux-review`"), with the volume below which you will say "not enough signal".
+11. Every number comes from a row in Data sources: `source | holds | link | access (connector or pull
+    command) | personal data | last pulled`. Read a source only as the contract's Stores section
+    allows; a new connector is bound through `/product stores`. Propose the links for the brief's
+    Product section as a Change proposal.
 </rules>
 
 ## Method
 1. **Decision questions** (rule 3), then the **funnel**: visit → signup → first useful result →
-   purchase → return within 7 days, adapted to the product, naming the step the user cares about most.
-2. **Events** (rule 4), **privacy** (rule 5), **tool options** (rule 6), **instrumentation handoff**
-   (rule 7).
+   purchase → return within 7 days, adapted to the product, naming the step the user cares about most,
+   with time metrics where a decision needs them (time to first useful result, time in the main flow).
+2. **Events** (rule 4), **privacy** (rule 5), **tool options** (rule 6), **data sources** (rule 11),
+   **instrumentation handoff** (rule 7).
 3. **Collection verified**: a manual trial run, payment reconciliation, no duplicates. Until all pass,
    `Collection status: unverified`.
-4. **Reads** (post-launch) from dated exports without personal data (rules 1, 2, 8, 9); compare with
-   go-to-market predictions and validation thresholds.
+4. **Reads** (post-launch) from dated exports without personal data (rules 1, 2, 8, 9): expectations
+   first (rule 10), then the counts, compared with go-to-market predictions and validation thresholds;
+   a health read compares response time, error rate and uptime with the targets in `solution.md`
+   Observability.
 
 <output_format>
 `metrics.md`: Decision questions · Metrics · Funnel · Events (`name | trigger | properties | source`) ·
-Privacy · Collection status (`unverified | verified (date, how)`) · Reads · Conversation state.
+Data sources · Privacy · Collection status (`unverified | verified (date, how)`) · Reads · Conversation
+state.
 </output_format>
 
 <examples>

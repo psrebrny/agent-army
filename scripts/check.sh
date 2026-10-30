@@ -575,15 +575,16 @@ PY_CONTRACT
   fi
 }
 
-# The product skills (13 advisors + the /product navigator) share one contract block.
+# The product skills (15 advisors + the /product navigator) share one contract block.
 # One list; completeness (all present) is asserted by check_package_rules (registry), not here.
 PRODUCT_SKILLS="product-strategy product-red-team market-research business-case validate-product \
-product-spec solution-architecture delivery-plan go-to-market product-metrics ux-review legal-review \
-launch-readiness product"
+product-spec solution-architecture delivery-plan go-to-market positioning-offer first-customers \
+product-metrics ux-review legal-review launch-readiness product"
 
 # One shared advisor contract lives in product/advisor-contract.md (APM installs only skill
 # folders, so it sits inside the /product skill). Every product skill points at it by relative path,
-# names its stage, and embeds no copy; the stores.json example parses and never allows `delete`.
+# names its stage, and embeds no copy; the stores.json example parses, never allows `delete`, and
+# its data sources allow only `read`.
 # Size is printed for information only (D17).
 check_advisor_contract() {
   local out rc
@@ -622,6 +623,9 @@ else:
         for t, b in doc['types'].items():
             if 'delete' in b.get('allowed', []):
                 errors.append(f'stores.json example allows delete for {t}')
+        for s, b in doc.get('sources', {}).items():
+            if b.get('allowed') != ['read']:
+                errors.append(f'stores.json example data source {s} must allow only read')
 for name in product:
     f = skills / name / 'SKILL.md'
     if not f.is_file():
@@ -641,6 +645,41 @@ for name in product:
         errors.append(f'{name}: more than 12 rules')
     if '<objective>' not in text:
         errors.append(f'{name}: no <objective> section')
+# Journey stages: product/SKILL.md owns the map. Its "what to read" table, the contract's stage list,
+# every skill's "Your stage" and the catalog's stage table must name the same numbered stages, so a
+# new stage cannot reach one copy only (stage numbers are stable IDs that skip records cite).
+def stage_rows(text, width):
+    rows = []
+    for line in text.splitlines():
+        cells = [c.strip() for c in line.strip().strip('|').split('|')]
+        if line.startswith('| ') and len(cells) == width and cells[0].isdigit():
+            rows.append(cells)
+    return rows
+nav = skills / 'product' / 'SKILL.md'
+if nav.is_file():
+    navt = nav.read_text()
+    stage_map = stage_rows(navt, 5)
+    stages = {int(r[0]): r[1] for r in stage_map}
+    if sorted(stages) != list(range(1, len(stages) + 1)):
+        errors.append(f'product/SKILL.md stage map is not numbered 1..N: {sorted(stages)}')
+    reads = sorted(int(r[0]) for r in stage_rows(navt, 3))
+    if reads != sorted(stages):
+        errors.append(f'product/SKILL.md "what to read" table covers stages {reads}, the map {sorted(stages)}')
+    if contract.is_file():
+        m = re.search(r'\*\*Stages\*\*[^:]*:\s*(.*?)\.\n', contract.read_text(), re.S)
+        listed = {int(n): ' '.join(s.split()) for n, s in re.findall(r'(\d+) ([^·]+)', m.group(1))} if m else {}
+        if listed != stages:
+            errors.append('advisor-contract.md stage list differs from the product/SKILL.md stage map')
+    for name in product:
+        f = skills / name / 'SKILL.md'
+        m = re.search(r'Your stage: ([^.\n]*)', f.read_text()) if f.is_file() else None
+        if m and not m.group(1).startswith('all'):
+            unknown = [n for n in re.findall(r'\d+', m.group(1)) if int(n) not in stages]
+            if unknown:
+                errors.append(f'{name}: names stage {", ".join(unknown)}, which the stage map does not have')
+    catalog = skills.parent / 'README.md'
+    if catalog.is_file() and stage_rows(catalog.read_text(), 5) != stage_map:
+        errors.append('.apm/README.md stage table differs from the product/SKILL.md stage map')
 for e in errors:
     print(e)
 print(f'COUNT {count}')
@@ -1008,6 +1047,9 @@ RETIRED = {
     'Last confirmed action': 'removed Planning Session field',
     'Deferred ideas': 'side ideas go to the manifest Out of scope',
     'Last manual configuration': 'merged into the Routing line',
+    '12-stage': 'the journey has 14 stages since 0.7.0',
+    '12 journey stages': 'the journey has 14 stages since 0.7.0',
+    'risk reversal only if the user confirm': 'policy confirmation belongs to positioning-offer rule 5',
 }
 LEGACY_OK = {skills / 'ship/references/legacy.md'}
 contracts = [p for p in skills.rglob('*.md') if p not in LEGACY_OK]
