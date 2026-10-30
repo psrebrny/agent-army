@@ -8,16 +8,17 @@ never by this script; the script only scores `cost` and applies the decision rul
 Usage:
   run.py <advisor> [--scenario S1 ...] [--arms N,K] [--with-reference --reference-dir DIR]
          [--model MODEL] [--actor-model M] [--persona-model M] [--judge-model M]
-         [--backend claude|api] [--judge-backend claude|api] [--max-turns 20] [--parallel]
-         [--web scenario|on|off] [--plan-only] [--no-ledger]
+         [--backend api|claude] [--judge-backend claude|api] [--max-turns 20] [--parallel]
+         [--web scenario|on|off] [--plan-only] [--no-ledger] [--keep-going]
   run.py --all [the same options, without advisor or --scenario]
 
   Models: --actor-model runs both arms (N and K); --persona-model plays the user;
   --judge-model scores. Each falls back to --model, then to a default: actor = CLI
   default, persona = haiku, judge = sonnet. API roles default to API_MODEL (pinned
   below); AUX_BASE_URL and AUX_API_KEY configure the OpenAI-compatible endpoint.
-  The judge runs on Claude (sonnet) unless --judge-backend api, also with --backend api:
-  one judge call per scenario, while actor and persona stay on the API.
+  --backend api is the default: actor and persona run on the API, so routine runs
+  spare the Claude limit; --backend claude is for pre-release confirmation and arm P.
+  The judge runs on Claude (sonnet) unless --judge-backend api: one judge call per scenario.
   API cost is assumed $0, NOT verified billing; tool calls count as completion rounds.
   Claude cost bands are divided by 5 for a sonnet actor and by 15 for a haiku actor.
 """
@@ -65,7 +66,8 @@ def progress(msg):
     """Live status for a human on stderr: wall clock, elapsed run time, what is happening now."""
     elapsed = int(time.monotonic() - STARTED)
     stamp = f"{datetime.datetime.now():%H:%M:%S} +{elapsed // 60}:{elapsed % 60:02d}"
-    print(f"  [{stamp}] {msg}", file=sys.stderr, flush=True)
+    sys.stderr.write(f"  [{stamp}] {msg}\n")  # one write per line: arms run in parallel threads
+    sys.stderr.flush()
 JUDGE_CRITERIA = ["false_facts", "fad_separability", "falsifiability", "smallest_next_step",
                   "resume", "decision_change", "not_assessed", "pace"]
 ACTOR_TOOLS = "Read,Write,Edit,Glob,Grep"
@@ -497,7 +499,8 @@ def main():
     ap.add_argument("--actor-model")
     ap.add_argument("--persona-model")
     ap.add_argument("--judge-model")
-    ap.add_argument("--backend", choices=["claude", "api"], default="claude")
+    ap.add_argument("--backend", choices=["claude", "api"], default="api",
+                    help="where actor and persona run (default: api, which spares the Claude limit)")
     ap.add_argument("--judge-backend", choices=["claude", "api"],
                     help="where the judge runs (default: claude, also with --backend api)")
     ap.add_argument("--max-turns", type=positive, default=SAFETY_STOP,
@@ -512,6 +515,8 @@ def main():
                     help="web tools for the actor: as the scenario's `web-on` file says, or forced")
     ap.add_argument("--plan-only", action="store_true", help="assemble and check isolation, run no model")
     ap.add_argument("--no-ledger", action="store_true")
+    ap.add_argument("--keep-going", action="store_true",
+                    help="finish every scenario despite failures; exit nonzero with a summary at the end")
     a = ap.parse_args()
     if a.all and (a.advisor or a.scenario):
         ap.error("--all cannot be combined with advisor or --scenario")
@@ -583,12 +588,21 @@ def main():
          "max_tool_calls": a.max_tool_calls, "parallel": a.parallel,
          "plan": [{"advisor": advisor, "scenario": scenario.name} for advisor, scenario in plan]},
         indent=2), encoding="utf-8")
+    failures = []
     try:
         for number, (advisor, scenario) in enumerate(plan, 1):
             progress(f"scenario {number}/{len(plan)}: {advisor} {scenario.name.split('-')[0]} "
                      f"(arms {','.join(arms)}; each arm runs session 1, then a fresh session 2)")
             a.advisor = advisor
-            run_scenario(a, scenario, base, arms, models, config)
+            try:
+                run_scenario(a, scenario, base, arms, models, config)
+            except EvalError as error:
+                if not a.keep_going:
+                    raise
+                failures.append(f"{advisor} {scenario.name.split('-')[0]}: {error}")
+                progress(f"failed, continuing (--keep-going): {error}")
+        if failures:
+            die(f"{len(failures)} of {len(plan)} scenario(s) failed:\n  " + "\n  ".join(failures))
     finally:
         print(f"advisor-eval: transcripts stay in {base}", flush=True)
 

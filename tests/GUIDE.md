@@ -80,11 +80,12 @@ Each real run calls models (Claude has incurred multi-dollar costs; API billing 
 - **Run:** `python3 .claude/skills/advisor-eval/run.py <advisor> --scenario <id> --plan-only` first
   (assembles each scratch repo outside this repo and checks isolation without a model), then the same
   command without `--plan-only`. Claude Code can call it as `/advisor-eval`; the protocol is in its
-  `SKILL.md`. The default `--backend claude` needs the `claude` CLI; `--backend api` runs actor and
+  `SKILL.md`. The default `--backend api` (it spares the Claude limit) runs actor and
   persona over stdlib HTTP with `AUX_BASE_URL` and `AUX_API_KEY` from the environment or the source
   repo's ignored private `.env` (loaded only on API; environment wins), no shell evaluation, and the
   model pinned as `API_MODEL` in `run.py`. The judge stays on Claude `sonnet` (one call per scenario)
-  unless `--judge-backend api`.
+  unless `--judge-backend api`. `--backend claude` needs the `claude` CLI and is kept for
+  pre-release confirmation and arm P.
   The API base includes `/v1` or the provider's equivalent prefix; the runner appends `/chat/completions`.
   Fixture contents are sent to the configured provider; never put keys in prompts, files or commands
   checked into Git. Keep the optional `.env` at mode `600` and never paste its contents in chat.
@@ -93,10 +94,11 @@ Each real run calls models (Claude has incurred multi-dollar costs; API billing 
 - **API calibration and batch:** first run `product-metrics --scenario S22` and `positioning-offer
   --scenario S18` with `--backend api --parallel --max-turns 70 --no-ledger`. Compare the actual
   decisions to the Opus rows (S18 was a pre-fix `fix-contract`); only then run
-  `python3 .claude/skills/advisor-eval/run.py --all --backend api --parallel --max-turns 70`
+  `python3 .claude/skills/advisor-eval/run.py --all --backend api --parallel --max-turns 70 --keep-going`
   (first with `--plan-only`). `--all` means one representative per product skill, 16 cases; it starts
   with S22/S18, includes S15/S7 and excludes the manual S8/S17. Run S10 separately via
-  `product-metrics --scenario S10`. An omitted scenario for a named advisor now selects its
+  `product-metrics --scenario S10`. Triage failures as a skill gap or a model limit, then confirm
+  changed advisors on Claude before a release (the routine workflow in the advisor-eval `SKILL.md`). An omitted scenario for a named advisor now selects its
   representative, not every fixture. Arms can run concurrently, scenarios cannot.
   API errors, safety stops, `fix-contract` and `rethink` halt the batch with a nonzero exit;
   incomplete/invalid runs get no ledger row. Existing real rows remain append-only, so retry remaining

@@ -341,7 +341,7 @@ class ProtocolTests(unittest.TestCase):
 
         # K-only avoids a comparative verdict; it still exercises both sessions/personas and judge.
         with mock.patch.object(sys, "argv", ["run.py", "positioning-offer", "--scenario", "S18",
-                                            "--arms", "K", "--actor-model", "sonnet",
+                                            "--backend", "claude", "--arms", "K", "--actor-model", "sonnet",
                                             "--persona-model", "persona-model", "--judge-model",
                                             "judge-model", "--no-ledger"]), \
                 mock.patch.object(runner.shutil, "which", return_value="/unused/claude"), \
@@ -495,7 +495,7 @@ class EndToEndTests(unittest.TestCase):
         env = dict(os.environ, PATH=f"{fake}{os.pathsep}{os.environ['PATH']}",
                    AUX_BASE_URL=f"http://127.0.0.1:{self.server.server_port}/v1",
                    AUX_API_KEY="scripted-test-key")
-        result = subprocess.run([sys.executable, str(HARNESS / "run.py"), "--backend", "api",
+        result = subprocess.run([sys.executable, str(HARNESS / "run.py"),  # default backend: api
                                  "--model", "scripted-model", "--no-ledger", "positioning-offer",
                                  "--scenario", "S18", "--arms", "K"],  # K-only: no comparative verdict
                                 env=env, text=True, capture_output=True, timeout=60)
@@ -511,6 +511,13 @@ class EndToEndTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(result.stdout.count("| fix-contract |"), 1)
         self.assertNotIn("| positioning-offer |", result.stdout)
+
+    def test_keep_going_finishes_the_batch_and_fails_with_a_summary(self):
+        self.server.false_fact = True
+        result = self.run_cli("--all", "--keep-going")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout.count("| fix-contract |"), 16)
+        self.assertIn("16 of 16 scenario(s) failed", result.stderr)
 
 
 if __name__ == "__main__":

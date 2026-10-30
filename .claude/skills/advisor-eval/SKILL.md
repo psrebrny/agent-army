@@ -9,7 +9,7 @@ This skill measures the product advisors; it is not one of them. It lives in `.c
 `design-docs/ARMY-PRODUCT-ADVISORS/00_CORE_MANIFEST.md`; rubric: `tests/fixtures/advisors/rubric.md`.
 
 ## Invocation
-`advisor-eval <advisor> [--scenario <id…>] [--backend claude|api]` or `advisor-eval --all`.
+`advisor-eval <advisor> [--scenario <id…>] [--backend api|claude]` or `advisor-eval --all`.
 
 For each advisor run:
 ```bash
@@ -17,8 +17,8 @@ python3 .claude/skills/advisor-eval/run.py <advisor> [--scenario S1 S3] [--arms 
   [--with-reference --reference-dir <pm-skills checkout at 8607e3b>] [--model <alias>]
 ```
 - First run `--plan-only`: it assembles every scratch repo and checks isolation without calling a model.
-- `--backend claude` is the default and needs the `claude` CLI. `--backend api` runs the actor (N and K)
-  and the persona without it, on Python's stdlib and a hosted OpenAI-compatible Chat Completions
+- `--backend api` is the default, so routine runs spare the Claude limit: it runs the actor (N and K)
+  and the persona without the `claude` CLI, on Python's stdlib and a hosted OpenAI-compatible Chat Completions
   endpoint configured by `AUX_BASE_URL` (including the provider's API prefix, e.g. `/v1`) and
   `AUX_API_KEY`; the model is `API_MODEL`, pinned in `run.py` (override with `--model`). The judge
   still runs on Claude `sonnet`, one call per scenario; `--judge-backend api` moves it to the API too.
@@ -27,6 +27,8 @@ python3 .claude/skills/advisor-eval/run.py <advisor> [--scenario S1 S3] [--arms 
   Keep `.env` private (`chmod 600`); never commit it or print/paste its contents into a chat.
   Fixture and scratch contents go to that provider. Never use a web
   login/session or a local inference server as a substitute for the requested hosted model.
+  `--backend claude` needs the `claude` CLI and spends the Claude limit: use it only for the
+  pre-release confirmation, arm P, or when the user asks.
 - `--actor-model`, `--persona-model`, `--judge-model` override `--model`. Without it, API roles use
   `API_MODEL`; Claude uses its CLI actor default, `haiku` persona and `sonnet` judge. Pin one actual
   model for API calibration and the batch, not `auto`, a model router or an OmniRoute combo.
@@ -57,15 +59,28 @@ calibration runs. Do not call a scripted mock run a calibration or put its score
 After accepting calibration, from the source repo:
 ```bash
 python3 .claude/skills/advisor-eval/run.py --all --backend api --max-turns 70 --parallel --plan-only
-python3 .claude/skills/advisor-eval/run.py --all --backend api --max-turns 70 --parallel
+python3 .claude/skills/advisor-eval/run.py --all --backend api --max-turns 70 --parallel --keep-going
 ```
 To cover the additional interrupted S10: run `product-metrics --scenario S10` with those API options.
-The batch exits nonzero at an API/protocol error, a safety stop, `fix-contract` or `rethink`; it never
+The batch stops at an API/protocol error, a safety stop, `fix-contract` or `rethink`; `--keep-going`
+finishes the remaining scenarios and exits nonzero with a summary of the failures. It never
 asks a model to waive a failure or fabricates a pass to complete the batch. Completed real rows remain.
 Use explicit advisor/scenario runs to retry remaining cases; `--all` does not deduplicate ledger rows.
 Transport: `--api-timeout 120`, `--api-retries 5` (429/5xx/connection errors, backoff + Retry-After;
 a quota wait over 120 s fails instead of ignoring it), `--max-tokens 16384` (4096 truncated long turns). Optional `--judge-json`
 requests `response_format: json_object`; leave it off for endpoints without that capability.
+
+### Routine workflow (the default)
+1. After a skill or contract change, run the batch above on the API in the background
+   (`--no-ledger` until the results are reviewed).
+2. Triage each `fix-contract`, `rethink` or low criterion from the judge's findings and transcripts:
+   - **skill gap**: the skill is ambiguous or silent on the case (missing consent, missing data, who
+     owns a decision). Fix the skill; a stronger model benefits too.
+   - **model limit**: a miscount, a loop, a lost instruction the skill states plainly. Record it,
+     add no rule for it: extra rules cost Opus tokens on every run and can stiffen its answers.
+3. Re-run only the scenarios whose skill changed.
+4. Before a release, and only with the user's go-ahead, confirm the changed advisors on one or two
+   scenarios with `--backend claude`; only Claude rows establish production quality.
 
 ## Protocol (what `run.py` does, and what you must not do by hand)
 1. **Arms.** N = the candidate `SKILL.md` copied into scratch `.claude/skills/` and invoked as
