@@ -1,0 +1,12 @@
+// Markdown structure rules; scripts/md-hook.sh fixes them on staged files before a commit.
+// Line width (120) is checked on added lines only, by scripts/md-hook.sh: an automatic rewrap would split
+// phrases that scripts/check.sh matches on one line, so existing long lines change only when edited.
+{
+  "config": {
+    "default": true,
+    "MD013": false,
+    "MD033": false, // skills use <objective>, <rules> and similar tags
+    "MD041": false // files may start with frontmatter instead of an H1
+  },
+  "ignores": ["build/**", "tests/fixtures/**", "**/node_modules/**"]
+}

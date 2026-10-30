@@ -67,6 +67,10 @@ scripts/check.sh --target-dir <dir>   # validate a MATERIALIZED tool dir (e.g. a
 ```
 **Product skills are checked structurally only** (`check.sh`: pointer, stage, objective, rule cap, links, description length). There is no model-based advisor evaluation; a repeatable advisor mistake found in use becomes a skill fix through `/adapt-army`.
 
+**Decisions and roadmap:** Agent Army is run as a product with its own skills: ADRs in `docs/adr/` (read ADR-001 before adding or growing a skill), product records in `docs/product/`.
+
+**Markdown:** `.markdownlint-cli2.jsonc` sets the structure rules; `scripts/md-hook.sh` (pre-commit) fixes them in staged files and rejects added lines over 120 columns. Wrap by hand at a sentence or clause boundary: an automatic rewrap would split phrases `check.sh` matches on one line.
+
 **Releasing a new version:** bump `PACKAGE_VERSION` in `armylib.py` and `version` in `apm.yml` together; `scripts/smoke.sh` migrates a real profile made by the previous release's generator (extracted from its commit). When to bump: see "Changing a contract" rule 1.
 
 **Generator preview — `python3 .apm/skills/bootstrap/bootstrap.py --mode auto --dry-run`** prints what the profile would create or migrate.
