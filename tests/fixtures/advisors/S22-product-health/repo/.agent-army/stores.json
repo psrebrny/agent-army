@@ -1,8 +1,0 @@
-{"version": 1, "types": {},
- "sources": {
-  "errors": {"connector": "error-tracker", "allowed": ["read"],
-    "pull": "error tracker > Issues > export CSV, last 7 days"},
-  "app-logs": {"connector": null, "allowed": ["read"],
-    "pull": "ssh runplan-app 'journalctl -u runplan --since yesterday | grep \"/plans\\|/onboarding\"'"},
-  "analytics": {"connector": "analytics", "allowed": ["read"],
-    "pull": "analytics > Funnels > onboarding > export weekly CSV"}}}

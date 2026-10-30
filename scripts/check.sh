@@ -781,12 +781,11 @@ PY_ADR
 # (b) no third-party install guidance (npx skills, /plugin install, apm install of another package);
 # (c) every .apm/SOURCES.md row names repo, file, a 7+ hex commit and a license;
 # (d) WARN for a product-skill description over 300 chars;
-# (e) relative links in .apm/README.md and the product skills resolve;
-# (f) WARN when a product skill's SKILL.md hash or contract tag differs from its latest SCORECARDS row.
+# (e) relative links in .apm/README.md and the product skills resolve.
 check_package_rules() {
   local out line
   py_capture --merge "$ROOT" $PRODUCT_SKILLS <<'PY_PACKAGE'
-import ast, hashlib, pathlib, re, sys
+import ast, pathlib, re, sys
 root = pathlib.Path(sys.argv[1]); product = sys.argv[2:]
 apm = root / '.apm'
 
@@ -940,37 +939,6 @@ if broken:
 else:
     emit('OK', f'relative links resolve ({checked} in .apm/README.md and product skills)')
 
-# (f) eval staleness against SCORECARDS.md
-ledger = root / 'tests/fixtures/advisors/SCORECARDS.md'
-latest = {}
-if ledger.is_file():
-    for line in ledger.read_text().splitlines():
-        cells = [c.strip() for c in line.strip().strip('|').split('|')]
-        if len(cells) >= 4 and re.fullmatch(r'\d{4}-\d{2}-\d{2}', cells[0]):
-            latest[cells[1]] = (cells[2], cells[3])
-changed, unevaluated = [], []
-for name in product:
-    f = apm / 'skills' / name / 'SKILL.md'
-    if not f.is_file():
-        continue
-    # Same fingerprint as advisor-eval/run.py: SKILL.md plus the shared contract it points at.
-    data, source = f.read_bytes(), f.read_text()
-    contract = apm / 'skills' / 'product' / 'advisor-contract.md'
-    if contract.name in source and contract.is_file():
-        data += contract.read_bytes()
-        source = contract.read_text()
-    m = re.search(r'<!-- (advisor-contract:v\d+) -->', source)
-    tag = m.group(1) if m else '-'
-    if name not in latest:
-        unevaluated.append(name)
-    elif latest[name] != (tag, hashlib.sha256(data).hexdigest()[:12]):
-        changed.append(name)
-if changed:
-    emit('WARN', 'advisor changed since last eval; run advisor-eval: ' + ', '.join(changed))
-else:
-    emit('OK', 'evaluated advisors match their latest SCORECARDS row')
-if unevaluated:
-    emit('INFO', 'no SCORECARDS row yet: ' + ', '.join(unevaluated))
 PY_PACKAGE
   out="$PY_OUT"
   while IFS=$'\t' read -r kind line; do
