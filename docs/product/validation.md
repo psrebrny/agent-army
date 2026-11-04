@@ -31,6 +31,32 @@ P-1,yes,claude,yes,,,,no,,
 What this can and cannot show: with n = 3 it catches a broken or confusing install, not how many people would
 install. The maintainer's run is weaker evidence than an outsider's (R-3).
 
+### Materials (drafts; sending them is the maintainer's act)
+
+Recruitment, warm network first: colleagues who code with Claude Code, Codex or Cursor; developer friends; one
+Discord or Slack group of AI-coding users the maintainer already belongs to. No ads, no cold outreach.
+
+Message draft (Polish, for the warm network):
+
+> Cześć! Robię open-source'owy zestaw agentów do Claude Code / Codex / Cursora. Potrzebuję 20 minut Twojego
+> czasu: zainstalujesz go na dowolnym swoim repo, korzystając tylko z README, a ja sprawdzę, gdzie się
+> zacinasz. Nie oceniam Ciebie, tylko README. Pasuje Ci call ze współdzielonym ekranem w tym tygodniu?
+> Jeśli wolisz sam, wyślę 5 krótkich pytań.
+
+Two ways to run it; the maintainer fills the CSV in both:
+
+1. **Observed (stronger, `behavior`):** a 20-minute screen-share call. The maintainer stays silent, keeps the
+   time and notes each stop. Any answer to a question makes the run "needed help".
+2. **Self-reported (weaker):** the participant installs alone and answers the five questions below.
+
+Five questions for the self-reported run:
+
+1. Which tool did you use, and did you have APM installed before?
+2. How many minutes until the package was installed?
+3. How many minutes until `/bootstrap` finished?
+4. Did you finish without asking anyone? If not, what did you ask?
+5. Where did you stop for more than a minute, and why?
+
 ## Conversation state
 
 - Settled: E-1 tests R-1 first (2026-10-30); thresholds above, fixed before any result.

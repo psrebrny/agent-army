@@ -56,6 +56,15 @@ Stars and last push come from the GitHub API on the check date.
 | MR-16 | The largest packages install from plugin marketplaces: superpowers sits in Anthropic's official marketplace and OpenAI's Codex plugin marketplace; BMAD, pm-skills and Minimalist Entrepreneur ship their own Claude Code and Codex marketplaces; BMAD also uses `npx skills add` | READMEs of MR-1, MR-5, MR-9, MR-11 | 2026-10-30 | third-party data |
 | MR-17 | Several grow through the author's audience: newsletter (pm-skills, Product Compass), book (Minimalist Entrepreneur), YouTube and paid community (Agent OS) | READMEs of MR-8, MR-9, MR-11 | 2026-10-30 | third-party data |
 
+### Competitor updates
+
+| ID | Claim | Source | Checked | Evidence level |
+|---|---|---|---|---|
+| MR-22 | superpowers (MR-1) keeps growing: 312,068 stars (309,194 on 2026-10-30), pushed 2026-11-03. Creator reels promote it as a must-install Claude Code skill ("Senior mode": brainstorm, spec, plan, tests first, then code), next to unrelated packages, with "comment X and I'll DM the link" calls | github.com/obra/superpowers (API); facebook.com/reel/1129694423368668 | 2026-11-04 | third-party data |
+| MR-23 | `affaan-m/ECC` (Everything Claude Code), missing from MR-1 to MR-8: "agent harness performance optimization system"; 296,773 stars, created 2026-01-18, pushed 2026-11-02; 71 agents, 314 skills, hook profiles with blocking tool hooks, continuous learning ("instincts" from sessions, `/evolve` clusters them into skills), AgentShield scanner; native installs for Claude Code, Codex, OpenCode, Copilot, Cursor, Gemini, Kimi, Qoder and more. `/skill-create` analyses the repo's git history and generates repo-specific `SKILL.md` files. Generic agents and hooks, repo-specific skills: closest found to A-7. Also reaches the business side with standalone skills (`market-research`, `investor-materials`, `investor-outreach`, `content-engine`, `article-writing`). Revenue: sponsors plus ECC Pro, a hosted GitHub App for private repos with PR-triggered audits and team usage | github.com/affaan-m/ECC (README, API) | 2026-11-04 | third-party data |
+| MR-24 | Anthropic's `claude-code-setup` plugin (skill `claude-automation-recommender`) scans a codebase and recommends 1–2 hooks, subagents, skills, plugins and MCP servers per type; it is read-only and creates no files. Anthropic covers "what should this repo have", not generating it with gates (A-7, ADR-001) | synced plugin `SKILL.md` | 2026-11-04 | third-party data |
+| MR-25 | `coreyhaines31/marketingskills`: marketing skills for Claude Code and other agents (CRO, copywriting, SEO, analytics, growth engineering, A/B test setup, ad creative); 58,387 stars, pushed 2026-10-31. A larger alternative than MR-18 for the go-to-market stages of the idea-to-revenue path; forks add scheduled agent "teams" (`syntax-syndicate/marketing-skills`, 86 stars) | github.com/coreyhaines31/marketingskills (API); facebook.com/reel/928642790316848 | 2026-11-04 | third-party data |
+
 ## Manual-check list
 
 1. User complaints straight from users: Reddit r/ClaudeAI and r/ClaudeCode, GitHub issues sorted by reactions in
