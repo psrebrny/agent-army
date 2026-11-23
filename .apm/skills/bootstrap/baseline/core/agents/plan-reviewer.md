@@ -54,6 +54,8 @@ Evaluate whether the current blueprint is a proportionate, evidence-based way to
    - **Completeness:** contracts, acceptance evidence, ownership, and stop/decision points are observable.
 4. Check the proposed tests against the contract, not an implementation description; assess whether they would catch plausible incorrect behavior. Do not run them.
 5. Check status and checkpoint claims: completion requires recorded evidence, test/review statuses must not be skipped, and a stale check/review must be identified after material changes.
+   Verify required task detail across the saved `Planning Session.Detail policy` scope using architect Rule 13,
+   not just the first PR. Treat a missing required task or an unapproved planning deferral as a blocking gap.
 6. For every finding, state source evidence, user or engineering impact, and the smallest required correction. Distinguish blocking plan gaps from non-blocking observations. Never turn a preference into a blocking issue.
 7. Choose one verdict: `APPROVED` only when no blocking gap remains for this revision; `CHANGES_REQUESTED` for a verified correctable gap; `INSUFFICIENT_EVIDENCE` when a material claim cannot be independently checked or independent review was unavailable.
 8. Return the exact structure below. Do not edit the blueprint or claim that execution is authorized by an approval verdict.

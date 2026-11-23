@@ -223,6 +223,9 @@ PY
       && grep -q 'ready_for_human_review' "$f" \
       && grep -q 'one consequential question per turn' "$f" \
       && grep -q '## Planning Session' "$f" \
+      && grep -q '^- \*\*Detail policy:\*\*' "$f" \
+      && grep -q '^| Step | Planning milestone | Status | Completion evidence |' "$f" \
+      && grep -q '^| compose |' "$f" && grep -q '^| review |' "$f" \
       && grep -q '## For you' "$f" && grep -q 'Latest plan change' "$f" \
       && grep -q 'Task status:\*\* \[open | in progress | in testing | in review | done | awaiting decision | blocked | conditional\]' "$f"; then
       ok "Delegation Contract, interactive planning and resumable status are explicit"
@@ -533,7 +536,7 @@ try:
     for name, text in (('ship', ship), ('architect', architect)):
         left = [c for c in legacy if c in text.replace(LEGACY_LINE, '')]
         assert not left, f'{name} still lists removed checkpoints: {sorted(left)}'
-    # One progress ledger: the manifest's Task Roadmap; no PR-level Execution Progress section.
+    # One delivery ledger: Task Roadmap. Planning has its own bounded milestone table.
     assert '## Task Roadmap' in architect and '\n## Execution Progress\n' not in architect, 'progress must come from the Task Roadmap, not a second ledger'
     # Two readers: a plain-language section per file, and correction tiers that keep edits small.
     assert architect.count('## For you\n') == 2, 'manifest and PR skeletons each need a For you section'
@@ -553,7 +556,43 @@ try:
     assert 'the task review accepted → `done`' in ' '.join(ship.split()), 'task done mapping must follow the accepted task review'
     assert 'scripts/removals.py' in ship, 'audit packets lost the removal list'
     session = fields(architect, 'Planning Session')
-    assert set(session) == {'Stage', 'Progress', 'Open question', 'Decisions', 'Evidence', 'Plan revision', 'Review', 'Next action'}, 'Planning Session fields changed'
+    assert set(session) == {
+        'Stage', 'Detail policy', 'Progress', 'Finish condition', 'Open question',
+        'Decisions', 'Evidence', 'Plan revision', 'Review', 'Next action',
+    }, 'Planning Session needs durable detail policy, milestones and finish condition'
+    assert choices(session['Detail policy'].split(';')[0] + ']') == {
+        'next-task', 'all-tasks',
+    }, 'planning depth must be explicit, separate from the interaction mode'
+    assert '| Step | Planning milestone | Status | Completion evidence |' in architect, 'missing planning milestone ledger'
+    assert '| compose |' in architect and '| review |' in architect, 'planning must end with composition and review'
+    author_rules = ' '.join(architect.split())
+    executor_rules = ' '.join(ship.split())
+    for rule in (
+        'before the first planning question',
+        'explicit user override',
+        'required planning milestones are `done`',
+        'A counter alone is not a finish condition',
+    ):
+        assert rule in author_rules, f'architect lost planning rule: {rule}'
+    for rule in (
+        '**Planning-first resume.**',
+        '**Planning readiness.**',
+        'Never overwrite `Planning Session.Progress`',
+        'A partial architect handoff',
+    ):
+        assert rule in executor_rules, f'ship lost planning boundary: {rule}'
+    plan_reviewer = (agents / 'plan-reviewer.md').read_text()
+    assert 'Planning Session.Detail policy' in plan_reviewer and 'architect Rule 13' in plan_reviewer, \
+        'plan review must check the requested detail scope, not just the first PR'
+    fixture = root / 'tests/fixtures/planning-roles/architect-full-plan'
+    saved = (fixture / 'repo/design-docs/REPORT-LINKS/00_CORE_MANIFEST.md').read_text()
+    saved_session = fields(saved, 'Planning Session')
+    assert set(saved_session) == set(session), 'full-plan resume fixture drifted from the manifest skeleton'
+    assert saved_session['Stage'] == 'discussion' and saved_session['Detail policy'].startswith('all-tasks;'), \
+        'full-plan fixture must resume unfinished planning with the explicit override'
+    assert '| compose |' in saved and '| review |' in saved and '| current |' in saved, \
+        'full-plan fixture must retain the route after its first completed decision'
+    assert all((fixture / f).is_file() for f in ('request.md', 'expected.md')), 'full-plan fixture packet missing'
     state = fields(architect, 'Execution State')
     assert 'Temporary delegation' in state, 'temporary authorization cannot survive resume'
     assert choices(state['Interaction policy'].split(' — ')[0] + ']') == {'autonomous', 'interactive', 'unset'}, 'unexpected third interaction mode'
@@ -569,7 +608,7 @@ except (AssertionError, IndexError) as exc:
     sys.exit(1)
 PY_CONTRACT
   then
-    ok "interaction cards agree; roadmap is the only progress ledger; For you sections, correction tiers and delegation fields are present; mode rule names only known bottlenecks"
+    ok "interaction cards agree; separate planning/delivery ledgers, durable depth and readiness gate are present; correction tiers, delegation and mode rule agree"
   else
     bad "interaction contract mismatch"
   fi
@@ -1013,6 +1052,12 @@ RETIRED = {
     'both audits': 'audits are selected by risk; say "the selected audits"',
     'both required reviews': 'audits are selected by risk',
     'Last confirmed action': 'removed Planning Session field',
+    'before writing ANY plan file': 'save the planning checkpoint before the first question',
+    '**Interactive** details the next task only': 'depth follows the saved policy, including user overrides',
+    'Interactive details only the next task': 'depth follows the saved policy, including user overrides',
+    'each PR\'s status in one line': 'delivery must not overwrite the planning milestone ledger',
+    'Save the provisional progress estimate, milestone headlines and what ends planning in `Progress`':
+        'planning now has a milestone ledger and a separate finish condition',
     'Deferred ideas': 'side ideas go to the manifest Out of scope',
     'Last manual configuration': 'merged into the Routing line',
     '12-stage': 'the journey has 14 stages since 0.7.0',
@@ -1023,9 +1068,15 @@ LEGACY_OK = {skills / 'ship/references/legacy.md'}
 contracts = [p for p in skills.rglob('*.md') if p not in LEGACY_OK]
 hits = []
 for p in contracts:
+    older_blueprint = False
     for n, line in enumerate(p.read_text().splitlines(), 1):
-        if 'Older blueprint' in line:
-            continue  # the architect's migration edge case names legacy fields on purpose
+        if p == skills / 'bootstrap/baseline/core/agents/architect.md':
+            if line.startswith('- **Older blueprint:**'):
+                older_blueprint = True
+            elif not line.startswith('  '):
+                older_blueprint = False
+        if older_blueprint:
+            continue  # only this bullet and its indented continuation may name legacy fields
         for phrase, why in RETIRED.items():
             if phrase in line:
                 hits.append(f'{p.relative_to(root)}:{n} "{phrase}" ({why})')

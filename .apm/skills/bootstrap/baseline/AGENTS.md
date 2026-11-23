@@ -35,6 +35,10 @@ implements source code. The main session conditionally uses `planning-analyst` f
 requires `plan-reviewer` in a fresh context before handing a new blueprint to execution. Use
 `<SKILLS_DIR>/ship/SKILL.md` to execute or resume work:
 
+The architect's `Planning Session` is the planning checkpoint (milestones, depth and finish condition).
+A request to plan everything before code survives resume and Interactive execution; see architect Rule 13.
+Planning completion hands off to `/ship`'s separate blueprint/scope approval, never directly to implementation.
+
 - **Claude Code:** `/ship "<task, PR, ticket, or small fix>"`, or plain `/ship` to resume the one
   unambiguous open scope.
 - **Other tools:** "Follow `<SKILLS_DIR>/ship/SKILL.md` for this task: <task>."

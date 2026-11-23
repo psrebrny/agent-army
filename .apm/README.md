@@ -1,6 +1,6 @@
 # Agent Army skills catalog
 
-Agent Army 0.7.1 installs 21 skills: five engineering workflows and sixteen product skills (fifteen
+Agent Army 0.8.0 installs 21 skills: five engineering workflows and sixteen product skills (fifteen
 advisors plus the `/product` navigator). Every skill is optional and callable on its own. Nothing runs
 another skill for you: `/product` recommends a step, you run it.
 
@@ -117,6 +117,11 @@ changes alerts, dashboards or settings; that is a `fix` work item.
 
 `architect`, `tester`, `code-reviewer`, `security-auditor`, `perf-auditor`, `docs-writer` and `coder`
 are roles that `/ship` runs, not skills you call.
+
+Interactive planning saves its ordered milestones, detail policy and finish condition before asking
+questions. "Plan everything before code" requires detail across the requested PRs, even with Interactive
+execution. On resume, continue from that checkpoint; a finished plan still needs separate blueprint/scope
+approval before any implementation or new tests.
 
 ## Pick by situation
 

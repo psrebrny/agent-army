@@ -44,6 +44,12 @@ contract; do not restate it in a packet.
 - no argument → resume the single unfinished task or PR only when exactly one exists; when none or
   several exist, present the candidates and ask what to start or resume.
 
+**Planning-first resume.** Before selecting executable work, read the manifest's `Planning Session`.
+If its stage is not `ready`, resume the architect's first actionable unfinished milestone and `Next action`,
+preserving `Detail policy` and the finish condition (architect Workflow Phases 2–5).
+An open delivery task, an answer to a planning question or "continue planning" never authorizes execution.
+Do not dispatch tester/coder or write implementation while that planning checkpoint is incomplete.
+
 PR review comments become one correction scope, settled with the user per comment. A comment that asks for
 tests ("add tests for this hook?") is not a mandate for a test file per unit: before proposing, find the
 existing tests that already detect each relevant regression and propose only the cases they miss, with their
@@ -52,9 +58,9 @@ with that test's name instead of adding one. The accepted case list is the teste
 
 Never select the most recently edited plan merely because it is recent. If no blueprint exists for a
 feature/ticket, invoke `architect` to create one, then stop at the mandatory blueprint + routing + scope
-gate below. Do not auto-select a task or PR from a new or materially revised blueprint, even when only
-one candidate exists. Users may invoke `architect` directly for planning or replanning; it creates/updates
-`design-docs/` and never implements source code.
+gate below once planning is ready. Do not auto-select a task or PR from a new or materially revised blueprint,
+even when only one candidate exists. Users may invoke `architect` directly for planning or replanning;
+it creates/updates `design-docs/` and never implements source code.
 
 For new planning, the main session coordinates the planning roles; do not ask an architect subagent to spawn
 its own workers. Invoke `planning-analyst` only when a material cause, behavior, source conflict, or repository
@@ -65,6 +71,8 @@ composes a blueprint, invoke `plan-reviewer` in a fresh context with the packet 
 the verdict and revision in `Planning Session`. If no independent context can be created, record
 `INSUFFICIENT_EVIDENCE` and stop at the blueprint gate unless the user explicitly chooses to proceed with that
 limitation. A review verdict never authorizes implementation.
+A partial architect handoff returns to its saved planning milestone, not to the blueprint gate or
+implementation. A role's `STATUS: done` describes its invocation, not the whole planning session.
 
 ## 1 · EXECUTION POLICY
 Read the selected PR's `Execution State`. Interaction is selected **per PR**, never per role or command.
@@ -84,8 +92,8 @@ When asking, give one recommendation with a one-line reason. Recommend **Interac
 
 Never ask the user to choose raw `red`/`green`/`review` checkpoints. The user may say `switch to
 autonomous` or `switch to interactive` at any time; persist the new mode immediately and apply it at the
-next safe boundary. On `switch to autonomous`, detail and review the remaining selected tasks before
-continuing.
+next safe boundary. Apply architect Rule 13 to planning depth before continuing; preserve an explicit
+user override, and resolve a conflict between that override and the requested mode rather than resetting it.
 
 At any mode, ask instead of guessing when a requirement is missing, the scope is ambiguous, or a change
 needs expanded authority. In both modes, pause with an Interaction Card before an external or irreversible
@@ -109,9 +117,10 @@ reference, never required reading. Internal labels (`Execution Profile`, `Bottle
 scope, plan revision, card field names) stay in the PR file unless the user asks or a card below requires them;
 then translate them into what they mean for the user.
 
-**Progress.** The outcome map is the manifest's `Task Roadmap`: one milestone per selected task, a closure
-milestone per PR, and the feature's `final` row; its finish condition is the manifest's. RED, implementation
-and GREEN are phases within a milestone. There is no other status list or progress section. After scope
+**Progress.** During planning use only the architect's saved planning milestones and planning finish condition.
+After execution scope approval, the outcome map is the manifest's `Task Roadmap`: one milestone per selected
+task, a closure milestone per PR, and the feature's `final` row; its finish condition is the manifest's.
+RED, implementation and GREEN are phases within a milestone. There is no other delivery progress ledger. After scope
 approval, show the selected scope and goal, the map, the current milestone and approximate total, and the
 finish condition; for a multi-PR scope also the current and remaining PRs, and announce the next PR's map when it
 starts. Keep the count on resume. At each interactive exchange show a
@@ -123,10 +132,11 @@ evidence without adding a milestone. A new outcome changes the estimate only aft
 scope; side ideas go to the manifest's `Out of scope` as deferred. Never promise a duration or message count.
 
 **Task plan.** Before each task, the first one included, show its `task plan` in two or three lines: behavior, significant cases, verification and exact write list.
-A roadmap task that is not yet detailed is detailed first, by the architect role, inside the manifest's core and
-from the reviewed slices (its PR file is created when the PR's first task starts, carrying the current scope's
-interaction policy); this is not a new blueprint gate. Never write tests for later roadmap tasks in advance. A
-topic found during work becomes an inserted roadmap row only when the user agrees it is in scope; a finding that
+A roadmap task that is not yet detailed follows architect Rule 13 and the saved `Detail policy`; a missing
+task required by `all-tasks` returns to planning, not just-in-time implementation. Detail inside the settled
+core is not a new blueprint gate. A new PR file carries the current scope's interaction policy.
+Never write tests for later roadmap tasks in advance. A topic found during work becomes an inserted roadmap row
+only when the user agrees it is in scope; a finding that
 the core is wrong stops the task for a core decision (architect Rule 13).
 When nothing is open and the write list is inside approved scope, show the plan and continue; it is a heads-up,
 not an approval step. It waits only when it carries a question: a missing requirement, trade-off, scope choice
@@ -148,7 +158,9 @@ them rediscover an answer already supported by the contract.
 - When finish criteria are met, return the final review result rather than opening another round of improvements.
 
 ### RESUME
-On resume, read `Execution State`, task decisions/evidence, the pending card, the roadmap and any temporary
+Apply the planning-first resume rule before the execution steps below. If the saved manifest lacks the
+current milestone table, `Detail policy` or planning finish condition, read `references/legacy.md` first.
+On execution resume, read `Execution State`, task decisions/evidence, the pending card, the roadmap and any temporary
 delegation before acting. Initialize a missing temporary delegation to `none`. Missing evidence stays unknown:
 inspect or rerun the relevant check without replaying decisions. When the user returns after a break, open with
 one sentence on where the work stands (task, last verified result, the pending question or next step) before
@@ -212,8 +224,21 @@ refactor checkpoint/recovery and exact write list, and the task review shows the
 do not call a passing baseline RED.
 
 ### MANDATORY BLUEPRINT + ROUTING + SCOPE GATE
-When `architect` creates or materially revises a blueprint (a core-tier change, architect Rule 9), this gate is mandatory even with
-`Interaction policy: autonomous`. Read `.agent-army/config.json` → `model_routing` before returning from
+**Planning readiness.** Before presenting this gate, check the architect's saved milestone evidence,
+`Detail policy`, task-specific finish condition and current review. A counter, a first detailed task,
+or an architect return is not evidence of completion. If required detail or a blocking decision is missing,
+continue planning; do not announce that planning is finished or ask to implement a convenient first slice.
+Normally `Planning Session.Stage` must be `ready`, with review approving the current `Plan revision`
+and no blocking findings. If only independent review is missing, stale or `INSUFFICIENT_EVIDENCE`, disclose
+the exact limitation and ask whether to obtain current independent review or proceed with that limitation.
+Until answered, remain in planning. This existing exception waives only review: it cannot waive missing
+decisions, required detail, or the blueprint/scope gate. Record any explicit acceptance against the current
+revision in `Review` and the review milestone, then set `ready` only if every other planning requirement is met.
+Never change the verdict to `APPROVED` on the user's behalf.
+
+When `architect` finishes creating or materially revising a blueprint (a core-tier change, architect Rule 9),
+this gate is mandatory even with `Interaction policy: autonomous`.
+Read `.agent-army/config.json` → `model_routing` before returning from
 the architect handoff. Persist an Interaction Card for the blueprint decision and:
 
 - `PR status: awaiting_approval`, `Active roles: none`, and `Execution scope: unset`;
@@ -237,13 +262,9 @@ built rather than task IDs:
 2. Scope: `Task <PR.Task> only`, `PR <ID>`, or `all unfinished PRs for this feature`.
 3. Model only for `inherit` fallback: `switch and continue` or `stay current`.
 
-Before presenting the gate, verify that `Planning Session.Stage` is `ready`, the review applies to the current
-`Plan revision`, and there are no unresolved blocking review findings. If the review is missing, stale or
-`INSUFFICIENT_EVIDENCE`, disclose the exact limitation and ask for an explicit decision to pause for independent
-review or proceed with that limitation. Never change the review verdict to `APPROVED` on the user's behalf.
-
 Persist the selected execution scope and the selected `autonomous`/`interactive` policy before dispatching
-any tester, coder or main-session implementation.
+any tester, coder or main-session implementation. Require the user's explicit blueprint approval and
+execution-scope choice for the ready plan; do not reuse an earlier planning answer as this approval.
 For `all unfinished PRs`, carry that scope forward to the next unfinished PR only after the current PR
 reaches `ready_for_human_review`: Autonomous mode continues after the current final-review card, while
 Interactive mode asks in that card whether to proceed to the next PR. Then calculate and persist the Scope
@@ -298,13 +319,15 @@ before and after every role dispatch, rewrite the selected PR file: set `PR stat
 Interaction Card. Never leave the previous worker listed as active after it returns. Keep detailed execution
 evidence in `Last verified stage` and the review files (section 1.8); do not replace the task's planning status
 with the English execution-step label.
-Whenever a task's status changes, update its `Task Roadmap` row in that same write. Whenever a PR's status
-changes (first dispatch, `awaiting_approval`, `blocked`, `ready_for_human_review`), also refresh the manifest's
-Planning Session `Progress` (each PR's status in one line), `Next action` (the one next step) and
-`For you.Where it stands` (the same in plain words) in the same write, so the blueprint entry point never shows
-an older state than its PR files. Touch no other manifest field.
+During planning, use the manifest checkpoint even if no PR file exists yet; do not create a PR file solely
+for a role transition. Whenever a task's status changes, update its `Task Roadmap` row in the same write.
+Whenever a PR's execution status changes, refresh the manifest's `For you.Where it stands` from those saved
+delivery states in the same write. Never overwrite `Planning Session.Progress`, depth, finish condition
+or `Next action` with delivery progress; change them only when the architect updates planning.
 
-- **Architect:** before → `planned`, active `architect`; after → `awaiting_approval`, active `none`,
+- **Architect:** before → `planned`, active `architect` where a PR file exists; after an unfinished
+  planning return → save the manifest checkpoint and continue planning, clearing any active role.
+  Only after readiness → `awaiting_approval`, active `none`,
   `Execution scope: unset`, Scope Profile `unset` in `Routing`, blueprint path, current Planning Session stage/revision,
   review verdict/revision, and the mandatory blueprint Interaction Card. New plan tasks remain `open`.
 - **Planning analyst:** before → active `planning-analyst`, task status unchanged; after → active `none`,
