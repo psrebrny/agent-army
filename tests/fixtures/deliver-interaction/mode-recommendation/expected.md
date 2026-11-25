@@ -1,6 +1,6 @@
 # Evaluator oracle — do not include in the actor packet
 
-Variant A (the overlay as given): the policy is `unset`, so `/ship` asks for the mode once, with one
+Variant A (the overlay as given): the policy is `unset`, so `/deliver` asks for the mode once, with one
 recommendation and a one-line reason: **Interactive**, naming Task 1.2 (`design_decision`). Task 1.1
 alone would not justify it. The recommendation does not set the mode: nothing is persisted as the policy
 before the user answers.

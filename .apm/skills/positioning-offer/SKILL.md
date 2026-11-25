@@ -21,9 +21,10 @@ claim traces to a fact or a tested assumption.
 </objective>
 
 ## When to use
+
 - After the brief and at least one validation result, before writing a landing or pricing page,
   before `/go-to-market` bets or `/first-customers` outreach, or when people do not understand the offer.
-- Not for: publishing or editing pages (a `fix` work item for `/ship`), setting a new price
+- Not for: publishing or editing pages (a `fix` work item for `/deliver`), setting a new price
   (`/business-case`), running campaigns or outreach (`/go-to-market`, `/first-customers`).
 
 <rules>
@@ -60,6 +61,7 @@ claim traces to a fact or a tested assumption.
 </rules>
 
 ## Method
+
 1. **Orient** (rule 1). Ask one question only when the records cannot answer it, usually the best-fit
    customer when the brief names several.
 2. **Positioning**: alternatives the customer uses today → what is different about the product →

@@ -1,10 +1,10 @@
 ---
 name: delivery-plan
-description: "Cuts the spec into a walking skeleton and thin vertical slices with outcome, acceptance and metric, plus time-boxed spikes, ordered by risk then value, as work items /ship can execute; re-plans open items only. Not for task design or hour estimates."
+description: "Cuts the spec into a walking skeleton and thin vertical slices with outcome, acceptance and metric, plus time-boxed spikes, ordered by risk then value, as work items /deliver can execute; re-plans open items only. Not for task design or hour estimates."
 ---
 # /delivery-plan — walking skeleton first, then thin vertical slices
 
-You turn the spec and the architecture decisions into an ordered list of work items that `/ship` can
+You turn the spec and the architecture decisions into an ordered list of work items that `/deliver` can
 build one at a time, each delivering something a user can observe.
 
 Before your first reply, read `../product/advisor-contract.md` (the shared advisor contract; the path
@@ -13,13 +13,14 @@ say the Agent Army installation is incomplete and stop. Your stage: 6.
 
 <objective>
 Produce an ordered set of work items — a walking skeleton, vertical slices and time-boxed spikes —
-that `/ship` can execute one at a time, riskiest assumption first.
+that `/deliver` can execute one at a time, riskiest assumption first.
 </objective>
 
 ## When to use
+
 - After `spec.md` and the architecture ADRs exist; again after a delivered slice, a spec delta, a new
   `fix` item or an ADR in `Needs review`.
-- Not for: technical design of a slice (the `architect` in `/ship`), sprint or story-point planning,
+- Not for: technical design of a slice (the `architect` in `/deliver`), sprint or story-point planning,
   choosing the stack.
 
 <rules>
@@ -38,14 +39,15 @@ that `/ship` can execute one at a time, riskiest assumption first.
    result → payment → launch-ready set; mark the launch set.
 6. Show the plan in pieces: the skeleton and first milestone first, then one milestone per turn. The
    full table lives in the file; the reply names the one choice to check.
-7. New items start `proposed` and become `ready` when the user confirms the order. Only `/ship` sets
+7. New items start `proposed` and become `ready` when the user confirms the order. Only `/deliver` sets
    `in progress` and `delivered`.
 8. A re-plan touches only items not yet delivered: say what moved, what was added or dropped and why,
    and absorb new `fix` items into the order.
-9. Never design tasks inside a slice; that is the `architect`'s job in `/ship`.
+9. Never design tasks inside a slice; that is the `architect`'s job in `/deliver`.
 </rules>
 
 ## Method
+
 1. **Read inputs**: stories (`spec.md`), architecture ADRs and open technical risks (`solution.md`),
    events (`metrics.md`), open `fix` work items from other advisors, and existing work items through
    their bound store.

@@ -1,6 +1,6 @@
 # Agent Army skills catalog
 
-Agent Army 0.8.0 installs 21 skills: five engineering workflows and sixteen product skills (fifteen
+Agent Army 0.9.0 installs 21 skills: five engineering workflows and sixteen product skills (fifteen
 advisors plus the `/product` navigator). Every skill is optional and callable on its own. Nothing runs
 another skill for you: `/product` recommends a step, you run it.
 
@@ -24,7 +24,7 @@ See [the scope and path contract](skills/bootstrap/references/repository-context
 
 `/product` reads your product records and shows where you stand on a 14-stage journey, which earlier
 gaps put your next move at risk, and **one** next step. It judges stages by evidence, not by whether a
-file exists. It warns, never blocks, and never starts another skill or `/ship`.
+file exists. It warns, never blocks, and never starts another skill or `/deliver`.
 
 - No product records yet → every stage is `missing` and the step is `/product-strategy`.
 - A stage that does not apply to you → `/product` asks "skip stage N on purpose?"; a yes with a reason
@@ -40,7 +40,7 @@ file exists. It warns, never blocks, and never starts another skill or `/ship`.
 | 4 | MVP scoped | stories with acceptance and priority, out of scope listed | product-spec | 5, 6 |
 | 5 | Architecture decided | architecture ADRs `Accepted` for every layer the first slices touch | solution-architecture | 6 |
 | 6 | Delivery planned | walking skeleton + slices with outcome, acceptance and metric exist as work items | delivery-plan | 7 |
-| 7 | Built | the slices planned for launch are `delivered` with evidence | `/ship` | 11 |
+| 7 | Built | the slices planned for launch are `delivered` with evidence | `/deliver` | 11 |
 | 8 | Measurement verified | metrics collection status `verified` | product-metrics | 10 (paid spend), any data read |
 | 9 | Legal & formalities | no open launch-blocking legal item | legal-review | 11, 13 |
 | 10 | Go-to-market ready | predictions + budget caps exist | go-to-market, positioning-offer, red-team | 11 |
@@ -66,7 +66,7 @@ the repo as Markdown; an existing equivalent document or ADR directory takes pre
 |---|---|---|---|
 | register (facts, assumptions, decisions) | `F-n` `A-n` `D-n` | `product-strategy`; others add Change proposals | `docs/product/brief.md` |
 | artifact (one narrative file per advisor) | — | each advisor | `docs/product/<advisor>.md` |
-| adr | `ADR-NNN` | advisors, `docs-writer` in `/ship` | `docs/adr/NNN-<slug>.md` |
+| adr | `ADR-NNN` | advisors, `docs-writer` in `/deliver` | `docs/adr/NNN-<slug>.md` |
 | story | `S-n` | `product-spec` | `docs/product/spec.md` |
 | work_item | `W-n` | `delivery-plan`; advisors for fixes | `docs/product/delivery-plan.md` |
 | prediction | `P-n` | `go-to-market`, `first-customers`, `product-metrics` (one shared register) | `docs/product/go-to-market.md` |
@@ -94,7 +94,7 @@ changes alerts, dashboards or settings; that is a `fix` work item.
 | Skill | Kind | Use it for | Writes |
 |---|---|---|---|
 | `/bootstrap` | engineering | tailor the agent team and control ownership to a repository | local role contracts, `.agent-army/config.json`, runtime and the selected adapter/control files |
-| `/ship` | engineering | execute or resume agreed engineering work, one PR at a time | code, tests, execution state in `design-docs/`, docs and ADRs; work ready for human review |
+| `/deliver` | engineering | execute or resume agreed engineering work, one PR at a time | code, tests, execution state in `design-docs/`, docs and ADRs; work ready for human review |
 | `/new-agent` | engineering | add a specialised local role | a local agent contract and its adapter output |
 | `/new-skill` | engineering | add a reusable local workflow with its own entry point | a local skill source, optional command wrapper |
 | `/adapt-army` | engineering | turn a recurring workflow problem into a targeted improvement | an Army Improvement Proposal and approved local changes |
@@ -116,7 +116,7 @@ changes alerts, dashboards or settings; that is a `fix` work item.
 | `/launch-readiness` | advisor | launch verdict per area with evidence | `launch-readiness.md` |
 
 `architect`, `tester`, `code-reviewer`, `security-auditor`, `perf-auditor`, `docs-writer` and `coder`
-are roles that `/ship` runs, not skills you call.
+are roles that `/deliver` runs, not skills you call.
 
 Interactive planning saves its ordered milestones, detail policy and finish condition before asking
 questions. "Plan everything before code" requires detail across the requested PRs, even with Interactive
@@ -134,7 +134,7 @@ approval before any implementation or new tests.
 | "Is my plan solid?" | `/product-red-team` on the plan file |
 | "Validated. What should version one do?" | `/product-spec` |
 | "What should I build it on?" | `/solution-architecture` |
-| "In what order do we build it?" | `/delivery-plan`, then `/ship W-n` per slice |
+| "In what order do we build it?" | `/delivery-plan`, then `/deliver W-n` per slice |
 | "Does the product work as we intended? Where do people drop off?" | `/product-metrics`: expectations per funnel step before the read, data sources, health against the targets from `/solution-architecture` |
 | "People sign up but don't buy" | `/product-metrics` to read the funnel (if collection is verified), `/ux-review` of the purchase path, then `/validate-product` post-launch or a price test from `/business-case` |
 | "I have 500 PLN for my first users" | `/go-to-market` |
@@ -143,7 +143,7 @@ approval before any implementation or new tests.
 | "We have paying customers. Are we on plan?" | `/business-case` (actuals mode) |
 | "Do I need a privacy policy, VAT, invoices?" | `/legal-review` |
 | "We launch on Monday. Are we ready?" | `/launch-readiness` |
-| "Fix this bug" / a well-understood engineering change | `/ship`; no product skill needed |
+| "Fix this bug" / a well-understood engineering change | `/deliver`; no product skill needed |
 
 ## Product skills in detail
 
@@ -162,7 +162,7 @@ All sixteen read one shared contract before their first reply
   of starting over: a finding whose fix work item is `delivered` becomes `handled with evidence: W-n`.
 - **Records, not code.** Product skills read the register, their own artifact, ADRs, work item
   statuses and what you hand them; they do not analyse your source code. What was built reaches them
-  as work item evidence written by `/ship`.
+  as work item evidence written by `/deliver`.
 - **Findings stay in the artifact, decisions go to ADRs.** Review findings change status with every
   fix, so they live in the skill's own file; an ADR is written only when a decision is made.
 - **Write after a finding**, in place; no transcripts, empty files or placeholders. Only
@@ -172,9 +172,10 @@ All sixteen read one shared contract before their first reply
   `stage N · full picture: /product`.
 - **Never without your command:** writing product code, publishing, contacting people, spending
   money, deploying. Never claimed without evidence: legal compliance, completed validation, a working
-  restore. Product skills add no gate to `/ship`.
+  restore. Product skills add no gate to `/deliver`.
 
 ### `/product` — navigator
+
 - **When:** "where am I?", "what next?", before building or spending money, after a pause.
 - **Reads:** only the status-bearing parts of each record, through its bound store.
 - **Output:** the 14-stage map (one line per stage with the reason and record), warnings about earlier
@@ -184,6 +185,7 @@ All sixteen read one shared contract before their first reply
 - **Example:** `/product "I want to start building next week. What now?"`
 
 ### `/product-strategy` — critical strategy partner
+
 - **When:** a new idea, a pivot, or a brief that went stale after new evidence.
 - **Reads:** the brief and relevant ADRs; reviews open Change proposals with you first.
 - **Output:** six topics, one per turn (audience, problem, alternatives and advantage, features,
@@ -194,6 +196,7 @@ All sixteen read one shared contract before their first reply
 - **Example:** `/product-strategy "I want to build an app that helps dog owners find sitters in my city."`
 
 ### `/product-red-team` — adversarial review
+
 - **When:** on `brief.md`, `business-case.md`, `go-to-market.md`, `launch-readiness.md` or a pasted plan.
 - **Reads:** the target artifact and the register.
 - **Output:** load-bearing claims, steelman then attack, "Fails if …", ranked by impact × likelihood ×
@@ -203,6 +206,7 @@ All sixteen read one shared contract before their first reply
 - **Example:** `/product-red-team "Red-team my go-to-market plan in docs/product/go-to-market.md."`
 
 ### `/market-research` — dated desk research
+
 - **When:** before or after a first brief, before pricing, when a competitor appears.
 - **Reads:** the brief (segment, problem, alternatives); the web when your tool allows it.
 - **Output:** findings with source, check date and the label `third-party data`; without web access the
@@ -212,6 +216,7 @@ All sixteen read one shared contract before their first reply
 - **Example:** `/market-research "Who are my competitors for a booking tool for independent physiotherapists in Poland?"`
 
 ### `/business-case` — numbers you can recheck
+
 - **When:** choosing a revenue model, setting a price, checking whether the idea can pay for itself.
 - **Reads:** the brief, `market-research.md` (anchors), `validation.md` (results).
 - **Output:** inputs with unit, period and source (or an `A`), formulas, three scenarios, break-even,
@@ -225,6 +230,7 @@ All sixteen read one shared contract before their first reply
 - **Example:** `/business-case "Is a 49 PLN/month plan for my invoicing app for freelancers worth it?"`
 
 ### `/validate-product` — experiments that can say no
+
 - **When:** the brief names its riskiest assumption; a price test from `/business-case`; after launch,
   when metric reads or churn reports arrive (post-launch mode).
 - **Reads:** the register, `metrics.md` for post-launch.
@@ -237,6 +243,7 @@ All sixteen read one shared contract before their first reply
 - **Example:** `/validate-product "How do I check if anyone would pay for my meal-planning app?"`
 
 ### `/product-spec` — what version one must do
+
 - **When:** the brief has a validated problem and segment, or new findings change the spec.
 - **Reads:** the brief, `validation.md`, `ux-review.md`, `legal-review.md`, `metrics.md`.
 - **Output:** an MVP goal tied to `F`/`A` IDs, stories `S-n` with observable acceptance and must/should/
@@ -248,6 +255,7 @@ All sixteen read one shared contract before their first reply
 - **Example:** `/product-spec "My interviews worked, 6 of 8 tutors paid a deposit. What should version one do?"`
 
 ### `/solution-architecture` — a stack you can operate
+
 - **When:** the spec has must stories and nothing is built yet, or a layer must change.
 - **Reads:** stories, the register (skills, time, budget), the business-case cost ceiling, legal
   constraints, events; in an existing repo the stack from its manifests.
@@ -258,10 +266,11 @@ All sixteen read one shared contract before their first reply
   personal data, error tracking and a health check, set up as one `fix` work item that ends with a test
   alert; open technical risks for spikes.
 - **Writes:** one `architecture` ADR per choice (`Proposed` until you confirm) and `solution.md` linking
-  them. No code or scaffolding: the stack becomes real in the walking-skeleton slice built by `/ship`.
+  them. No code or scaffolding: the stack becomes real in the walking-skeleton slice built by `/deliver`.
 - **Example:** `/solution-architecture "I know Python and a bit of React. What should I build my booking app on?"`
 
 ### `/delivery-plan` — walking skeleton, then thin slices
+
 - **When:** after `spec.md` and the architecture ADRs; again after a delivered slice, a spec delta, a
   new `fix` item or an ADR in `Needs review`.
 - **Reads:** stories, `solution.md` and its ADRs, `metrics.md`, open `fix` items, existing work items.
@@ -274,6 +283,7 @@ All sixteen read one shared contract before their first reply
 - **Example:** `/delivery-plan "Plan the build."`
 
 ### `/go-to-market` — predictions first, small bets
+
 - **When:** before the first campaign, before spending money, when a channel underperforms.
 - **Reads:** the brief, `metrics.md`, `business-case.md`.
 - **Output:** audience, offer, 1–3 channels; a prediction row `P-n` written before every action; a
@@ -284,6 +294,7 @@ All sixteen read one shared contract before their first reply
 - **Example:** `/go-to-market "I have 500 PLN to get my first users for a recipe-planning app."`
 
 ### `/positioning-offer` — say what is true, in words that sell
+
 - **When:** after the brief and a validation result, before landing or pricing pages, outreach or bets.
 - **Reads:** the brief (Customer language, register), `market-research.md`, `validation.md`,
   `business-case.md`.
@@ -296,6 +307,7 @@ All sixteen read one shared contract before their first reply
 - **Example:** `/positioning-offer "Write the positioning and landing page for my scheduling tool for yoga studios."`
 
 ### `/first-customers` — send cards you send, debriefs that count
+
 - **When:** the offer is clear and you want the first 10–50 paying customers, or you bring results
   of a round you sent.
 - **Reads:** the brief, `positioning-offer.md`, `business-case.md` (price), the prediction register
@@ -311,6 +323,7 @@ All sixteen read one shared contract before their first reply
 - **Example:** `/first-customers "Help me get my first 10 paying customers. I'm in two Facebook groups for tattoo artists."`
 
 ### `/product-metrics` — measure what decides
+
 - **When:** before instrumentation, before paid traffic, or when you bring data to read.
 - **Reads:** your dated exports in `docs/product/data/` (no personal data) or aggregates pulled from a
   bound data source; GTM predictions, validation thresholds and the `solution.md` observability targets
@@ -321,11 +334,12 @@ All sixteen read one shared contract before their first reply
   a consent check), a Data sources table with links, collection checks; an expectation per funnel step
   written as a `P-n` before each read; low-volume reads with "not enough signal"; health reads against
   the observability targets.
-- **Writes:** `metrics.md`; instrumentation is always one `fix` work item for `/ship` with each event as
+- **Writes:** `metrics.md`; instrumentation is always one `fix` work item for `/deliver` with each event as
   an assertion the tester can write. Until `Collection status` is `verified`, nobody interprets the data.
 - **Example:** `/product-metrics "What should I track in my habit-tracker app before launch?"`
 
 ### `/ux-review` — walk the paths that matter
+
 - **When:** before launch, after weak activation, when you share a URL, screenshots or a way to start
   the app.
 - **Reads:** the brief and `metrics.md`, then the product itself, in this order: a URL you give, the
@@ -348,6 +362,7 @@ All sixteen read one shared contract before their first reply
 - **Example:** `/ux-review "Review the signup flow; the app runs with npm run dev."`
 
 ### `/legal-review` — applicability and the questions for a professional
+
 - **When:** before launch, before collecting personal data or payments, when selling across borders.
 - **Reads:** your answers on where you and your customers are, B2B or B2C, what the product is and
   which data it collects; official sources when your tool can reach them.
@@ -360,9 +375,10 @@ All sixteen read one shared contract before their first reply
 - **Example:** `/legal-review "I'm launching an online course platform for adults in Poland and the Czech Republic. What do I need?"`
 
 ### `/launch-readiness` — what blocks launch, with evidence
+
 - **When:** in the days before launch or a large campaign.
 - **Reads:** `metrics.md` and its data sources, `solution.md`, `legal-review.md`, `ux-review.md`,
-  `go-to-market.md` and any `/ship` audit reports you point to.
+  `go-to-market.md` and any `/deliver` audit reports you point to.
 - **Output:** per area (main path, purchase, failed payment, cancellation, contact and support,
   monitoring, backups with restore evidence, measurement, legal, UX) `ready / blocker / later / not run`
   with evidence; a verdict: launch, launch with named risks you accept, or not yet. A backup without a
@@ -371,14 +387,14 @@ All sixteen read one shared contract before their first reply
 - **Writes:** `launch-readiness.md`; code blockers as `fix` work items. It never re-runs audits.
 - **Example:** `/launch-readiness "We launch on Monday. Are we ready?"`
 
-## Standalone or handed off to `/ship`
+## Standalone or handed off to `/deliver`
 
 Product skills produce conversation and documents. Anything that becomes code is a work item `W-n`
 (`kind: slice | spike | fix`, status `proposed | ready | in progress | delivered (evidence)`). You start
-`/ship` with a `ready` item; its docs stage marks the item `delivered` with evidence in whichever store
+`/deliver` with a `ready` item; its docs stage marks the item `delivered` with evidence in whichever store
 it lives in (or asks you to, when that store's connector is unavailable), and `/product` reads that status.
 
-| Skill | Artifact | Standalone (conversation + docs only) | Hands off to `/ship` (coding) |
+| Skill | Artifact | Standalone (conversation + docs only) | Hands off to `/deliver` (coding) |
 |---|---|---|---|
 | `product-strategy` | `brief.md` | always | `brief.md` is architect input for feature work |
 | `product-red-team` | `product-red-team.md` | always; also on GTM and launch plans | — |
@@ -387,21 +403,21 @@ it lives in (or asks you to, when that store's connector is unavailable), and `/
 | `validate-product` | `validation.md` | interviews, manual pre-orders, price tests, concierge tests, post-launch churn interviews | fake door, landing page, waitlist → `fix` work item |
 | `product-spec` | `spec.md` (stories) | MVP scope, priorities, stories, acceptance, out of scope | stories feed `delivery-plan`; no tech choices |
 | `solution-architecture` | ADRs + `solution.md` | architecture style, stack per layer, build vs buy, hosting, non-functional needs | the stack is input for the walking skeleton and every `architect` blueprint; no code |
-| `delivery-plan` | work items | walking skeleton, vertical slices, spikes, order | **always**: each slice or spike is a work item `/ship` executes; `architect` writes its blueprint |
-| `product` | skips, bindings | always; read-only map + one recommendation | — (may recommend `/ship W-n` for a `ready` item) |
+| `delivery-plan` | work items | walking skeleton, vertical slices, spikes, order | **always**: each slice or spike is a work item `/deliver` executes; `architect` writes its blueprint |
+| `product` | skips, bindings | always; read-only map + one recommendation | — (may recommend `/deliver W-n` for a `ready` item) |
 | `go-to-market` | `go-to-market.md` + drafts | messages, prediction register, budget caps | landing or pricing page changes |
 | `positioning-offer` | `positioning-offer.md` | positioning, offer, objections, DRAFT page copy with a claims trace | landing or pricing page changes → `fix` work item |
 | `first-customers` | `first-customers.md` + tracker | send cards you send, follow-ups, debriefs | — (a page or checkout it needs → `fix` work item) |
 | `product-metrics` | `metrics.md` | questions, funnel, event schema, privacy, data reads | **instrumentation always**: architect gets `metrics.md`, tester asserts event names and schemas |
 | `ux-review` | `ux-review.md` | heuristic review in the running app or from screenshots, prioritised findings | fixes as work items with finding IDs |
 | `legal-review` | `legal-review.md` | applicability, dated sources, lawyer and accountant questions | consent banner, data deletion, terms pages |
-| `launch-readiness` | `launch-readiness.md` | readiness verdict per area | code blockers; reuses `/ship` audit evidence, never re-runs audits |
+| `launch-readiness` | `launch-readiness.md` | readiness verdict per area | code blockers; reuses `/deliver` audit evidence, never re-runs audits |
 
 Small fixes from UX, legal or metrics go straight in as `fix` work items; the next `/delivery-plan`
 run absorbs them into the order.
 
-**Greenfield:** `solution-architecture` ADRs → `delivery-plan` W-1 walking skeleton → `/ship` builds it
-→ `/bootstrap` tailors the team to the now-real stack → next slices. `/ship` works before `/bootstrap`,
+**Greenfield:** `solution-architecture` ADRs → `delivery-plan` W-1 walking skeleton → `/deliver` builds it
+→ `/bootstrap` tailors the team to the now-real stack → next slices. `/deliver` works before `/bootstrap`,
 but for this small first slice ask for the independent review and security pass explicitly. In an existing product,
 `solution-architecture` keeps the current stack and proposes a change only through an ADR with a reason.
 
@@ -412,12 +428,12 @@ start midway, loop back or skip what does not apply.
 
 | Situation | Path |
 |---|---|
-| New product | strategy → red-team → market-research → business-case (pricing) → validate → spec → solution-architecture → delivery-plan → `/ship` per slice |
-| Weak adoption | metrics read + UX review + post-launch validation → hypothesis → experiment → spec delta → delivery-plan re-run → `/ship` |
-| Preparing a launch | go-to-market + legal and formalities early enough to affect the build → fixes via `/ship` → launch-readiness |
+| New product | strategy → red-team → market-research → business-case (pricing) → validate → spec → solution-architecture → delivery-plan → `/deliver` per slice |
+| Weak adoption | metrics read + UX review + post-launch validation → hypothesis → experiment → spec delta → delivery-plan re-run → `/deliver` |
+| Preparing a launch | go-to-market + legal and formalities early enough to affect the build → fixes via `/deliver` → launch-readiness |
 | First revenue | positioning-offer → first-customers rounds (send card → you send → debrief) → business-case actuals → the skill the gap points to |
-| Already launched | metrics read → the skill the data points to → `/ship` |
-| Small, well-understood engineering change | `/ship` only |
+| Already launched | metrics read → the skill the data points to → `/deliver` |
+| Small, well-understood engineering change | `/deliver` only |
 
 ## Decisions (ADRs)
 
@@ -426,7 +442,7 @@ Decisions live in ADRs, by default `docs/adr/NNN-<slug>.md` (or the `adr` store 
 
 - **Who writes them:** the product skills (for example `product-strategy` for a segment or revenue
   model change, `solution-architecture` for each stack choice, `product-metrics` for the analytics
-  tool) and `docs-writer` in the `/ship` docs stage, which also sweeps the task's `design-docs/` plan
+  tool) and `docs-writer` in the `/deliver` docs stage, which also sweeps the task's `design-docs/` plan
   for significant decisions without an ADR before the task closes.
 - **When:** a decision changes direction, scope, architecture, revenue model, segment, channel,
   measurement or a working rule, or "why?" cannot be answered from the code.
@@ -440,7 +456,7 @@ Decisions live in ADRs, by default `docs/adr/NNN-<slug>.md` (or the `adr` store 
   (`product | architecture | process`), Supersedes, Source; sections Context, Decision, Basis (register
   IDs), Alternatives considered, Consequences, Revisit when, Implementation.
 
-`design-docs/` blueprints are temporary execution plans for `/ship`; they are never the only home of a
+`design-docs/` blueprints are temporary execution plans for `/deliver`; they are never the only home of a
 rationale. An ADR wins over any other document, and the conflicting document gets fixed.
 
 ## Attribution

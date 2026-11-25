@@ -1,10 +1,10 @@
-# Interactive ship evaluation fixtures
+# Interactive deliver evaluation fixtures
 
 These are manual conversation-evaluation inputs, not an automated LLM suite. Structural checks do not
 prove that a model follows the interaction contract. No captured model runs are included.
 
 For each case, copy `shared/repo/` to a fresh temporary directory, then overlay that case's `repo/` if
-present. Give the acting model the current ship skill, applicable baseline roles/instructions, the copied
+present. Give the acting model the current deliver skill, applicable baseline roles/instructions, the copied
 repository, and that case's `request.md`. Keep `expected.md` with the evaluator, including its follow-up
 turns. Do not share this README's case summary as an intended answer. Restrict writes to the scratch repo;
 no external services, package installation, commits or deployment are needed. Record responses, resulting

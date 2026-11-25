@@ -33,6 +33,15 @@ if ! out=$("${LINT[@]}" "${files[@]}" 2>&1); then echo "$out" >&2; status=1; fi
 python3 - "$WIDTH" "${files[@]}" <<'PY' || status=1
 import re, subprocess, sys
 width, files = int(sys.argv[1]), sys.argv[2:]
+# One staged diff with rename detection, so a moved file reports only its changed lines.
+full = subprocess.run(['git', 'diff', '--cached', '-M', '-U0'], capture_output=True, text=True).stdout
+diffs, cur = {}, None
+for line in full.splitlines():
+    if line.startswith('+++ '):
+        cur = line[6:] if line.startswith('+++ b/') else None
+        diffs.setdefault(cur, [])
+    elif cur is not None and not line.startswith('diff --git'):
+        diffs[cur].append(line)
 bad = []
 for f in files:
     text = subprocess.run(['git', 'show', f':{f}'], capture_output=True, text=True).stdout.splitlines()
@@ -48,9 +57,8 @@ for f in files:
             skip.add(n)
         elif fence or line.lstrip().startswith('|'):
             skip.add(n)
-    diff = subprocess.run(['git', 'diff', '--cached', '-U0', '--', f], capture_output=True, text=True).stdout
     n = 0
-    for line in diff.splitlines():
+    for line in diffs.get(f, []):
         hunk = re.match(r'@@ -\S+ \+(\d+)', line)
         if hunk:
             n = int(hunk.group(1))

@@ -5,8 +5,10 @@
 - **Standards Source**: repository README; no additional instructions supplied
 
 ## For you
+- **What will be built:**
+  - PR 1 — An improved report list → `01_PR_1_ReportList.md`
+  - PR 2 — Report proposals with pagination → `02_PR_2_Proposals.md`
 - **Where it stands:** The in-app delivery choice is settled; link behavior is next. Nothing is built.
-- **What will be built:** An improved report list, then report proposals with pagination.
 - **Unchanged:** Authentication and the reporting service.
 - **How it will be checked:** List behavior and links, then pagination and a manual walkthrough.
 - **Latest plan change:** none
@@ -40,7 +42,6 @@ The existing list and proposed second list depend on an external service's link 
 ## 2. Goal (Definition of Done)
 - [ ] Existing unnamed rows have an agreed placeholder.
 - [ ] Proposals have valid links and pagination.
-- **Full scope:** Both lists and their visible behavior.
 - **Finish condition:** The user can open the lists, follow valid links and paginate; final audit passes.
 - **Out of scope:** Email delivery and reporting-service API changes.
 

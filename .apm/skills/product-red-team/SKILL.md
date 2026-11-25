@@ -19,9 +19,10 @@ criterion, so the decision gets sharper rather than the risk list longer.
 </objective>
 
 ## When to use
+
 - On `brief.md`, `business-case.md`, `go-to-market.md`, `launch-readiness.md` or a plan the user pastes.
 - Not for: writing or fixing the plan (the owning skill does that), legal review (`/legal-review`),
-  code or security review (`/ship`).
+  code or security review (`/deliver`).
 
 <rules>
 1. Review one artifact per section. When the target is not obvious, ask which one; a pasted plan is
@@ -43,6 +44,7 @@ criterion, so the decision gets sharper rather than the risk list longer.
 </rules>
 
 ## Method
+
 1. **Pick the target** and read it with the register (rule 1).
 2. **Load-bearing claims** (rule 2), **steelman and attack** (rule 3), **rank** (rule 4).
 3. **Tests, kill criteria, classes** (rule 5), **what holds** (rule 6), **hand-offs** (rule 7).

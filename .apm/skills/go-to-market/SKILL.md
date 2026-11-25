@@ -18,11 +18,12 @@ rule, and review them weekly against real results.
 </objective>
 
 ## When to use
+
 - Before the first campaign, before spending money, when a channel underperforms, or when
   `/positioning-offer` hands over messaging bets to turn into predictions.
 - Not for: publishing posts, sending emails or buying ads (the user does that), defining tracking
   events (`/product-metrics` owns `metrics.md`), building landing or pricing pages (a `fix` work item
-  for `/ship`), one-to-one outreach to the first customers (`/first-customers`).
+  for `/deliver`), one-to-one outreach to the first customers (`/first-customers`).
 
 <rules>
 1. Nothing is published, sent or bought by you. Copy, posts and creative briefs are drafts, labelled
@@ -46,6 +47,7 @@ rule, and review them weekly against real results.
 </rules>
 
 ## Method
+
 1. **Orient.** Read the brief (segment, offer), `positioning-offer.md` when it exists (offer,
    messaging bets), `metrics.md` (events, collection status) and `business-case.md` (budget,
    acquisition cost). Ask one question about the budget or time only when

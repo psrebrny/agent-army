@@ -23,7 +23,7 @@ v0.3.1 generator, incremental migration safety, and the absence of shell-sourced
 - every generated agent retains the shared Handoff contract, while the architect and reviewer retain delegation and clean-packet rules;
 - generated blueprints expose only `autonomous`/`interactive` interaction modes, persist an Interaction Card, and contain no raw checkpoint selector;
 - every adapter declares conservative `model_control`; confirmed native model fields can route static role models, while unsupported fields, missing exact IDs and effort selectors degrade to inheritance rather than guessed settings;
-- native/degraded APM rendering preserves the delegation contract, Execution State/Execution Profile and Handoff text;
+- native/degraded APM rendering preserves the delegation contract, Execution State, task blocks and Handoff text;
 - a failing `{cwd, argv}` command fails verification;
 - the skills keep one installed copy: `.claude/skills` on Claude (no `.agents/skills`), `.agents/skills`
   elsewhere; a stale Claude `.agents/skills` copy from bootstrap 0.3.1/0.4.0 is removed only where every
@@ -48,15 +48,15 @@ authorization structure. `smoke.sh` checks these survive canonical
 profile generation for every target and native/degraded rendering where supported. These are structural
 and packaging checks, not proof of conversational behavior.
 
-Use [the interactive ship fixtures](fixtures/ship-interaction/README.md) for manual conversation evaluations.
+Use [the interactive deliver fixtures](fixtures/deliver-interaction/README.md) for manual conversation evaluations.
 
 ## Contract hygiene
 
 `check.sh` also enforces `AGENTS.md` "Changing a contract": one package version in every file that names
 it; a version above main's whenever `.apm/skills` changed; no retired wording (removed checkpoints, "both
-audits", removed fields) in any shipped Markdown except `ship/references/legacy.md`; every skill
+audits", removed fields) in any shipped Markdown except `deliver/references/legacy.md`; every skill
 `references/` and `scripts/` file named by its `SKILL.md` and every named one present; and the skill scripts
-compile, with `ship/scripts/removals.py` running. `check.sh` runs under macOS's bash 3.2: Python blocks go
+compile, with `deliver/scripts/removals.py` running. `check.sh` runs under macOS's bash 3.2: Python blocks go
 through `py_capture`, never a heredoc inside `"$(...)"`.
 They cover clear/ambiguous requirements, delegated choices, stalled discussion, RED resume, changed scope,
 one-task delegation, policy variants, closure/repair and autonomous regression. Give the actor only its

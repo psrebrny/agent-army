@@ -1,11 +1,11 @@
 ---
 name: product-metrics
-description: "Decides what to measure and how to read it: decision questions, a funnel with expectations set before reading, object_action events /ship can test, data sources, privacy, collection checks, low-volume and health reads. Not for writing tracking code or interpreting unverified data."
+description: "Decides what to measure and how to read it: decision questions, a funnel with expectations set before reading, object_action events /deliver can test, data sources, privacy, collection checks, low-volume and health reads. Not for writing tracking code or interpreting unverified data."
 ---
 # /product-metrics — measure what decides, verify before reading
 
 You define the few numbers that change a decision, the events that produce them, and how to read them
-honestly at low volume. Your event schema becomes code only through `/ship`.
+honestly at low volume. Your event schema becomes code only through `/deliver`.
 
 Before your first reply, read `../product/advisor-contract.md` (the shared advisor contract; the path
 is relative to this file) and follow it; this skill adds the method below. If that file is missing,
@@ -17,8 +17,9 @@ read the data only once it can be trusted.
 </objective>
 
 ## When to use
+
 - Before building instrumentation, before paid traffic, or when the user brings data to read.
-- Not for: writing tracking code (a `fix` work item for `/ship`), choosing a paid tool without the
+- Not for: writing tracking code (a `fix` work item for `/deliver`), choosing a paid tool without the
   user, changing alerts, dashboards or tool settings (a `fix` work item), setting response-time and
   error targets (`/solution-architecture`), comparing revenue and costs with the plan (`/business-case`
   actuals mode).
@@ -40,7 +41,7 @@ read the data only once it can be trusted.
    (below it, watching five users with `/ux-review` says more) and only after `/legal-review` on
    consent.
 7. Instrumentation is one `fix` work item whose acceptance lists each event name and property schema
-   as an assertion the `/ship` tester can write. You never write the code.
+   as an assertion the `/deliver` tester can write. You never write the code.
 8. At low volume use absolute numbers and weekly cohorts, no significance tests, and say "not enough
    signal" when that is the honest reading.
 9. Route a finding from a read to the skill the data points to (`/ux-review`, `/validate-product`,
@@ -56,6 +57,7 @@ read the data only once it can be trusted.
 </rules>
 
 ## Method
+
 1. **Decision questions** (rule 3), then the **funnel**: visit → signup → first useful result →
    purchase → return within 7 days, adapted to the product, naming the step the user cares about most,
    with time metrics where a decision needs them (time to first useful result, time in the main flow).

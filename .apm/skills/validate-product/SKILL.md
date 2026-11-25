@@ -20,11 +20,12 @@ its real result into Ship, Iterate or Kill.
 </objective>
 
 ## When to use
+
 - After the brief names its riskiest `A`; for a price test handed over by `/business-case` (also from
   its actuals mode); when a `/first-customers` debrief contradicts a key `A`; after launch when
   `metrics.md` reads or the user reports churn.
 - Not for: contacting respondents or posting anything (the user does that, or gives an explicit
-  command), building a landing page or fake door (a `fix` work item for `/ship`), selling rounds to the first
+  command), building a landing page or fake door (a `fix` work item for `/deliver`), selling rounds to the first
   paying customers (`/first-customers`).
 
 <rules>
@@ -53,6 +54,7 @@ its real result into Ship, Iterate or Kill.
 </rules>
 
 ## Method
+
 1. **Pick the assumption** from the register (rule 2), **write the hypothesis** (rule 3), **choose the
    experiment** (rules 4, 6).
 2. **Participants and recruitment**: who, how many, where to find them, what it costs. Small n is

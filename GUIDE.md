@@ -5,26 +5,32 @@ TDD), independent tester, architectural auditor, security, performance and docs 
 other honest, plus deterministic **hooks** (barriers the model can't bypass).
 
 ## Requirements
+
 Claude Code v2.x · `bash` · `python3` (barriers; a fallback runs without it). Windows: WSL or Git Bash.
 
 ## Project policy — before you start
+
 `/bootstrap` asks who owns each control layer: runtime hooks, git pre-commit and CI. Existing user controls are preserved by default. The verified commands and ownership state are committed in `.agent-army/config.json` as structured `{cwd, argv}` data; they are read by agents and the Agent Army runtime without shell evaluation.
 
 **Testing rigor** — what level of tests does THIS repo need?
+
 - `strict` (default) — full TDD: write RED tests first, verify GREEN. Testing Trophy (E2E/integration > unit). For most real projects.
 - `pragmatic` — tests required, but not strict RED-first. Write them, keep them passing. Still Testing Trophy mix.
 - `light` — smoke tests / happy-path only. When coverage must be thin.
 - `none` — no tests at all. For throwaway / side-project validators, POCs, experiments. The test gate is skipped entirely.
 
 **Lint** — does the gate block on lint errors?
+
 - `on` (default) — yes, linter must pass. For production code.
 - `off` — linting still runs (auto-format on save), but the gate won't halt a commit. Use when you have your own, stricter linter elsewhere.
 
 **CI** — does this repo use Agent Army's workflow, or do you bring your own?
+
 - `on` (default) — use `.github/workflows/quality.yml` (the Army's verify.sh).
 - `off` — the repo already has its own CI (richer, specialized) — don't install ours; you brought it.
 
 **Examples:**
+
 - A 3-week side-project validator? `TEST_POLICY=none, LINT_POLICY=off, CI_MODE=off` — fast iteration, no ceremony.
 - A microservice in a monorepo with its own CI pipeline? `TEST_POLICY=strict, LINT_POLICY=on, CI_MODE=off` — full rigor, but don't overlay our CI.
 - A frontend feature in a React app, no existing CI? `TEST_POLICY=pragmatic, LINT_POLICY=on, CI_MODE=on` — reasonable tests, use our basic CI.
@@ -32,58 +38,72 @@ Claude Code v2.x · `bash` · `python3` (barriers; a fallback runs without it). 
 **Security barriers are NOT a knob.** Secret files and dangerous commands are blocked at every level — that does not change.
 
 ## Install (once per repo)
+
 ```bash
 cd my-repo
 apm install psrebrny/agent-army --target opencode   # or: claude | cursor | codex | gemini | copilot | windsurf
 ```
+
 apm deploys the 21 skills only (see `.apm/README.md`). The baseline agents/hooks/CI ride bundled as raw assets inside the `bootstrap` skill — they become live, repo-tailored files only when you run `/bootstrap` below (it also installs the git pre-commit hook and appends to `.gitignore`).
 
 ## STEP 1 — entry point: `/bootstrap`  (run first)
-```
+
+```text
 cd my-repo   # open it in your AI tool, then:
 /bootstrap
 ```
-> OpenCode natively discovers the shared `.agents/skills/` location; invoke `@.agents/skills/bootstrap/SKILL.md` (and the corresponding `/ship` path) when no native command is registered. This skill directory is APM-managed, like `node_modules`: installation restores it and it should not be edited as a project source.
+
+> OpenCode natively discovers the shared `.agents/skills/` location;
+> invoke `@.agents/skills/bootstrap/SKILL.md` (and the corresponding `/deliver` path) when no native command is
+> registered. This skill directory is APM-managed, like `node_modules`:
+> installation restores it and it should not be edited as a project source.
 `/bootstrap`:
+
 1. **reads the repo** (stack, standards, conventions, real test/lint commands),
 2. **asks a few smart questions** (only the gaps; business, architecture, testing, NFR, process),
 3. **creates/specializes the whole team for this repo** (exact commands, test framework, conventions) + a tailored `CLAUDE.md`/`AGENTS.md` + a `design-docs/` skeleton (each agent's inline output skeleton specialized to the repo),
 4. **verifies** (runs lint+tests once) and reports.
 Greenfield (empty repo) → full interview + bootstrap of the foundations. Quality is held by `.claude/agents/_STANDARD.md`.
 
-## STEP 2 — working in the repo: `/ship`  (orchestrator)
+## STEP 2 — working in the repo: `/deliver`  (orchestrator)
+
 ```bash
-/ship "add a /health endpoint with a test"
+/deliver "add a /health endpoint with a test"
 ```
+
 Pipeline: **Discovery/interview → mode choice → Blueprint (architect, design-docs/) → implementation in strict TDD (tester: RED → code → GREEN) → review (code-reviewer) → security → docs → summary + commit proposal** (commit only with your approval).
 
-At the start `/ship` asks about the **execution mode**:
+At the start `/deliver` asks about the **execution mode**:
+
 - **A) Autonomous** — after you accept the blueprint and choose `one task`/`one PR`/`all unfinished PRs`, the team proceeds on its own and stops at hook gates or commit approval. Where bootstrap configured per-role models, each subagent starts with its assigned profile; an inherited-model fallback may additionally ask `switch and continue` or `stay current`.
 - **B) Interactive** — after the same mandatory gate, the team pauses after each RED test and verified task. Each Interaction Card says what changed, which test/diff/report to inspect and asks one specific question, so you can redirect work without inferring what needs review.
 Both modes pause for real ambiguity, risk, scope expansion and final human review. Switch on the fly: "switch to autonomous/interactive".
 
 ## Command cheatsheet
+
 - `/bootstrap` — ONCE: repo analysis + interview + building the team.
-- `/ship "<task>"` — take a feature end-to-end with quality control.
+- `/deliver "<task>"` — take a feature end-to-end with quality control.
 - `/new-agent` — add a new agent (always to `_STANDARD.md`).
 - `/new-skill` — add a focused local workflow when no existing skill or agent is the right owner.
 - `/adapt-army` — turn recurring feedback into an approved Army improvement: existing agent/skill overlay, convention, deterministic control, new agent or new skill. The agent also recognizes these signals during ordinary conversations.
 - `/agents` — list the team.
 
 ## What's in the repo after install
-```
+
+```text
 .claude/
   settings.json                 # hook registration (barriers)
   agents/                       # the team (architect, tester, code-reviewer, security-auditor, perf-auditor, docs-writer; + optional coder)
     _STANDARD.md                # the quality bar for EVERY agent
                                 # each agent embeds its own output skeleton (blueprint / report) in its ## Output section
   hooks/                        # guard / format / verify / gate / detect / git-pre-commit
-  skills/                       # bootstrap · ship · new-agent · new-skill · adapt-army
+  skills/                       # bootstrap · deliver · new-agent · new-skill · adapt-army
 CLAUDE.md                       # project memory (tailored to the repo after /bootstrap)
 .github/workflows/quality.yml   # CI: the same verify.sh
 ```
 
 ## Barriers (run automatically, independent of the agents' judgment)
+
 - **PreToolUse** → blocks editing secrets and dangerous commands.
 - **PostToolUse** → auto-format after a file change.
 - **SubagentStop** → lint+tests after the tester.
@@ -91,6 +111,7 @@ CLAUDE.md                       # project memory (tailored to the repo after /bo
 - **git pre-commit** → secret scan + lint/tests, even when someone bypasses Claude Code.
 
 ## Extending
+
 New agent: `/new-agent` (holds `_STANDARD.md`). New reusable workflow: `/new-skill`. Core skills (in
 `.claude/skills/` on Claude, `.agents/skills/` elsewhere) remain APM-managed; a local improvement belongs in `AGENTS.md`, a local `.agent-army/agents`
 role, or a distinct local `.apm/skills` workflow.
@@ -106,6 +127,7 @@ specialized agents and external controls, and asks once before updating marked m
 full bootstrap only when intentionally re-specializing the team or switching target.
 
 ## Troubleshooting
+
 - `claude doctor` — diagnostics (hooks, MCP, shell).
 - Hooks don't work on Windows → use WSL/Git Bash.
 - No `python3` → the barriers run in fallback mode (blocking the worst patterns).

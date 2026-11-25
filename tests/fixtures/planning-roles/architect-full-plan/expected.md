@@ -24,7 +24,7 @@
 - After all required detail is saved, obtain independent review of the current plan; persist the verdict and
   revision in `reviews/plan-review.md`. A finding reopens only the affected milestone(s); re-review corrections.
 - Missing/stale review is not success. If independent context is unavailable, disclose it without fabricating
-  approval; only `/ship` may handle its existing explicit review-limitation decision.
+  approval; only `/deliver` may handle its existing explicit review-limitation decision.
 - `ready` means the plan can be presented for the separate blueprint/scope gate. A request to continue
   planning, an answer to a planning question, or review approval alone never authorizes tests or source edits.
 - At the gate, summarize ordered outcomes, exclusions and risks in chat. Wait for explicit blueprint and

@@ -1,6 +1,6 @@
 ---
 name: bootstrap
-description: Evidence-led setup and safe incremental migration of a tailored Agent Army v0.8.0. One tool-neutral profile in .agent-army serves every tool; it preserves existing user controls and never renders native agent copies.
+description: Evidence-led setup and safe incremental migration of a tailored Agent Army v0.9.0. One tool-neutral profile in .agent-army serves every tool; it preserves existing user controls and never renders native agent copies.
 ---
 # /bootstrap — own controls, then author a real team
 
@@ -37,7 +37,9 @@ Migrating a 0.3.x/0.4.x profile to 0.5 also removes the native role copies those
 `.gemini/agents/…`, `.windsurf/skills/agent-army-*`, `.apm/agents` staging) — only where a copy is identical
 to its `.agent-army/agents` contract — and moves the generated `model:` lines out of the contracts into the
 profile's per-tool `model_routing`. A copy that differs is kept and listed as a conflict on the card: merge
-its change into the contract, then delete the copy. For an incremental
+its change into the contract, then delete the copy. Migrating to 0.9 renames the executor `/ship` to `/deliver`
+(Claude Code has a native `/ship`): list every `/ship` mention in the root `AGENTS.md` and local
+`.agent-army/agents` as a recommended diff on the review card. For an incremental
 migration, show the exact version transition, managed paths, preserved local sources and any conflict,
 then get one explicit “apply migration” confirmation before rerunning without `--dry-run`.
 
@@ -129,7 +131,7 @@ Runtime hooks are the one tool-specific layer: with `--runtime-hooks army` the p
 primitives to `.apm/hooks` and, given `--tool`, renders them for that tool through APM
 (`apm install --frozen --target <tool>`). Without `--tool` it only writes the primitives.
 
-Model routing is configured at this same boundary, never improvised by `/ship`. It is stored per tool in
+Model routing is configured at this same boundary, never improvised by `/deliver`. It is stored per tool in
 `.agent-army/config.json` → `model_routing.tools` and applied by the skills at dispatch time; the role
 contracts carry no generated `model:` line. Claude gets its documented `haiku`/`sonnet`/`opus` tiers by
 default. Another tool whose descriptor has `dispatch: subagent-with-prompt` can get exact model IDs:
@@ -185,7 +187,7 @@ impression; open files that could disprove your architectural hypothesis.
 
 Print a Recon Evidence Report before editing agents:
 
-```
+```text
 Stack(s):        language, framework, versions and working directories
 Architecture:    3–6 laws, each with a proving path
 Conventions:     naming/layout/error rules, with paths
@@ -257,7 +259,7 @@ Apply role-specific depth:
 
 Write or refresh root `AGENTS.md` first (keep the generator's `agent-army:feedback-router` block in it unchanged): stacks, commands, laws, reusable
 assets, policy, roster, delegation/review rules, PR execution-state conventions, adapter model-control availability and the ownership status of controls. Claude alone gets
-a thin `CLAUDE.md` pointer to it. Keep `architect`, `tester`, `ship` and the
+a thin `CLAUDE.md` pointer to it. Keep `architect`, `tester`, `deliver` and the
 architect's embedded blueprint skeletons in lockstep.
 
 ## Step 4 — mandatory reflection and quality gates
@@ -302,7 +304,7 @@ python3 "$BOOTSTRAP_DIR/army.py" locate
 Report: visibility and per-tool dispatch/model routing; full control ownership table;
 recon laws with proving paths; every specialized role; verified commands;
 reflection changes; assumptions; and any external/disabled/blocked guarantee.
-Suggest `/ship "<first task>"` only after this report.
+Suggest `/deliver "<first task>"` only after this report.
 
 ## Non-negotiable quality bar
 

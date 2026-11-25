@@ -8,5 +8,7 @@ The cases cover contradictory evidence, an unavailable source, a relevant untrac
 override across two PRs, an external link blocker, composition, independent review and the separate execution
 gate. Its expected file supplies follow-up answers; do not include those answers in the actor's packet.
 `architect-resume` deliberately retains a legacy checkpoint to exercise non-destructive migration.
+`reviewer-readability` seeds the three blueprint-readability defects (duplicated end state and status, a missing
+or per-task code shape, a contract not anchored to the mirrored code); the reviewer must report all three.
 
 `architect-current-baseline/request.md` is a fixed task packet for a paired baseline comparison of interview behavior. No model-generated baseline output has been captured in this workspace, so the baseline comparison remains an explicit PR follow-up rather than a claimed result.

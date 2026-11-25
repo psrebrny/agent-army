@@ -218,8 +218,10 @@ PY
       && grep -q 'approved read/write paths' "$f" \
       && grep -q 'STOP and return `awaiting_approval`' "$f" \
       && grep -q '## Execution State' "$f" \
-      && grep -q '\*\*Execution Profile:\*\*' "$f" \
-      && grep -q '\*\*Run Configuration:\*\*' "$f" \
+      && grep -q '^## Execution rules' "$f" \
+      && grep -q '^- \*\*Files:\*\* read' "$f" \
+      && grep -q '^- \*\*Verify:\*\*' "$f" \
+      && grep -q '^- \*\*Evidence:\*\* \[RED and GREEN' "$f" \
       && grep -q 'ready_for_human_review' "$f" \
       && grep -q 'one consequential question per turn' "$f" \
       && grep -q '## Planning Session' "$f" \
@@ -228,17 +230,17 @@ PY
       && grep -q '^| compose |' "$f" && grep -q '^| review |' "$f" \
       && grep -q '## For you' "$f" && grep -q 'Latest plan change' "$f" \
       && grep -q 'Task status:\*\* \[open | in progress | in testing | in review | done | awaiting decision | blocked | conditional\]' "$f"; then
-      ok "Delegation Contract, interactive planning and resumable status are explicit"
+      ok "short task block + shared Execution rules, interactive planning and resumable status are explicit"
     else
       bad "architect missing explicit contract, interactive planning or resumable status"
     fi
-    # D14/D15: the PR skeleton writes English statuses and a Bottleneck-only Execution Profile.
+    # D14/D15: the PR skeleton writes English statuses and a one-line Bottleneck, omitted with inherit routing.
     if grep -qE 'do zrobienia|w trakcie|do testów|do review|wykonane|czeka na decyzję|zablokowane|warunkowe' "$f" \
-      || grep -qE '^- \*\*(Capability|Deliberation|Routing rationale):\*\*' "$f" \
-      || ! grep -q '^- \*\*Bottleneck rationale:\*\*' "$f"; then
-      bad "architect skeleton still carries a Polish status or Capability/Deliberation (D14/D15)"
+      || grep -qE '^- \*\*(Capability|Deliberation|Routing rationale|Bottleneck rationale):\*\*' "$f" \
+      || ! grep -q '^- \*\*Bottleneck:\*\* \[.*omit this line with `inherit` model routing' "$f"; then
+      bad "architect skeleton carries a Polish status, a multi-line profile or an unconditional Bottleneck (D14/D15)"
     else
-      ok "architect skeleton uses English statuses and a Bottleneck-only Execution Profile"
+      ok "architect skeleton uses English statuses and a one-line Bottleneck omitted with inherit routing"
     fi
   fi
   if [ "$name" = "code-reviewer" ]; then
@@ -432,7 +434,7 @@ check_skill() {
   [ -f "$f" ] && ok "SKILL.md present" || { bad "no SKILL.md"; return; }
   [ -n "$(yaml_key "$f" name)" ] && ok "has name" || bad "missing 'name:'"
   [ -n "$(yaml_key "$f" description)" ] && ok "has description" || bad "missing 'description:'"
-  if [ "$base" = "ship" ]; then
+  if [ "$base" = "deliver" ]; then
     # The skill folder is one contract: SKILL.md plus the reference files it reads on demand.
     local g; g="$(mktemp)"; cat "$f" "$(dirname "$f")"/references/*.md > "$g"
     if grep -q 'RESOLVE THE EXECUTION SCOPE' "$g" \
@@ -462,9 +464,9 @@ check_skill() {
       && grep -q 'legacy value on read' "$g" \
       && grep -q '`do zrobienia` → `open`, `w trakcie` → `in progress`, `do testów` → `in testing`, `do review` → `in review`, `wykonane` → `done`, `czeka na decyzję` → `awaiting decision`, `zablokowane` → `blocked`, `warunkowe` → `conditional`' "$g" \
       && [ "$(grep -cE 'do zrobienia|w trakcie|do testów|wykonane|czeka na decyzję|zablokowane|warunkowe' "$g")" -eq 1 ]; then
-      ok "ship interaction modes, routing and closure loop are explicit"
+      ok "deliver interaction modes, routing and closure loop are explicit"
     else
-      bad "ship missing resolve, routing or closure-loop rule"
+      bad "deliver missing resolve, routing or closure-loop rule"
     fi
     rm -f "$g"
   fi
@@ -508,11 +510,12 @@ check_interaction_contract() {
   if python3 - "$ROOT" <<'PY_CONTRACT'
 import pathlib, re, sys
 root = pathlib.Path(sys.argv[1])
-ship_dir = root / '.apm/skills/ship'
-ship = (ship_dir / 'SKILL.md').read_text()
-# Rules moved to references/ still belong to the ship contract.
-ship_all = ship + ''.join(f.read_text() for f in sorted((ship_dir / 'references').glob('*.md')))
+deliver_dir = root / '.apm/skills/deliver'
+deliver = (deliver_dir / 'SKILL.md').read_text()
+# Rules moved to references/ still belong to the deliver contract.
+deliver_all = deliver + ''.join(f.read_text() for f in sorted((deliver_dir / 'references').glob('*.md')))
 architect = (root / '.apm/skills/bootstrap/baseline/core/agents/architect.md').read_text()
+agents_dir = root / '.apm/skills/bootstrap/baseline/core/agents'
 
 def fields(text, heading):
     section = text.split('## ' + heading + '\n', 1)[1]
@@ -525,7 +528,7 @@ def choices(value):
     return {item.strip() for item in value.strip('[]').split('|')} - {'none'}
 
 try:
-    cards = [fields(text, 'Interaction Card') for text in (ship, architect)]
+    cards = [fields(text, 'Interaction Card') for text in (deliver, architect)]
     required = {'Checkpoint', 'Progress', 'Completed', 'Evidence', 'Review focus', 'Question', 'Options', 'Discussion'}
     assert all(set(card) == required for card in cards), 'interaction card fields differ or are missing'
     for name in ('Checkpoint', 'Options'):
@@ -533,28 +536,40 @@ try:
     assert {'behavior decision', 'task plan', 'task review', 'final review'} <= choices(cards[0]['Checkpoint']), 'missing lifecycle checkpoint'
     # D19: the separate RED / baseline / implementation acceptance pauses fold into `task plan`.
     legacy = {'RED acceptance', 'baseline acceptance', 'implementation acceptance'}
-    for name, text in (('ship', ship), ('architect', architect)):
+    for name, text in (('deliver', deliver), ('architect', architect)):
         left = [c for c in legacy if c in text.replace(LEGACY_LINE, '')]
         assert not left, f'{name} still lists removed checkpoints: {sorted(left)}'
     # One delivery ledger: Task Roadmap. Planning has its own bounded milestone table.
     assert '## Task Roadmap' in architect and '\n## Execution Progress\n' not in architect, 'progress must come from the Task Roadmap, not a second ledger'
     # Two readers: a plain-language section per file, and correction tiers that keep edits small.
     assert architect.count('## For you\n') == 2, 'manifest and PR skeletons each need a For you section'
+    # One owner per human-facing fact: status once, a per-PR index, a task-tagged end state and one code shape per PR.
+    manifest_you, pr_you = [s.split('\n## ', 1)[0] for s in architect.split('## For you\n')[1:3]]
+    assert manifest_you.index('**What will be built:**') < manifest_you.index('**Where it stands:**'), 'manifest For you must start with What will be built'
+    assert 'one line per PR' in manifest_you and 'no task detail' in manifest_you, 'manifest index must be one line per PR'
+    assert 'Where it stands' in pr_you and 'What changes' not in pr_you, 'PR For you must point at the status, not repeat it'
+    assert pr_you.count('**What you will see at the end:**') == 1 and pr_you.count('**How it will look in code:**') == 1, 'PR For you needs one end state and one code shape'
+    assert '([PR].[n])' in pr_you, 'end-state items and code-shape nodes need task tags'
+    tasks = architect.split('### Task [ID].1:', 1)[1].split('````', 1)[0]
+    assert 'How it will look in code' not in tasks and '**Mirrors:**' in tasks, 'tasks get no diagram; mirroring contracts name their source'
+    assert 'Anchor a mirroring contract in the mirrored code' in architect, 'architect lost the anchored-contract rule'
+    for rule in ('`Where it stands`', 'its own diagram', 'open the mirrored file'):
+        assert rule in ' '.join((agents_dir / 'plan-reviewer.md').read_text().split()), f'plan-reviewer lost readability check: {rule}'
     assert all(t in architect for t in ('**minor**', '**task**', '**core**', 'consistency check')), 'Rule 9 correction tiers or consistency check missing'
-    assert '**Small corrections stay small.**' in ship and 'Never ask the user to\n  approve the plan of a fix they just asked for.' in ship, 'ship lost the small-correction fast path'
+    assert '**Small corrections stay small.**' in deliver and 'Never ask the user to\n  approve the plan of a fix they just asked for.' in deliver, 'deliver lost the small-correction fast path'
     reviewer = (root / '.apm/skills/bootstrap/baseline/core/agents/code-reviewer.md').read_text()
     assert '**UI SEMANTICS**' in reviewer and '**ACCESSIBLE UI:**' in architect, 'UI accessibility basics missing from reviewer or architect'
-    assert '## 1.8 · WHERE ARTIFACTS GO' in ship and 'never cite `/tmp`' in ship, 'ship lost the artifact convention'
+    assert '## 1.8 · WHERE ARTIFACTS GO' in deliver and 'never cite `/tmp`' in deliver, 'deliver lost the artifact convention'
     agents = root / '.apm/skills/bootstrap/baseline/core/agents'
     for role in ('code-reviewer', 'security-auditor', 'perf-auditor', 'tester', 'coder', 'docs-writer', 'plan-reviewer', 'planning-analyst'):
-        assert '`/ship` section 1.8' in (agents / f'{role}.md').read_text(), f'{role} does not point at the artifact convention'
+        assert '`/deliver` section 1.8' in (agents / f'{role}.md').read_text(), f'{role} does not point at the artifact convention'
     assert '**README AT FEATURE LEVEL**' in (agents / 'docs-writer.md').read_text(), 'docs-writer lost the README altitude rule'
-    assert '| final | Whole-feature audit' in architect and '**Whole-feature audit.**' in ship_all and 'reviews/feature-review.md' in ship_all, 'whole-feature audit missing from plan or executor'
+    assert '| final | Whole-feature audit' in architect and '**Whole-feature audit.**' in deliver_all and 'reviews/feature-review.md' in deliver_all, 'whole-feature audit missing from plan or executor'
     assert '**removals across the whole feature:**' in (agents / 'code-reviewer.md').read_text(), 'feature-mode removals check missing'
     # One closure order, a task is done at its accepted review, and every audit packet carries the removal list.
-    assert '**Closure, in this order, when every task of the PR is `done`:**' in ship_all and 'references/closure.md' in ship, 'ship lost the single closure order'
-    assert 'the task review accepted → `done`' in ' '.join(ship.split()), 'task done mapping must follow the accepted task review'
-    assert 'scripts/removals.py' in ship, 'audit packets lost the removal list'
+    assert '**Closure, in this order, when every task of the PR is `done`:**' in deliver_all and 'references/closure.md' in deliver, 'deliver lost the single closure order'
+    assert 'the task review accepted → `done`' in ' '.join(deliver.split()), 'task done mapping must follow the accepted task review'
+    assert 'scripts/removals.py' in deliver, 'audit packets lost the removal list'
     session = fields(architect, 'Planning Session')
     assert set(session) == {
         'Stage', 'Detail policy', 'Progress', 'Finish condition', 'Open question',
@@ -566,7 +581,7 @@ try:
     assert '| Step | Planning milestone | Status | Completion evidence |' in architect, 'missing planning milestone ledger'
     assert '| compose |' in architect and '| review |' in architect, 'planning must end with composition and review'
     author_rules = ' '.join(architect.split())
-    executor_rules = ' '.join(ship.split())
+    executor_rules = ' '.join(deliver.split())
     for rule in (
         'before the first planning question',
         'explicit user override',
@@ -580,7 +595,7 @@ try:
         'Never overwrite `Planning Session.Progress`',
         'A partial architect handoff',
     ):
-        assert rule in executor_rules, f'ship lost planning boundary: {rule}'
+        assert rule in executor_rules, f'deliver lost planning boundary: {rule}'
     plan_reviewer = (agents / 'plan-reviewer.md').read_text()
     assert 'Planning Session.Detail policy' in plan_reviewer and 'architect Rule 13' in plan_reviewer, \
         'plan review must check the requested detail scope, not just the first PR'
@@ -593,12 +608,14 @@ try:
     assert '| compose |' in saved and '| review |' in saved and '| current |' in saved, \
         'full-plan fixture must retain the route after its first completed decision'
     assert all((fixture / f).is_file() for f in ('request.md', 'expected.md')), 'full-plan fixture packet missing'
+    seeded = root / 'tests/fixtures/planning-roles/reviewer-readability'
+    assert all((seeded / f).is_file() for f in ('request.md', 'expected.md')), 'plan-reviewer readability fixture missing'
     state = fields(architect, 'Execution State')
     assert 'Temporary delegation' in state, 'temporary authorization cannot survive resume'
     assert choices(state['Interaction policy'].split(' — ')[0] + ']') == {'autonomous', 'interactive', 'unset'}, 'unexpected third interaction mode'
     # D13: the mode recommendation names only bottlenecks the architect can write.
-    rule = re.search(r'Recommend \*\*Interactive\*\* if any selected task has `Bottleneck` `([^`]+)`', ship)
-    assert rule, 'ship has no mode recommendation rule'
+    rule = re.search(r'Recommend \*\*Interactive\*\* if any selected task has `Bottleneck` `([^`]+)`', deliver)
+    assert rule, 'deliver has no mode recommendation rule'
     enum = re.search(r'^- \*\*Bottleneck:\*\* \[([^\]]+)\]', architect, re.M)
     assert enum, 'architect has no Bottleneck enum'
     unknown = choices(rule.group(1)) - choices(enum.group(1))
@@ -735,7 +752,7 @@ PY_ADVISOR
   fi
 }
 
-# The interaction-pace:v1 paragraph is copied verbatim into the advisor contract, /ship and
+# The interaction-pace:v1 paragraph is copied verbatim into the advisor contract, /deliver and
 # the baseline AGENTS.md. Every copy that exists must match the contract's.
 check_interaction_pace() {
   local out rc
@@ -743,7 +760,7 @@ check_interaction_pace() {
 import pathlib, sys
 root = pathlib.Path(sys.argv[1])
 OPEN, CLOSE = '<!-- interaction-pace:v1 -->', '<!-- /interaction-pace:v1 -->'
-files = ['.apm/skills/product/advisor-contract.md', '.apm/skills/ship/SKILL.md',
+files = ['.apm/skills/product/advisor-contract.md', '.apm/skills/deliver/SKILL.md',
          '.apm/skills/bootstrap/baseline/AGENTS.md']
 copies, errors = {}, []
 for rel in files:
@@ -1063,8 +1080,18 @@ RETIRED = {
     '12-stage': 'the journey has 14 stages since 0.7.0',
     '12 journey stages': 'the journey has 14 stages since 0.7.0',
     'risk reversal only if the user confirm': 'policy confirmation belongs to positioning-offer rule 5',
+    '/ship': 'renamed to /deliver in 0.9.0 (Claude Code has a native /ship)',
+    '**Execution Profile:**': 'a task has one Bottleneck line since 0.9.0',
+    '**Run Configuration:**': 'the model is recorded in the Routing line since 0.9.0',
+    'Bottleneck rationale': 'rationale and trigger share the one Bottleneck line',
+    'Verification Command': 'the task field is `Verify`',
+    '**What changes:**': 'PR For you uses What you will see at the end',
+    '**Full scope:**': 'PR end states and the manifest index own the scope',
+    'Agent Execution Guidelines': 'shared rules live in the manifest Execution rules',
 }
-LEGACY_OK = {skills / 'ship/references/legacy.md'}
+LEGACY_OK = {skills / 'deliver/references/legacy.md'}
+# The migration step that tells users about the rename may name the old command.
+PHRASE_OK = {'/ship': {skills / 'bootstrap/SKILL.md'}}
 contracts = [p for p in skills.rglob('*.md') if p not in LEGACY_OK]
 hits = []
 for p in contracts:
@@ -1078,7 +1105,7 @@ for p in contracts:
         if older_blueprint:
             continue  # only this bullet and its indented continuation may name legacy fields
         for phrase, why in RETIRED.items():
-            if phrase in line:
+            if phrase in line and p not in PHRASE_OK.get(phrase, ()):
                 hits.append(f'{p.relative_to(root)}:{n} "{phrase}" ({why})')
 emit('BAD' if hits else 'OK', 'retired wording still in contracts: ' + '; '.join(hits) if hits else f'no retired wording in {len(contracts)} shipped Markdown files')
 
@@ -1103,9 +1130,9 @@ for f in sorted(skills.glob('*/scripts/*.py')):
         compile(f.read_text(), str(f), 'exec')
     except SyntaxError as e:
         errs.append(f'{f.relative_to(root)}: {e}')
-r = subprocess.run([sys.executable, str(skills / 'ship/scripts/removals.py'), 'HEAD'], cwd=root, capture_output=True, text=True)
+r = subprocess.run([sys.executable, str(skills / 'deliver/scripts/removals.py'), 'HEAD'], cwd=root, capture_output=True, text=True)
 if r.returncode != 0 or '# Removals since' not in r.stdout:
-    errs.append('ship/scripts/removals.py HEAD failed: ' + (r.stderr.strip() or r.stdout[:80]))
+    errs.append('deliver/scripts/removals.py HEAD failed: ' + (r.stderr.strip() or r.stdout[:80]))
 emit('BAD' if errs else 'OK', '; '.join(errs) if errs else 'skill scripts compile and removals.py runs')
 PY_HYGIENE
   out="$PY_OUT"

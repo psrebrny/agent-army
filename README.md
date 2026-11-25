@@ -7,7 +7,7 @@ performance and documentation agents.
 ## Install once, bootstrap per repository
 
 The skills are generic, so install them once for your user. Every repository you open
-then has `/ship`, `/product`, `/bootstrap` and the rest:
+then has `/deliver`, `/product`, `/bootstrap` and the rest:
 
 ```bash
 apm install -g psrebrny/agent-army --target claude   # user scope; or claude | cursor | codex | gemini | copilot | windsurf | opencode
@@ -40,7 +40,7 @@ You decide whether the profile is part of the repository (`--visibility`):
 An Agent Army-owned CI needs a committed profile, so with `gitignore`/`exclude` it is reported as `blocked`.
 
 In tools without slash commands, invoke the skill file directly (`<skills dir>/bootstrap/SKILL.md`, and the
-same for `/ship`, `/new-agent`, `/new-skill`, `/adapt-army` and the product skills).
+same for `/deliver`, `/new-agent`, `/new-skill`, `/adapt-army` and the product skills).
 The product skills need no bootstrap: they work in any repository.
 
 During bootstrap, choose the owner of each layer independently:
@@ -71,13 +71,14 @@ repository enforcement for chosen, active `army` pre-commit and CI layers;
 external layers remain the user's responsibility.
 
 Use `architect` directly when you want discovery and a blueprint only; it never
-implements source code. `/ship` resolves and resumes the narrowest unambiguous
-task or PR from `design-docs/` (plain `/ship` resumes only when one open scope
+implements source code. `/deliver` resolves and resumes the narrowest unambiguous
+task or PR from `design-docs/` (plain `/deliver` resumes only when one open scope
 exists). Each PR persists its interaction mode, Interaction Card and task state,
 so a new session can continue without reconstructing chat history.
 
-Architect gives each task an Execution Profile: its reasoning `Bottleneck`, the
-rationale and an escalation trigger. `/ship` derives the coordinator profile for
+Architect writes each task as a short block (contract, files, tests, verify, manual check, review focus,
+evidence) and, unless model routing is `inherit`, one `Bottleneck` line with its evidence and escalation
+trigger; rules shared by every task live once in the manifest. `/deliver` derives the coordinator profile for
 the selected scope from those bottlenecks and escalates from them, while each
 role's model comes from the per-tool routing bootstrap records, applied when the skill dispatches
 the role (otherwise the tool default). The
@@ -89,16 +90,16 @@ for it (`--tool <tool> --model-light … --model-mid … --model-strong …`). T
 main session use the main-session model. The delivery loop is TDD → independent review/security
 → repairs and re-audit → docs/full verification → ready for human review.
 
-When an architect creates or materially revises a blueprint, `/ship` always
+When an architect creates or materially revises a blueprint, `/deliver` always
 pauses — including in autonomous mode — so the user can review acceptance
 criteria and choose one task, one PR or all unfinished PRs before implementation.
 For tools without a configured per-role model, every role inherits
-the active tool/session configuration and `/ship` asks for a manual change only
+the active tool/session configuration and `/deliver` asks for a manual change only
 when the recommendation is material. It never invents a provider/model ID,
 changes the main-session setting, or claims that a role-level effort changed:
 effort falls back to the tool default unless the adapter explicitly supports it.
 
-`/ship` has two interaction modes per PR. When it asks, it recommends one with a
+`/deliver` has two interaction modes per PR. When it asks, it recommends one with a
 reason: Interactive when a task still has an open design choice or no runnable check,
 otherwise Autonomous; your choice wins. **Autonomous** continues after the
 mandatory gate until a real decision, risk, or final human review. **Interactive**
@@ -132,13 +133,13 @@ restarting. Existing `supervised` PRs still migrate to `interactive` on resume.
 ## The 21 skills
 
 Every skill is optional and callable on its own; none runs another. Not sure where to start with a
-product? Run `/product`. The full catalog, with inputs, outputs, examples and what reaches `/ship`, is
+product? Run `/product`. The full catalog, with inputs, outputs, examples and what reaches `/deliver`, is
 [`.apm/README.md`](.apm/README.md).
 
 | Skill | Use it for |
 |---|---|
 | `/bootstrap` | tailor the agent team and control ownership to this repository |
-| `/ship` | execute or resume agreed engineering work up to human review |
+| `/deliver` | execute or resume agreed engineering work up to human review |
 | `/new-agent` | add a specialised local role |
 | `/new-skill` | add a reusable local workflow |
 | `/adapt-army` | turn a recurring workflow problem into a targeted improvement |
@@ -150,7 +151,7 @@ product? Run `/product`. The full catalog, with inputs, outputs, examples and wh
 | `/validate-product` | falsifiable experiments and reading their results, incl. post-launch churn |
 | `/product-spec` | MVP goal, stories with acceptance and priority |
 | `/solution-architecture` | architecture style and stack per layer, recorded as ADRs |
-| `/delivery-plan` | walking skeleton and vertical slices as work items for `/ship` |
+| `/delivery-plan` | walking skeleton and vertical slices as work items for `/deliver` |
 | `/go-to-market` | channels as written predictions with budget caps |
 | `/positioning-offer` | positioning, offer, objections and DRAFT page copy traced to evidence |
 | `/first-customers` | the first paying customers: send cards you send, anonymised tracker, debriefs |
@@ -161,7 +162,7 @@ product? Run `/product`. The full catalog, with inputs, outputs, examples and wh
 
 Product skills write conversation results to `docs/product/` and decisions to `docs/adr/` by default;
 `.agent-army/stores.json` can bind a record type to a connected tool instead. They never write product
-code: anything that becomes code is a work item you hand to `/ship`.
+code: anything that becomes code is a work item you hand to `/deliver`.
 
 ## Update an installed Army
 
@@ -182,6 +183,12 @@ where a copy is identical to its contract: `.claude/agents/agent-army-*.md`, `.c
 `.github/agents/…`, `.cursor/agents/…`, `.gemini/agents/…`, `.windsurf/skills/agent-army-*` and `.apm/agents`
 staging. It also moves generated `model:` lines from the contracts into the profile. An edited copy is kept
 and listed as a conflict.
+
+**0.9.0:** `/ship` is renamed to `/deliver`, because Claude Code now has its own `/ship`. `/bootstrap` lists
+the `/ship` mentions in your `AGENTS.md` and local roles for you to update. Blueprints are shorter: each task is
+a short block, rules shared by all tasks are written once in the manifest, the manifest's "What will be built"
+is a one-line-per-PR index, and each PR file holds the detailed end state (tagged by task) and one outline of
+the code shape. Older blueprints keep working and move to the new shape on their next write.
 
 ## Keeping the team current
 

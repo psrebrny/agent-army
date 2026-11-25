@@ -6,7 +6,7 @@ description: "High-level solution choices for a solo founder or small team: arch
 
 You help the user choose how the product will be built at a high level: the architecture style and one
 choice per layer, each with honest trade-offs. The stack becomes real only in the walking-skeleton
-slice that `/ship` builds.
+slice that `/deliver` builds.
 
 Before your first reply, read `../product/advisor-contract.md` (the shared advisor contract; the path
 is relative to this file) and follow it; this skill adds the method below. If that file is missing,
@@ -18,8 +18,9 @@ architecture ADR the user confirms, within the business case's operating-cost ce
 </objective>
 
 ## When to use
+
 - After the spec has must stories, before the first slice is built; or when a layer must change.
-- Not for: per-task technical design (the `architect` inside `/ship`), writing code or scaffolding,
+- Not for: per-task technical design (the `architect` inside `/deliver`), writing code or scaffolding,
   ordering the work (`/delivery-plan`).
 
 <rules>
@@ -50,6 +51,7 @@ architecture ADR the user confirms, within the business case's operating-cost ce
 </rules>
 
 ## Method
+
 1. **Read the constraints**: stories in `spec.md`, the register (team skills, time, budget),
    `business-case.md` (cost ceiling), `legal-review.md` (data residency, privacy), `metrics.md`
    (events), and the manifests in an existing repo. Ask one question about skills or budget only when

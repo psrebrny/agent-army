@@ -97,7 +97,7 @@ decisions than pm-skills or Minimalist Entrepreneur (A-3). Those need real use.
 
 - **Brief:** Change proposals 1–3 below.
 - **`/product-red-team`:** "Why Agent Army instead of superpowers plus pm-skills?", and whether ADR-001 still
-  holds for `/ship` and `bootstrap` given MR-1.
+  holds for `/deliver` and `bootstrap` given MR-1.
 - **`/validate-product`:** test A-2 and A-3 against pm-skills and Minimalist Entrepreneur, not only Anthropic.
 
 Proposed to the brief's Change proposals:

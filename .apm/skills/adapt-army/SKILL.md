@@ -7,7 +7,7 @@ description: Turn user feedback into a safe, durable improvement to this repo's 
 ## 0 · Fix the present, then learn the lesson
 
 When feedback identifies a defect in the active task, first repair it inside the already approved scope.
-If the task is under `/ship`, use the required RED → implementation → GREEN/review loop; do not turn a
+If the task is under `/deliver`, use the required RED → implementation → GREEN/review loop; do not turn a
 lesson proposal into a shortcut around verification. A durable Army change is a separate change set and
 normally waits for the next safe task/PR boundary. Apply it immediately only when it is necessary to
 continue correctly.
@@ -96,10 +96,11 @@ decision progresses.
    `apm install --frozen --target <tool>` only when a repo-local skill changed, then run the relevant verification. Do not commit without explicit approval.
 
 ## <prompt_examples>
+
 **EX 1 — task correction plus durable workflow lesson.** USER: “You started coding before I accepted the
 test interpretation. Fix this task, and this must not happen again.” → Repair the task through TDD, then
-read the live `ship` skill and route the durable local rule to `AGENTS.md` and, if necessary, the owning
-local role source. Do not edit the installed `ship` skill.
+read the live `deliver` skill and route the durable local rule to `AGENTS.md` and, if necessary, the owning
+local role source. Do not edit the installed `deliver` skill.
 
 **EX 2 — existing agent, not a new one.** USER: “Reviewer should reject endpoints that expose internal
 database IDs.” → Route to `code-reviewer` and `AGENTS.md`; explain that this is a checklist addition, not

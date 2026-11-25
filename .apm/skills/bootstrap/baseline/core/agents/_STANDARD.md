@@ -5,7 +5,12 @@ Every agent in `<AGENTS_DIR>/` — shipped, repo-specialized by `/bootstrap`, or
 hand-crafted `architect.md` (use it as the reference exemplar).
 
 ## Required structure (every agent file)
-1. **Frontmatter** — `name`; `description` that says **WHEN to delegate** ("Use when…"); `tools` = the **minimal** set (read-only unless it must write). `model` is optional and MUST be omitted from the portable baseline unless the user explicitly approves a tool-specific default. Model choice belongs to `/ship`'s per-task execution profile and the active session; never hardcode a vendor/model ID into a reusable agent.
+
+1. **Frontmatter** — `name`; `description` that says **WHEN to delegate** ("Use when…");
+   `tools` = the **minimal** set (read-only unless it must write).
+   `model` is optional and MUST be omitted from the portable baseline unless the user explicitly approves a
+   tool-specific default. Model choice belongs to `/deliver`'s per-task execution profile and the active session;
+   never hardcode a vendor/model ID into a reusable agent.
 2. **Role & Purpose** — one tight paragraph; a single clear responsibility.
 3. **Principles** — the non-negotiables. Use **BAD/GOOD** contrasts where a behavior is easy to get wrong.
 4. **Scope / What it checks or produces** — concrete and domain-specific, never generic.
@@ -15,6 +20,7 @@ hand-crafted `architect.md` (use it as the reference exemplar).
 8. **`<prompt_examples>`** — 2–3 CONCRETE examples with real-looking file paths and explicit assertions. They must be **VARIED**, not three slants on one scenario: span different cases the agent actually meets (e.g. different Testing-Trophy levels, UI vs backend vs pure-logic, happy path vs error/edge). When specialized to a repo, use that repo's real paths, commands and framework syntax.
 
 ## Quality rules (apply to all)
+
 - Single responsibility; minimal tools; least privilege.
 - **Behavior over implementation**; name **explicit file paths**, never abstract tags.
 - Severity/priority discipline where it ranks things — no inflation, no false-positive spam.
@@ -26,6 +32,7 @@ hand-crafted `architect.md` (use it as the reference exemplar).
 - Concrete beats generic: every rule must change behavior — cut filler.
 
 ## Self-check before saving an agent (ALL must be YES)
+
 - [ ] Frontmatter complete; `description` states WHEN to use it; tools minimal; no model is hardcoded unless the user explicitly approved a tool-specific default.
 - [ ] Contains Role, Principles, Scope, Workflow, Output(embeds its skeleton), Edge cases.
 - [ ] Its primary output skeleton ends with `Handoff`: STATUS, VERIFIED, ASSUMPTIONS, OUT_OF_SCOPE, OPEN_QUESTIONS.

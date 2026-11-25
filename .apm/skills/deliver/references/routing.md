@@ -1,32 +1,34 @@
-# /ship reference — scope profile, effort and model routing
+# /deliver reference — scope profile, effort and model routing
 
-Read this file when `/ship` section 1.4–1.6 sends you here: to calculate the Scope Profile after scope
+Read this file when `/deliver` section 1.4–1.6 sends you here: to calculate the Scope Profile after scope
 selection, to escalate a task after a failed attempt, when `army.py locate` reports `inherit` or a null
 role model, or when a task seems to need a model above its role's configured tier.
 
 ## SCOPE-AWARE ROUTING
+
 Keep two profiles separate:
 
-- **Execution Profile** belongs to each atomic task and determines the cheapest adequate configuration
-  for that task's actual work.
+- **Task `Bottleneck`** belongs to each atomic task and determines the cheapest adequate configuration
+  for that task's actual work. With `inherit` routing the architect omits it; treat such a task as `unknown`.
 - **Scope Profile** belongs to the user-selected scope and determines only coordination burden for the
-  main `/ship` session, derived from the selected scope and its tasks' bottlenecks, never from a task
+  main `/deliver` session, derived from the selected scope and its tasks' bottlenecks, never from a task
   capability. It must never silently raise every worker to the strongest tier.
 
 Calculate and persist the Scope Profile after scope selection:
 
 | Selected scope | Coordinator recommendation | Worker recommendation |
 |---|---|---|
-| One task | that task's `Bottleneck`; coordination `low` | that task's Execution Profile |
-| One PR | the hardest `Bottleneck` among its unfinished tasks; coordination `low` for one task, otherwise `medium` | each task's own Execution Profile |
-| All unfinished PRs | the hardest `Bottleneck` matters only at cross-PR planning/replanning and final review; coordination `medium`, or `high` only for cross-PR dependencies, migrations, security risk, or an architectural pivot | each task's own Execution Profile |
+| One task | that task's `Bottleneck`; coordination `low` | that task's `Bottleneck` |
+| One PR | the hardest `Bottleneck` among its unfinished tasks; coordination `low` for one task, otherwise `medium` | each task's own `Bottleneck` |
+| All unfinished PRs | the hardest `Bottleneck` matters only at cross-PR planning/replanning and final review; coordination `medium`, or `high` only for cross-PR dependencies, migrations, security risk, or an architectural pivot | each task's own `Bottleneck` |
 
 Record it in the PR file's `Routing` line, next to the selected scope; at the gate it is shown on
 `show details`. A whole feature therefore does not make a `retrieval` ping endpoint run on a stronger
 configuration; it only increases coordination when the dependency graph warrants it.
 
 ## BOTTLENECK-AWARE EFFORT POLICY
-The architect writes each task's `Bottleneck`, `Bottleneck rationale` and `Escalation trigger` (architect
+
+The architect writes each task's `Bottleneck` line with its evidence and escalation trigger (architect
 Rule 5). The profile is a recommendation backed by evidence, not a command to use the strongest model or
 the highest effort.
 
@@ -57,22 +59,25 @@ Routing rules:
 - This policy does not fabricate or mutate a native model/effort setting. With `per_role_static`, use
   the configured role model and record the bottleneck as rationale. With `inherit` or an
   unsupported effort selector, write a `needs_input` configuration gap only when the recommendation is
-  material; the user changes the UI/CLI setting and `/ship` resumes at the next safe boundary.
+  material; the user changes the UI/CLI setting and `/deliver` resumes at the next safe boundary.
 
 ## MODEL & EFFORT ROUTING
-An Execution Profile carries no capability, deliberation or vendor model ID, and `/ship` makes no per-task
+
+A task's `Bottleneck` carries no capability, deliberation or vendor model ID, and `/deliver` makes no per-task
 capability recommendation. Each role is routed from `model_routing` (bootstrap) or the tool default.
 Bootstrap records per-tool model tiers once in `.agent-army/config.json`; `army.py locate --tool <tool>`
 resolves them into `roles.<role>.model`. This is configuration, not an LLM decision.
 
 ### Per-role static routing (`dispatch: subagent-with-prompt`)
+
 Pass the role's model (`model_routing.tools.<tool>.<capability>`, or the contract's own `model:` line,
-which wins; `army.py locate` resolves both as `roles.<role>.model`) as the subagent's model. `/ship`
+which wins; `army.py locate` resolves both as `roles.<role>.model`) as the subagent's model. `/deliver`
 dispatches directly, including in autonomous mode: it does **not** pause or ask the user to switch at each
 role boundary. Record the model and its `model_source` (`profile`, `package-default` or `user-override`) in
-that task's Run Configuration.
+the PR's `Routing` line.
 
 ### Main-thread fallback (`dispatch: main-thread`)
+
 Do not try to spawn a worker. Read the role's contract (`army.py role <role>`), execute that role in the
 main session, and record it as `Active roles`. The main-session model and effort remain unchanged.
 
@@ -84,19 +89,21 @@ The portable defaults intentionally distinguish roles:
 | `mid` | coder, perf-auditor, planning-analyst | implementation, bounded research, or measurement |
 | `light` | tester, docs-writer | focused RED/GREEN work or factual documentation |
 
-The task's Execution Profile remains the planner's evidence for coordination and escalation; it does not
+The task's `Bottleneck` remains the planner's evidence for coordination and escalation; it does not
 silently change a role's configured model mid-run. If a task demonstrably needs a model above the
 configured role profile, record a `needs_input` configuration gap at the mandatory gate and ask for an
 explicit re-bootstrap with that tool's real model IDs (`--tool <tool> --model-…`). Never fake a
 provider/model ID.
 
 ### Inherit fallback
+
 When `roles.<role>.model` is null (the tool has no per-role model, or bootstrap lacks its three exact
 model IDs, or `model_routing.strategy` is `inherit`), the role inherits. The subagent uses the
-tool/session configuration and effort remains the tool default. `/ship` cannot observe that actual setting
+tool/session configuration and effort remains the tool default. `/deliver` cannot observe that actual setting
 and must not claim it changed. Only then, when a material recommendation differs, pause at the mandatory
 gate and show:
-```
+
+```text
 Model & Effort Recommendation
 - Scope / role: [task ID / main session or role]
 - Recommended: [confirmed model or adapter-defined tier] / [confirmed effort or tool default]
@@ -104,9 +111,10 @@ Model & Effort Recommendation
 - Lower-cost alternative: [profile] — [trade-off]
 - Decision needed: switch and continue | stay current
 ```
-The user changes the main-session model/effort in the UI/CLI, then tells `/ship` to continue. If the user
+
+The user changes the main-session model/effort in the UI/CLI, then tells `/deliver` to continue. If the user
 chooses `stay current`, record that explicit decision and proceed. Never change a UI/CLI/API model or
-effort setting yourself. Persist it as the manual setting in `Routing` and in Run Configuration; do not ask
+effort setting yourself. Persist it as the manual setting in `Routing`; do not ask
 again until the selected scope, next task profile, or contract materially changes.
 `subagent_effort: unsupported` always means effort inherits the tool default — do not present it as a
 role-level setting.

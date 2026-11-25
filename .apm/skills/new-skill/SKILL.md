@@ -11,7 +11,7 @@ Do not create a skill merely because one task was awkward.
 ## 1 · Confirm the capability boundary
 
 Before writing, state the single workflow this skill owns, its trigger, inputs, outputs, read/write
-scope, stop conditions and relationship to existing `/ship`, `/bootstrap`, `/adapt-army` and agents.
+scope, stop conditions and relationship to existing `/deliver`, `/bootstrap`, `/adapt-army` and agents.
 Show the proposed name and get explicit approval. Names are lowercase kebab-case and must not collide
 with an APM-managed core skill or an existing local skill.
 
@@ -61,6 +61,7 @@ absent automation.
 ```
 
 ## <prompt_examples>
+
 **EX 1 — create a real workflow.** USER: “Every release needs the same dependency-risk summary before
 the PR. Create a `/release-readiness` workflow, not another reviewer.” → Confirm it has a distinct
 user-invoked input/output, create `.apm/skills/release-readiness/SKILL.md`, add the wrapper, render and

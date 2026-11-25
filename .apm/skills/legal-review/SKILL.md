@@ -18,6 +18,7 @@ a pass/fail check, plus the questions a lawyer and an accountant must answer.
 </objective>
 
 ## When to use
+
 - Before launch, before collecting personal data or payments, when selling across borders.
 - Not for: legal advice, final legal texts presented as ready to publish, or judging a dispute.
 
@@ -42,10 +43,11 @@ a pass/fail check, plus the questions a lawyer and an accountant must answer.
 8. Keep one list of questions for a lawyer and one for an accountant in the file, specific enough to
    get a quote, and update them in place.
 9. Remediation that is code (consent banner, data deletion, terms and withdrawal pages) becomes `fix`
-   work items for `/ship`; privacy needs raised in `metrics.md` are checked here.
+   work items for `/deliver`; privacy needs raised in `metrics.md` are checked here.
 </rules>
 
 ## Method
+
 1. **Applicability** (rule 3), one missing fact per turn.
 2. **Say what runs.** With source access, name the official sources you will check and roughly how
    long; without it, say the result will be partial (contract escalation) and list what to verify and

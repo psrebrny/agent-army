@@ -1,9 +1,9 @@
 name: agent-army
-version: 0.8.0
+version: 0.9.0
 description: >-
   Self-checking agent team + deterministic barriers for any repo, plus optional
   product advisors. Installs 21 live skills: five delivery skills (bootstrap,
-  ship, new-agent, new-skill, adapt-army), the /product navigator and fifteen
+  deliver, new-agent, new-skill, adapt-army), the /product navigator and fifteen
   product advisors (strategy, red team, market, business case, validation,
   spec, architecture, delivery plan, go-to-market, positioning and offer,
   first customers, metrics, UX, legal, launch readiness). Run /bootstrap once per repo: it creates local APM sources, lets

@@ -19,20 +19,20 @@ tools (Jira, Linear, Slack, analytics) and enough data. Several overlap with our
 | `competitive-brief` | `/market-research` |
 | `synthesize-research` | `/validate-product` |
 | `product-brainstorming` | `/product-strategy`, `/product-red-team` (theirs fits before ours) |
-| `code-review`, `testing-strategy`, `debug`, `architecture`, `deploy-checklist` | baseline agents, `/ship`, `/solution-architecture`, `/launch-readiness` |
+| `code-review`, `testing-strategy`, `debug`, `architecture`, `deploy-checklist` | baseline agents, `/deliver`, `/solution-architecture`, `/launch-readiness` |
 
 What they lack and Agent Army has:
 
 1. A 14-stage journey where each advisor reads the previous records; nothing in theirs persists between sessions.
 2. Evidence discipline: facts vs assumptions, predictions with kill thresholds written before results.
 3. No outward actions: advisors never send, publish or spend.
-4. Repo-tailored engineering: `bootstrap` agents, strict TDD in `/ship`, enforced hooks.
+4. Repo-tailored engineering: `bootstrap` agents, strict TDD in `/deliver`, enforced hooks.
 5. Many tools: Claude Code, Codex, Copilot, Cursor, Gemini, OpenCode; theirs are Claude only.
 
 ## Decision
 
 1. Invest only in what sets Agent Army apart: the advisor contract and evidence register, hand-offs between
-   stages, first customers and revenue vs plan, `/ship` and `bootstrap`.
+   stages, first customers and revenue vs plan, `/deliver` and `bootstrap`.
 2. Do not grow generic templates (PRD layout, competitor matrix, metric glossaries, roadmap formats).
 3. Do not add team-work skills: `stakeholder-update`, `roadmap-update`, `sprint-planning`, `standup`.
    Priorities go through ADRs, plans through `/delivery-plan`.

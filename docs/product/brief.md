@@ -5,7 +5,7 @@
 Agent Army is an open-source package of agents and skills for AI coding tools. Details: `.apm/README.md`.
 
 - **Tools:** Claude Code, Codex, Copilot, Cursor, Gemini, OpenCode.
-- **Engineering:** `bootstrap` generates repo-tailored agents; `/ship` delivers tasks with strict TDD.
+- **Engineering:** `bootstrap` generates repo-tailored agents; `/deliver` runs tasks with strict TDD.
 - **Product:** sixteen advisors take one founder from an idea to the first revenue through 14 stages, with every
   claim traced to evidence.
 
@@ -58,7 +58,7 @@ None recorded yet.
 | A-2 | A | Solo founders building with AI coding tools want a guided, evidence-based path from idea to revenue. Test: 3 of 5 founders who try it reach stage 3 within 2 weeks | maintainer | — | open | 2026-10-30 |
 | A-3 | A | On overlapping tasks our advisors give better decisions than Anthropic's generic skills. Test: ADR-001 revisit 2, side by side on real work | maintainer | — | open | 2026-10-30 |
 | A-4 | A | The shared evidence register gives better product decisions than stage-by-stage skills. Test: on one real decision, run our advisors and pm-skills on the same input; ours changes or stops the decision with a recorded fact, theirs does not | market-research | — | open | 2026-10-30 |
-| A-5 | A | Repo-tailored agents with blocking hooks need fewer fix rounds than generic skills. Test: on one real repo, 3 tasks with `/ship` and 3 comparable tasks with superpowers; `/ship` needs fewer review fix rounds on at least 2 of 3 | market-research | — | open | 2026-10-30 |
+| A-5 | A | Repo-tailored agents with blocking hooks need fewer fix rounds than generic skills. Test: on one real repo, 3 tasks with `/deliver` and 3 comparable tasks with superpowers; `/deliver` needs fewer review fix rounds on at least 2 of 3 | market-research | — | open | 2026-10-30 |
 | A-6 | A | People install agent packages from Claude Code and Codex plugin marketplaces rather than APM. Test: offer a marketplace install and compare installs over a month | market-research | — | open | 2026-10-30 |
 | A-7 | A | No other package generates repo-tailored agents with enforced gates. Test: a manual search of the Anthropic and Codex plugin directories and GitHub topics finds no such tool | market-research | — | open | 2026-10-30 |
 | D-1 | D | Build only what Anthropic's plugins do not cover: [ADR-001](../adr/001-focus-on-differentiators.md) | maintainer | — | accepted | 2026-10-30 |
@@ -73,7 +73,7 @@ None recorded yet.
 | market-research | New `A`: people install agent packages from Claude Code and Codex plugin marketplaces rather than APM; test: offer a marketplace install and compare installs over a month — accepted 2026-10-30 | MR-16 |
 | market-research | New `A`: no other package generates repo-tailored agents with enforced gates; test: a manual search of the Anthropic and Codex plugin directories and GitHub topics finds no such tool — accepted 2026-10-30 | MR-19 to MR-21 |
 | product-red-team | Unknowns: add "maintenance capacity: can one maintainer keep 21 skills across 6 tools current?" — proposed | R-5 |
-| market-research | Development direction for `adapt-army`: learn without waiting for a correction, but end in hard gates, not soft skills (ECC's "instincts" stop at skills). Count occurrences of a normalized lesson in `state.json`; when the same review finding recurs across `/ship` tasks, propose a role checklist item, then a machine-enforced control (lint, test or hook). Approval rule unchanged — proposed, not decided; maintainer is still weighing it | MR-23, A-5, A-7 |
+| market-research | Development direction for `adapt-army`: learn without waiting for a correction, but end in hard gates, not soft skills (ECC's "instincts" stop at skills). Count occurrences of a normalized lesson in `state.json`; when the same review finding recurs across `/deliver` tasks, propose a role checklist item, then a machine-enforced control (lint, test or hook). Approval rule unchanged — proposed, not decided; maintainer is still weighing it | MR-23, A-5, A-7 |
 | market-research | `adapt-army` routes package-level lessons (a defect in a shared Agent Army skill, not in this repo) to a GitHub issue in `psrebrny/agent-army`: drafts a normalized, non-sensitive issue (no private repo paths or code), shows it, and creates it only after approval — proposed, not decided | MR-23, A-1 |
 | market-research | Product layer: posts and articles in the founder's own voice (a voice profile from 3–5 of their texts; one piece repurposed per channel), as in ECC's `content-engine` and `article-writing`. Extend the drafts of `go-to-market` and `first-customers` rather than add a skill (ADR-001); keep our edge: every claim in a post traces to the register, no invented proof (unlike MR-18), each post tied to a prediction — proposed, not decided | MR-23, MR-18, MR-17 |
 | market-research | Revenue model, for when the monetisation revisit trigger fires: ECC's pattern — free MIT package, GitHub Sponsors, and a paid hosted GitHub App (private repos, checks on every PR, team usage). Our analogue would run the repo's gates and `adapt-army` lessons as a PR check. Recorded as an option, not a plan — proposed, not decided | MR-23 |

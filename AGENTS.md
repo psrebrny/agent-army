@@ -20,19 +20,22 @@ No build step, no test suite, no installer script — apm is the install mechani
 
 - `apm.yml` — apm manifest (name, version, `includes`, deps).
 - `.apm/skills/` — the 21 skills apm deploys (registry: `SKILLS` in `bootstrap.py`; `check.sh` keeps it equal to the skill dirs and wrappers):
-  - five engineering workflows: `/bootstrap`, `/ship`, `/new-agent`, `/new-skill`, `/adapt-army`;
+  - five engineering workflows: `/bootstrap`, `/deliver`, `/new-agent`, `/new-skill`, `/adapt-army`;
   - sixteen product skills: the `/product` navigator and fifteen advisors (`product-strategy`, `product-red-team`, `market-research`, `business-case`, `validate-product`, `product-spec`, `solution-architecture`, `delivery-plan`, `go-to-market`, `positioning-offer`, `first-customers`, `product-metrics`, `ux-review`, `legal-review`, `launch-readiness`). Each points at one shared contract, `.apm/skills/product/advisor-contract.md` (`advisor-contract:v2`; it lives inside the `/product` skill folder because APM installs only skill folders), and names its own stage; the full stage map lives in `product/SKILL.md`. A semantic change to the contract bumps the tag. Skills follow the Prompt Architect shape: purpose, `<objective>`, at most 12 `<rules>` (conditional where judgment is needed), `<output_format>`, optional `<escalation>`, `<examples>`; `check.sh` enforces the pointer, stage, objective and rule cap.
-- `.apm/README.md` — the user-facing catalog: stage model, record stores, every skill, the `/ship` boundary table, ADRs.
+- `.apm/README.md` — the user-facing catalog:
+  stage model, record stores, every skill, the `/deliver` boundary table, ADRs.
 - `.apm/SOURCES.md` — attribution for borrowed methods (repo · file · commit · license). Source repo only: APM installs just the skill folders, so each skill also names its source and license inline.
 - `.apm/commands/` — thin command wrappers for tools that surface a `command/` dir rather than `skills/`; each just points at the matching `.agents/skills/<skill>/SKILL.md`. Claude does not use them: there the skills are native in `.claude/skills`. The skills may be installed globally or per repo; `/bootstrap` never copies them. (apm's own placement varies by tool/version; when a native command isn't registered, invoke the skill directly by its `.agents/skills/…/SKILL.md` path.)
-- `.apm/skills/bootstrap/bootstrap.py` — deterministic 0.8.0 generator/migrator (profile schema v3, no target):
+- `.apm/skills/bootstrap/bootstrap.py` — deterministic 0.9.0 generator/migrator (profile schema v3, no target):
   `python3 bootstrap.py [--visibility committed|gitignore|exclude] [--mode auto|incremental|full]`
   `[--runtime-hooks …] [--git-precommit …] [--ci …] [--tool <tool>]`.
   It creates `.agent-army/agents/*.agent` role contracts (the only copy), `.agent-army/config.json` with
   per-tool `model_routing.tools`, optional `.agent-army/runtime.py` and `.apm/hooks` (rendered through APM
   only with `--tool`). Migrating a 0.3/0.4 profile removes the native role copies those versions rendered
   when identical to the contract. `assemble.sh` is a no-APM compatibility wrapper.
-- `.apm/skills/ship/` — `SKILL.md` (orchestration every run needs), `references/routing.md` and `references/legacy.md` (read on demand), `scripts/removals.py` (the removal list for audit packets).
+- `.apm/skills/deliver/` — `SKILL.md` (orchestration every run needs),
+  `references/routing.md` and `references/legacy.md` (read on demand),
+  `scripts/removals.py` (the removal list for audit packets).
 - `.apm/skills/bootstrap/army.py` — read-only resolver every skill can call relative to itself (`../bootstrap/army.py`): `locate [--cwd DIR] [--army-root DIR]` prints the Git `repo_root`, the selected `army_root`, profile (`specialized`/`baseline`), dispatch mode and per-role contract + model for a tool; `role <name>` prints a contract with the same selection. Path and scope rules: `bootstrap/references/repository-context.md`; regression suite: `bootstrap/tests/test_army.py` (run by `smoke.sh`). Shared constants live in `armylib.py`.
 - `.apm/skills/bootstrap/baseline/` — **the single source of truth** for everything `/bootstrap` installs:
   - `core/agents/` — nine source role definitions + `_STANDARD.md`; bootstrap materializes them as `.agent-army/agents/*.agent`, and skills use them directly as baseline roles in a repo without a profile.
@@ -44,13 +47,14 @@ No build step, no test suite, no installer script — apm is the install mechani
 ## Agent architecture
 
 **LLM layer (judgment, can be wrong):**
+
 - `architect` — writes blueprints in `design-docs/`, never writes source code
 - `tester` — strict TDD executor: writes RED tests from contract, verifies GREEN
 - `code-reviewer` — architectural auditor; verdict: `APPROVED` / `CHANGES_REQUESTED` / `ARCHITECTURAL_ALIGNMENT_NEEDED`
 - `security-auditor` — read-only, secrets + injection scan
 - `perf-auditor` — read-only, measure-first performance audit
 - `docs-writer` — minimal documentation updates
-- `coder` — optional; production-code implementer for large/parallel tasks (off the default `/ship` pipeline)
+- `coder` — optional; production-code implementer for large/parallel tasks (off the default `/deliver` pipeline)
 
 **Control layer:** runtime hooks offer deterministic feedback; selected pre-commit and CI provide
 the repository controls. Each layer can be Agent Army-owned, external, disabled or blocked; no
@@ -61,6 +65,7 @@ runtime hook is described as impossible to bypass.
 No build step. All changes go in `.apm/` (the single source of truth).
 
 **Local "unit" checks (deterministic, zero-LLM) — `scripts/check.sh`.** Validate one piece or everything; it checks frontmatter, `_STANDARD.md` sections, cross-tool safety (a string `tools:` is a hard FAIL when `--target-dir` names a tool whose descriptor says `accepts_tools_field: false`, a WARN otherwise), ≥2 prompt examples, that each agent's Output section embeds a fenced skeleton, and that every `tools/*.yml` descriptor parses with its required keys:
+
 ```bash
 scripts/check.sh architect        # one agent (piece by piece)
 scripts/check.sh tester reviewer  # a few
@@ -71,6 +76,7 @@ scripts/check.sh --target-dir <dir>   # validate a MATERIALIZED tool dir (e.g. a
                                        # descriptor-driven: correct agents dir, exact hooks_live set,
                                        # settings.json iff claude-settings, per that tool's tools/<tool>.yml
 ```
+
 **Product skills are checked structurally only** (`check.sh`: pointer, stage, objective, rule cap, links, description length). There is no model-based advisor evaluation; a repeatable advisor mistake found in use becomes a skill fix through `/adapt-army`.
 
 **Decisions and roadmap:** Agent Army is run as a product with its own skills: ADRs in `docs/adr/` (read ADR-001 before adding or growing a skill), product records in `docs/product/`.
@@ -84,6 +90,7 @@ scripts/check.sh --target-dir <dir>   # validate a MATERIALIZED tool dir (e.g. a
 **Smoke test — `scripts/smoke.sh`.** Deterministic gates cover the target-free profile, `army.py locate` (subdirectory, baseline fallback, per-tool dispatch/models, user overrides), visibility, per-tool model routing, incremental and real 0.4.0 → 0.5.0 migration (native copies removed only when identical), external-control preservation, unsafe hook collisions, runtime secret/command safety, and a real APM hook render. See `tests/GUIDE.md` for the full testing guide.
 
 **End-to-end (the real apm path):**
+
 ```bash
 apm install psrebrny/agent-army --dry-run --target opencode   # preview placement, no writes
 # or install into a scratch repo and run /bootstrap to see the specialized output:
@@ -111,8 +118,8 @@ exist because each was broken once and reached `main` unnoticed.
    patch otherwise, and update every place that names the version (`armylib.py`, `apm.yml`, `bootstrap.py`
    docstring, bootstrap `SKILL.md` description, this file; `smoke.sh` reads it). `check.sh` fails when
    `.apm/skills` changed since main and the version did not move, or when these places disagree.
-2. **One owner per rule.** A rule lives in the contract of the role that performs it; `ship` holds only
-   orchestration: who runs, when, which state is written, where it pauses. `ship` points to a role rule
+2. **One owner per rule.** A rule lives in the contract of the role that performs it; `deliver` holds only
+   orchestration: who runs, when, which state is written, where it pauses. `deliver` points to a role rule
    (`code-reviewer` feature mode) instead of restating it. Before adding a rule, grep whether it already
    exists elsewhere; change that copy instead of adding a second one. A skeleton holds each fact in one field.
 3. **Removing or narrowing is a sweep, not an edit.** When a field, status, checkpoint, section or role is
@@ -120,7 +127,7 @@ exist because each was broken once and reached `main` unnoticed.
    and `scripts/` for the old name and for wording that assumes the old behavior (`both audits`, `always`,
    the old card name), and fix every hit, including other roles, examples, fixtures and frontmatter
    `description`. Then add the old wording to `RETIRED` in `check.sh` (contract hygiene), which scans every
-   shipped Markdown file; only `ship/references/legacy.md` and the architect's "Older blueprint" edge case may
+   shipped Markdown file; only `deliver/references/legacy.md` and the architect's "Older blueprint" edge case may
    name it.
 4. **Walk the lifecycle before committing a flow change.** A change to statuses, pauses, stage order or
    closure is checked on paper against one scenario: Interactive, one feature of two PRs, a task accepted at
@@ -138,7 +145,7 @@ exist because each was broken once and reached `main` unnoticed.
    running it, e.g. "read `references/legacy.md` when the PR file has an older shape"; `check.sh` fails on an
    unnamed or missing file. A role contract stays one file: a subagent receives only that file's text.
 7. **Review the whole diff against the base before merge**, including removed lines (`git diff
-   <base>...HEAD`, or `python3 .apm/skills/ship/scripts/removals.py <base>`), against rules 1–6. Report what
+   <base>...HEAD`, or `python3 .apm/skills/deliver/scripts/removals.py <base>`), against rules 1–6. Report what
    was found and fixed in the PR body.
 
 ## Hard rules

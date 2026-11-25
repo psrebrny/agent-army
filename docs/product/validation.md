@@ -16,7 +16,7 @@
 
 1. The package is installed for their tool (`apm install …`, README "Install once, bootstrap per repository").
 2. `/bootstrap` finished and `.agent-army/config.json` exists in their repo.
-3. One skill call reads the profile: `/ship` on a one-line task, or `/product`.
+3. One skill call reads the profile: `/deliver` on a one-line task, or `/product`.
 
 **What to record per person** (no names: P-1, P-2, P-3), in `docs/product/data/<date>-install-test.csv`:
 

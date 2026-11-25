@@ -19,14 +19,15 @@ next step that unblocks the most.
 </objective>
 
 ## When to use
+
 - "Where am I?", "what next?", before building or spending money, after a pause, or when a decision
   looks stale. `/product stores` shows and changes where each record type lives and which data sources
   skills may read.
 - Not for: doing an advisor's work (strategy, experiments, numbers, specs), editing advisor artifacts,
-  or planning tasks inside a work item (`/ship`).
+  or planning tasks inside a work item (`/deliver`).
 
 <rules>
-1. Never run another skill or start `/ship`: you name the step, the user runs it. Warn, never block.
+1. Never run another skill or start `/deliver`: you name the step, the user runs it. Warn, never block.
 2. Judge every stage by evidence in the records, never by file presence, with exactly one state per
    stage and no hedges ("done, but thin"). Apply the criterion literally: an untested key `A` that has
    a test is stage 3's gap, not stage 2's.
@@ -55,6 +56,7 @@ next step that unblocks the most.
 </rules>
 
 ## Stage map
+
 "Done" means evidence, not just a file.
 
 | # | Stage | Done when | Skills | Should precede |
@@ -65,7 +67,7 @@ next step that unblocks the most.
 | 4 | MVP scoped | stories with acceptance and priority, out of scope listed | product-spec | 5, 6 |
 | 5 | Architecture decided | architecture ADRs `Accepted` for every layer the first slices touch | solution-architecture | 6 |
 | 6 | Delivery planned | walking skeleton + slices with outcome, acceptance and metric exist as work items | delivery-plan | 7 |
-| 7 | Built | the slices planned for launch are `delivered` with evidence | `/ship` | 11 |
+| 7 | Built | the slices planned for launch are `delivered` with evidence | `/deliver` | 11 |
 | 8 | Measurement verified | metrics collection status `verified` | product-metrics | 10 (paid spend), any data read |
 | 9 | Legal & formalities | no open launch-blocking legal item | legal-review | 11, 13 |
 | 10 | Go-to-market ready | predictions + budget caps exist | go-to-market, positioning-offer, red-team | 11 |
@@ -101,6 +103,7 @@ What to read per stage:
 | 14 | `business-case.md` Actuals vs plan | a dated read whose numbers trace to an export in `docs/product/data/`, with a recorded decision (keep, re-forecast or a proposal) |
 
 ## Method
+
 1. **Applies?** If the repo has no product (a library, an internal tool, a course exercise) and no
    product records, say the stage model does not apply and stop. With no product records in a product
    repo, the map is all `missing`: recommend `/product-strategy` and stop there.
@@ -113,13 +116,14 @@ What to read per stage:
    a line (`10–12. — missing — no records yet`). Then the current stage, then warnings one line each
    with the consequence ("ads before measurement is verified: you will not know what worked"), then
    stale items with what they affect.
-5. **One next step** (rules 5–6): name it as a skill or as `/ship W-n` for a `ready` work item, say why
+5. **One next step** (rules 5–6): name it as a skill or as `/deliver W-n` for a `ready` work item, say why
    and what it unblocks.
 6. **Not assessed**: what the records could not tell you, never silently empty.
 7. **At most one question** (rule 8), then **keep the state**: one line in the journey's
    `Conversation state` (date, one state per stage, the recommended step, questions settled).
 
 ## Bindings mode (`/product stores`)
+
 1. List every record type with its store: repo (path) or external (connector, container, `id_in`,
    allowed), and whether that connector is listed in this environment right now.
 2. Offer to change one binding. A change is a migration, shown before anything is written: the records

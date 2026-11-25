@@ -1,6 +1,6 @@
 # OpenCode (opencode.ai) — skills-first descriptor. Agent Army deliberately does not materialize
 # OpenCode-native agent files: the canonical role contracts stay in .agent-army/agents/*.agent and
-# /ship executes them in the main thread. This avoids a second Markdown agent tree and keeps the
+# /deliver executes them in the main thread. This avoids a second Markdown agent tree and keeps the
 # repository free of generated documentation-like files. OpenCode's native .opencode/agents/ and
 # plugin mechanisms remain available for a future explicit adapter.
 tool: opencode

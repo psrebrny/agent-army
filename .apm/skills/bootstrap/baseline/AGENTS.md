@@ -7,15 +7,18 @@
 > globally or in this repo; `<SKILLS_DIR>` below means wherever they are) and in `<AGENTS_DIR>/`.
 
 ## One profile, every tool
+
 The repo's specialized team lives only in `<AGENTS_DIR>/` and `.agent-army/config.json`. Every tool
 uses the same profile: the skills find it with `bootstrap/army.py locate` and run each role as a
 subagent or in the main thread. There is no native agent copy (`.claude/agents`, `.codex/agents`, …).
 
 ## First run — bootstrap ONCE
+
 The team shipped with the package is a generic baseline. Skills work on it right away, but before
 real work, specialize it to THIS repo.
 
 **Run the bootstrap routine in `<SKILLS_DIR>/bootstrap/SKILL.md`.**
+
 - **Claude Code:** type `/bootstrap`.
 - **Other tools (no slash command):** start a task and paste the Kickoff prompt below, or tell the
   agent: "Follow `<SKILLS_DIR>/bootstrap/SKILL.md` against this repo."
@@ -25,44 +28,48 @@ Bootstrap will: read the codebase, ask a few gap questions, write the repo-tailo
 or `.git/info/exclude`), wire the guardrails you choose, and verify the commands actually run. Run it once.
 
 ### Kickoff prompt (copy-paste for tools without slash commands)
+>
 > Read `<SKILLS_DIR>/bootstrap/SKILL.md` and run it against this repository. Honor
 > `<AGENTS_DIR>/_STANDARD.md` and the "Cost & context discipline" section below.
 > Ask only for gaps recon can't settle, then specialize the team in `<AGENTS_DIR>/`.
 
-## Day-to-day — plan, ship, resume
+## Day-to-day — plan, deliver, resume
+
 Invoke `architect` directly when you want discovery and an interactive blueprint in `design-docs/`; it never
 implements source code. The main session conditionally uses `planning-analyst` for material unknowns and
 requires `plan-reviewer` in a fresh context before handing a new blueprint to execution. Use
-`<SKILLS_DIR>/ship/SKILL.md` to execute or resume work:
+`<SKILLS_DIR>/deliver/SKILL.md` to execute or resume work:
 
 The architect's `Planning Session` is the planning checkpoint (milestones, depth and finish condition).
 A request to plan everything before code survives resume and Interactive execution; see architect Rule 13.
-Planning completion hands off to `/ship`'s separate blueprint/scope approval, never directly to implementation.
+Planning completion hands off to `/deliver`'s separate blueprint/scope approval, never directly to implementation.
 
-- **Claude Code:** `/ship "<task, PR, ticket, or small fix>"`, or plain `/ship` to resume the one
+- **Claude Code:** `/deliver "<task, PR, ticket, or small fix>"`, or plain `/deliver` to resume the one
   unambiguous open scope.
-- **Other tools:** "Follow `<SKILLS_DIR>/ship/SKILL.md` for this task: <task>."
+- **Other tools:** "Follow `<SKILLS_DIR>/deliver/SKILL.md` for this task: <task>."
 
-`/ship` resolves the narrowest unambiguous scope from blueprint state. If no scope or several candidates
+`/deliver` resolves the narrowest unambiguous scope from blueprint state. If no scope or several candidates
 exist, it asks; it never guesses from recency. Its closed loop is policy-aware TDD (Red → Green, or a
 passing before/after baseline for an explicitly approved behavior-preserving refactor) → independent
 review + security → repairs → Green + re-audit → docs + full verification → `ready_for_human_review`.
 
 ## Workflows available here
+
 Each is a skill in `<SKILLS_DIR>/<name>/SKILL.md`: in Claude Code type `/<name>`; elsewhere tell the
 agent "Follow `<SKILLS_DIR>/<name>/SKILL.md` for: <request>." All are optional and none runs another.
 
-- **Engineering:** `bootstrap` (tailor the team and controls) · `ship` (execute or resume work) ·
+- **Engineering:** `bootstrap` (tailor the team and controls) · `deliver` (execute or resume work) ·
   `new-agent` (add a local role) · `new-skill` (add a local workflow) · `adapt-army` (turn a recurring
   problem into a targeted improvement).
 - **Product (conversation + docs in `docs/product/` and `docs/adr/`; anything that becomes code is a
-  work item `W-n` for `ship`):** `product` (where am I on the 14-stage journey, one next step; start
+  work item `W-n` for `deliver`):** `product` (where am I on the 14-stage journey, one next step; start
   here when unsure) · `product-strategy` · `product-red-team` · `market-research` · `business-case` ·
   `validate-product` · `product-spec` · `solution-architecture` · `delivery-plan` · `go-to-market` ·
   `positioning-offer` · `first-customers` · `product-metrics` · `ux-review` · `legal-review` · `launch-readiness`. Where each record type lives
   (repo by default, or a connected tool) is recorded in `.agent-army/stores.json`.
 
 ## The team (delegate by role)
+
 - `architect` — interview (greenfield/existing) + blueprint in `design-docs/` (never writes source)
 - `planning-analyst` — conditional, read-only diagnosis/research with evidence; no blueprint or edits
 - `plan-reviewer` — independent, read-only review of a saved blueprint revision; no edits or execution
@@ -71,17 +78,32 @@ agent "Follow `<SKILLS_DIR>/<name>/SKILL.md` for: <request>." All are optional a
 - `security-auditor` — read-only security audit (secrets, injection, unsafe data handling)
 - `perf-auditor` — read-only performance audit (measure first, then hotspots)
 - `docs-writer` — minimal, truthful documentation updates
-**Who writes what code:** `tester` writes and runs the **test** code (never production). **Production code** is written by the `/ship` orchestrator (main session) by default — it holds the warm context (blueprint + RED tests + your conversation), so small/medium tasks need no extra hop. For **large, file-heavy, or parallel-PR** tasks, delegate production coding to the `coder` subagent (ships off the default `/ship` pipeline; `/bootstrap` tailors it): its exploration stays in its own throwaway context window and it returns a short summary, which keeps the orchestrator's session lean (see "Cost & context discipline" below).
+**Who writes what code:** `tester` writes and runs the **test** code (never production).
+**Production code** is written by the `/deliver` orchestrator (main session) by default —
+it holds the warm context (blueprint + RED tests + your conversation), so small/medium tasks need no extra hop.
+For **large, file-heavy, or parallel-PR** tasks,
+delegate production coding to the `coder` subagent (ships off the default `/deliver` pipeline; `/bootstrap` tailors it):
+its exploration stays in its own throwaway context window and it returns a short summary,
+which keeps the orchestrator's session lean (see "Cost & context discipline" below).
 Quality bar for every agent: `<AGENTS_DIR>/_STANDARD.md`.
 
 ## Delegation, review & model gates
+
 - **Contract before action:** every delegated task names its goal, allowed read/write paths, forbidden paths and stop conditions. A worker stops and reports when it needs to leave that scope or a contract assumption is unproved; it never silently broadens a task.
 - **Interactive preflight:** a short `task plan` before each task names the behavior, cases, verification and exact write list. It waits only when it carries a question or something unexpected; otherwise work continues. In autonomous mode work may continue only when that list is inside the blueprint's write scope.
 - **Fresh review:** give `code-reviewer` only the task contract, diff and human decisions. Do not forward implementation/tester reports, reasoning or transcripts; call a missing contract a `Diff-Only Review`.
 - **Fresh plan review:** give `plan-reviewer` the approved goal, confirmed decisions, exact blueprint revision and relevant raw source pointers. Do not pass the architect transcript/self-review or analyst report as proof. If the target cannot provide an independent context, record `INSUFFICIENT_EVIDENCE`; never label self-review independent.
-- **Execution state:** each PR blueprint persists its `autonomous` or `interactive` policy, active roles, Interaction Card, task/PR status and any Temporary delegation; progress comes from the manifest's Task Roadmap. Each blueprint file opens with a plain-language `For you` section, and a plan correction is made at the smallest tier (minor, task, core) and written as current state, not history. `/ship` writes it immediately before and after every role handoff, so it can resume without guessing from a Todo list or chat history.
+- **Execution state:** each PR blueprint persists its `autonomous` or `interactive` policy, active roles,
+  Interaction Card, task/PR status and any Temporary delegation; progress comes from the manifest's Task Roadmap.
+  Each blueprint file opens with a plain-language `For you` section,
+  and a plan correction is made at the smallest tier (minor, task, core) and written as current state, not history.
+  `/deliver` writes it immediately before and after every role handoff,
+  so it can resume without guessing from a Todo list or chat history.
 - **Two interaction modes:** `autonomous` pauses only for blueprint/scope, real decisions and final human review. `interactive` works with the user: pauses keep the user in the thread and able to steer, so it adds one task review after every verified task plus a `task plan` that waits only for a real question. Explicit one-task delegation lets the agent settle in-scope choices itself but always returns to task review. The user can switch modes at any safe boundary; raw role/checkpoint selection is never exposed.
-- **Delivery-focused interaction:** `/ship` shows selected task outcomes plus closure, the current step and finish condition. Ask one consequential question only for a real gap; no quizzes or tutoring. Reuse facts and decisions, act when clear, and explain map changes. Task evidence remains authoritative; GREEN still awaits audit. Resume from the existing PR without replaying resolved questions.
+- **Delivery-focused interaction:** `/deliver` shows selected task outcomes plus closure,
+  the current step and finish condition. Ask one consequential question only for a real gap; no quizzes or tutoring.
+  Reuse facts and decisions, act when clear, and explain map changes. Task evidence remains authoritative;
+  GREEN still awaits audit. Resume from the existing PR without replaying resolved questions.
 - **Collaborative pace (every skill and role in this repo):**
 
 <!-- interaction-pace:v1 -->
@@ -89,13 +111,37 @@ We reach the result together in small steps, not in one long answer. Each turn o
 <!-- /interaction-pace:v1 -->
 
 - **Blueprint + routing + scope gate:** a new or materially revised blueprint always pauses for acceptance and execution scope, even in autonomous mode. The user chooses one task, one PR, or all unfinished PRs. A model/effort decision is added only when the selected adapter falls back to inherited configuration.
-- **Scope-aware routing:** each task keeps its own `Execution Profile`; the selected scope adds a coordinator-only Scope Profile. A whole feature increases coordination only when dependencies warrant it — it never routes every simple task to a stronger model.
-- **Bottleneck-aware effort:** `/ship` diagnoses whether the constraint is retrieval, design judgment, capability, context noise, verification or multiple approaches. Improve context first for retrieval/noise, raise effort by one step only for a reasoning problem, and route to a stronger role or specialist when the task is genuinely outside the current tier. A good verifier can justify a cheaper worker plus another repair loop; repeated effort without a better result stops and escalates. Never invent or silently mutate a native model/effort setting.
-- **Per-role model routing:** where the adapter supports a native agent `model` field, bootstrap assigns a static model to each role before it is spawned: strong for architect, plan-reviewer, code-reviewer and security-auditor; mid for coder, perf-auditor and planning-analyst; light for tester and docs-writer. Claude uses its documented tiers; Cursor requires the user's three exact target-native model IDs. OpenCode executes role contracts in the main thread, so it inherits the active session model. `/ship` never invents a provider ID or silently changes the main-session model. Unsupported fields, missing IDs and every role-level effort setting fall back to inherited tool configuration; `inherited` is a limitation, not a model choice. Native adapters preserve unmarked user model overrides; OpenCode has no role-level model record.
+- **Scope-aware routing:** each task keeps its own `Bottleneck` (omitted with `inherit` routing);
+  the selected scope adds a coordinator-only Scope Profile.
+  A whole feature increases coordination only when dependencies warrant it —
+  it never routes every simple task to a stronger model.
+- **Bottleneck-aware effort:** `/deliver` diagnoses whether the constraint is retrieval, design judgment, capability,
+  context noise, verification or multiple approaches.
+  Improve context first for retrieval/noise, raise effort by one step only for a reasoning problem,
+  and route to a stronger role or specialist when the task is genuinely outside the current tier.
+  A good verifier can justify a cheaper worker plus another repair loop;
+  repeated effort without a better result stops and escalates.
+  Never invent or silently mutate a native model/effort setting.
+- **Per-role model routing:** where the adapter supports a native agent `model` field,
+  bootstrap assigns a static model to each role before it is spawned:
+  strong for architect, plan-reviewer, code-reviewer and security-auditor;
+  mid for coder, perf-auditor and planning-analyst; light for tester and docs-writer. Claude uses its documented tiers;
+  Cursor requires the user's three exact target-native model IDs.
+  OpenCode executes role contracts in the main thread, so it inherits the active session model.
+  `/deliver` never invents a provider ID or silently changes the main-session model.
+  Unsupported fields, missing IDs and every role-level effort setting fall back to inherited tool configuration;
+  `inherited` is a limitation, not a model choice. Native adapters preserve unmarked user model overrides;
+  OpenCode has no role-level model record.
 - **Closure:** review and security run from independent evidence. Every confirmed security finding must be repaired and re-audited inside the contract; an expansion becomes `awaiting_approval`, never a silent scope change.
 
 ## Cost & context discipline
-The team already bakes most cost control into its parts (per-task profiles in blueprints; target-native per-role model routing where supported; plan-before-code in `architect`; trivial-task-inline + parallel read-only audits in `ship`; delegate-and-summarize in `coder`). The role map is static for the current bootstrap; `/ship` never invents a provider ID or mutates it mid-run. On top of that, every agent honors:
+
+The team already bakes most cost control into its parts (per-task profiles in blueprints;
+target-native per-role model routing where supported; plan-before-code in `architect`;
+trivial-task-inline + parallel read-only audits in `deliver`; delegate-and-summarize in `coder`).
+The role map is static for the current bootstrap; `/deliver` never invents a provider ID or mutates it mid-run.
+On top of that, every agent honors:
+
 - **Pointers, not payloads** — hand subagents file paths + the blueprint section, not pasted file bodies; read the slice you need (`offset`/`limit`, the touched function), not whole files "for safety".
 - **Load by decision** — start with the task and applicable instructions, then load sources that resolve a concrete uncertainty. Expand to connected callers/schemas when needed; do not repeatedly scan the entire repo or replay a transcript. Keep durable decisions in the blueprint and return evidence pointers plus conclusions. If relevant sources changed, recheck those facts rather than trusting an old summary. Never trim away applicable safety rules or contradictory evidence to make the packet smaller.
 - **Keep instruction ownership clear** — repository laws belong in `AGENTS.md`, role behavior in its contract, procedures in skills, and task state in the blueprint. For repeated stale or conflicting instructions, route a targeted correction through `adapt-army`; do not silently rewrite user-owned rules or start a general documentation cleanup.
@@ -121,11 +167,13 @@ package skills and templates before choosing any local specialization changes.
 <!-- agent-army:feedback-router:end -->
 
 ## Hardening the formatter config — offer once, never nag
+
 When an agent keeps hitting the SAME style gap the formatter doesn't enforce (e.g. the diff repeatedly
 wants single quotes but `.prettierrc` has no `singleQuote`, or `*.yml` indent drifts because nothing
 pins it), it may propose — ONCE — adding that rule to the **formatter's own config that the hooks
 already run** (`.prettierrc`/`.editorconfig`/ruff/gofmt — whatever structured `quality.format` in `.agent-army/config.json` invokes),
 so it's machine-enforced from then on instead of re-litigated every PR.
+
 - **Conservative, not naggy:** a one-off restyle is just diff-noise — revert it (see Hard rules), don't
   raise config. Only a *recurring, repo-wide* gap earns the offer, and only once — if declined, drop it.
 - **One source of truth, no hook conflict:** EXTEND the config the formatter already reads; never add a
@@ -135,6 +183,7 @@ so it's machine-enforced from then on instead of re-litigated every PR.
   `/adapt-army`.
 
 ## Guardrails (the "law" the model cannot talk past)
+
 - **git pre-commit + CI (`.github/workflows/quality.yml`)** — the hard, tool-independent gate:
   secret scan + lint + tests. Active on EVERY tool, even if someone bypasses the agent.
 - **Claude Code only:** lifecycle hooks in `.claude/settings.json` (PreToolUse / PostToolUse /
@@ -142,6 +191,7 @@ so it's machine-enforced from then on instead of re-litigated every PR.
   the git pre-commit + CI gate is the active barrier.
 
 ## Hard rules
+
 - Do NOT commit without human approval.
 - Do NOT weaken or disable tests/hooks to "pass".
 - Do NOT paste secrets into code or prompts.

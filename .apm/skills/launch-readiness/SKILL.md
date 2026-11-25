@@ -1,6 +1,6 @@
 ---
 name: launch-readiness
-description: "Launch readiness verdict per area: purchase, failed payment, cancellation, contact, support, monitoring, restore evidence, measurement; reuses /ship audit results, 'not run' is not 'clean'. Not for running audits or fixing code."
+description: "Launch readiness verdict per area: purchase, failed payment, cancellation, contact, support, monitoring, restore evidence, measurement; reuses /deliver audit results, 'not run' is not 'clean'. Not for running audits or fixing code."
 ---
 # /launch-readiness — what blocks launch, with evidence
 
@@ -17,8 +17,9 @@ backed by evidence and every blocker turned into a next step.
 </objective>
 
 ## When to use
+
 - In the days before launch, or before a large campaign.
-- Not for: running security or performance audits (the `/ship` roles do that), fixing code (`fix` work
+- Not for: running security or performance audits (the `/deliver` roles do that), fixing code (`fix` work
   items), or legal questions (`/legal-review`).
 
 <rules>
@@ -26,7 +27,7 @@ backed by evidence and every blocker turned into a next step.
 2. A backup without a dated restore actually performed is an unverified blocker. Monitoring is
    `ready` only with the targets from `solution.md` Observability and a dated test alert that reached
    the user; without them it is a blocker, or `not run` when nobody can say.
-3. Security and performance: cite an existing `/ship` auditor report when one is in the repo's docs or
+3. Security and performance: cite an existing `/deliver` auditor report when one is in the repo's docs or
    the user points to one; otherwise the area is `not run`. Never run or re-run an audit yourself.
 4. Measurement is `ready` only when `metrics.md` shows collection `verified`; legal only when no open
    launch-blocking `L-n` (or `UNSOURCED` item) remains; UX only when no open `blocks` finding remains.
@@ -37,8 +38,9 @@ backed by evidence and every blocker turned into a next step.
 </rules>
 
 ## Method
+
 1. **Collect evidence**: `metrics.md`, `solution.md`, `legal-review.md`, `ux-review.md`,
-   `go-to-market.md`, the project's ops notes (for example `docs/ops.md`), `/ship` audit reports or ops
+   `go-to-market.md`, the project's ops notes (for example `docs/ops.md`), `/deliver` audit reports or ops
    logs in the repo's docs or pointed to by the user, and the data sources `metrics.md` lists.
 2. **Check each area**: main path works · purchase · failed payment (retry, message, access) ·
    cancellation · contact and support · monitoring and alerts · backups with restore evidence ·
@@ -55,7 +57,7 @@ state.
 The examples show the pattern and the format, not the subject matter.
 
 - Fresh start: "We launch on Monday. Are we ready?" → step 1 of ~6; asks for the latest backup restore
-  date first; finds none, marks restore as an unverified blocker, cites the existing `/ship`
+  date first; finds none, marks restore as an unverified blocker, cites the existing `/deliver`
   security-auditor report for security, and returns "not yet" with two blockers.
 - Resume: "Restore test done today, log in docs/ops/restore-2026-10-20.md." with
   `docs/product/launch-readiness.md` present → reads the log, flips restore to ready with that evidence

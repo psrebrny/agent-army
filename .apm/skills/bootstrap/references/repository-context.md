@@ -54,7 +54,7 @@ Outside Git, stop rather than substituting the skill installation or the user's 
   `runtime.py` does not select nested profiles: invoking it is not proof that the nested team's commands
   ran. Existing repository-wide controls still apply independently.
 
-Scope: engineering workflows (`/ship`, `/adapt-army`, `/new-agent`). Product skills keep their records
+Scope: engineering workflows (`/deliver`, `/adapt-army`, `/new-agent`). Product skills keep their records
 and `.agent-army/stores.json` at the Git root. `profile_newer: true` means the profile was written by a newer
 package than the installed one: use it read-only and do not run `bootstrap.py` against it.
 

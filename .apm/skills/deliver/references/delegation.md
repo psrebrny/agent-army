@@ -1,4 +1,4 @@
-# /ship reference — one-task delegation
+# /deliver reference — one-task delegation
 
 Read this file when the user hands you the current task ("do this part yourself"), or when a resumed
 `Execution State` has a `Temporary delegation` other than `none`.
@@ -7,7 +7,7 @@ Read this file when the user hands you the current task ("do this part yourself"
 through verification. If "part" is ambiguous, clarify the task boundary first. Keep `Interaction policy:
 interactive`; record `Temporary delegation` in `Execution State` with the task ID, the user's authorization,
 approved write scope and return point (`task review`). Include this authorization in a delegated coder's
-packet; the coder returns to `/ship` for verification/interactive review rather than owning the dialogue.
+packet; the coder returns to `/deliver` for verification/interactive review rather than owning the dialogue.
 It is a bounded exception, not a third mode.
 
 Within that task, preserve the usual RED/baseline evidence and the plan/write list, but settle the task's

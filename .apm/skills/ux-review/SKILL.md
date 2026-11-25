@@ -1,6 +1,6 @@
 ---
 name: ux-review
-description: "Heuristic UX review of the paths that matter (offer, onboarding, first useful result, purchase, errors, accessibility), walked in the running app when possible; each finding tied to a screen or flow step; fixes become /ship work items. Not for user studies or visual design."
+description: "Heuristic UX review of the paths that matter (offer, onboarding, first useful result, purchase, errors, accessibility), walked in the running app when possible; each finding tied to a screen or flow step; fixes become /deliver work items. Not for user studies or visual design."
 ---
 # /ux-review — walk the paths that matter, tie every finding to what you saw
 
@@ -15,14 +15,15 @@ say the Agent Army installation is incomplete and stop. Your stage: 11 (12 after
 
 <objective>
 Produce a short, prioritised list of evidence-tied UX findings on the paths the user cares about, with
-the top fixes handed to `/ship` as work items.
+the top fixes handed to `/deliver` as work items.
 </objective>
 
 ## When to use
+
 - Before launch, after weak activation numbers, or when the user shares a URL, screenshots or a way
   to start the app.
 - Not for: visual brand design, running usability tests with people (you can prepare the script for
-  `/validate-product`), or writing the fixes (`fix` work items for `/ship`).
+  `/validate-product`), or writing the fixes (`fix` work items for `/deliver`).
 
 <rules>
 1. No evidence, no finding. Every finding cites a screen, a flow step or a screenshot you took or were
@@ -61,6 +62,7 @@ the top fixes handed to `/ship` as work items.
 </rules>
 
 ## Method
+
 1. **Scope.** Read the brief (audience, promise) and `metrics.md` if present. Agree in one turn which
    paths to review and what you can open: URL, local start, screenshots. Less access means a partial
    result, said up front.
