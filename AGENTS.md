@@ -26,7 +26,7 @@ No build step, no test suite, no installer script — apm is the install mechani
   stage model, record stores, every skill, the `/deliver` boundary table, ADRs.
 - `.apm/SOURCES.md` — attribution for borrowed methods (repo · file · commit · license). Source repo only: APM installs just the skill folders, so each skill also names its source and license inline.
 - `.apm/commands/` — thin command wrappers for tools that surface a `command/` dir rather than `skills/`; each just points at the matching `.agents/skills/<skill>/SKILL.md`. Claude does not use them: there the skills are native in `.claude/skills`. The skills may be installed globally or per repo; `/bootstrap` never copies them. (apm's own placement varies by tool/version; when a native command isn't registered, invoke the skill directly by its `.agents/skills/…/SKILL.md` path.)
-- `.apm/skills/bootstrap/bootstrap.py` — deterministic 0.9.0 generator/migrator (profile schema v3, no target):
+- `.apm/skills/bootstrap/bootstrap.py` — deterministic 0.9.1 generator/migrator (profile schema v3, no target):
   `python3 bootstrap.py [--visibility committed|gitignore|exclude] [--mode auto|incremental|full]`
   `[--runtime-hooks …] [--git-precommit …] [--ci …] [--tool <tool>]`.
   It creates `.agent-army/agents/*.agent` role contracts (the only copy), `.agent-army/config.json` with

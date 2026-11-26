@@ -28,7 +28,8 @@ ran (security and perf only if the diff touches their risk areas, a skip is stat
 in-scope findings were repaired before the one task review. That review leads with how to see the result,
 gives a review map (reading order tests -> core -> wiring, 3-5 where-to-look points, what the audits
 covered), shows the verdicts and repairs, and ends with the next task's plan in plain words. "no, the totals are wrong" is fixed in this task before the next slice
-starts; "continue" accepts it and starts the presented plan.
+starts; "continue" accepts it without starting the next task: the next task's `task plan` card is saved and a
+ready prompt (repo, branch, plan path, accepted task, verify result, next step) is offered for a new thread.
 
 Follow-up turn during task 1.2: "the header also needs a submenu" → asked whether it is in scope; only on
 "yes" does it become row `1.2a` (no renumbering), otherwise it is listed as out of scope.

@@ -445,7 +445,7 @@ the task's Delegation Contract. -->
 - **Manual check:** [in plain words: how to start or reach the app, what to open and click, and what the user should see after this task; with interaction, one line for keyboard (Tab/Enter) and visible focus; or a command and its expected output when nothing is visible]
 - **Review focus:** [one to three things in this task's diff only a human can judge]
 - **Bottleneck:** [retrieval | design_decision | capability_gap | context_noise | verification | multiple_approaches | unknown] — [evidence; escalation trigger; omit this line with `inherit` model routing]
-- **Evidence:** [RED and GREEN command + result, review file; written by /deliver; or none yet]
+- **Evidence:** [RED and GREEN command + result + file fingerprint, review file; written by /deliver; or none yet]
 ````
 
 ## <prompt_examples>

@@ -175,15 +175,18 @@ them rediscover an answer already supported by the contract.
 
 Apply the planning-first resume rule before the execution steps below. If the saved manifest lacks the
 current milestone table, `Detail policy` or planning finish condition, read `references/legacy.md` first.
-On execution resume, read `Execution State`, task decisions/evidence, the pending card, the roadmap and any temporary
-delegation before acting. Initialize a missing temporary delegation to `none`. Missing evidence stays unknown:
-inspect or rerun the relevant check without replaying decisions. When the user returns after a break, open with
-one sentence on where the work stands (task, last verified result, the pending question or next step) before
-anything else. If the file has a shape older than the current skeletons (a `supervised` policy, a card at a
-checkpoint not in the list below, an `Execution Progress` section, Polish statuses, separate routing lines),
-read `references/legacy.md` first. When a simple inline task has no PR file, keep the same compact state in the
-conversation; do not create a blueprint solely for a progress counter or claim file-backed resumption where
-none exists.
+On execution resume, after a compaction or in a new thread, rebuild from the saved state, not from the
+conversation: read `Execution State`, the current task's block (decisions, `Evidence`), the pending card, the
+task's roadmap row and any temporary delegation, and nothing of finished tasks unless the next step needs it.
+Initialize a missing temporary delegation to `none`. Missing evidence stays unknown: inspect or rerun the
+relevant check without replaying decisions. A passing check in `Evidence` is reused, not rerun, while its command
+and file fingerprint (section 1.8) still match; rerun it when either differs or the user asks.
+When the user returns after a break, open with one sentence on where the work stands (task, last verified
+result, the pending question or next step) before anything else. If the file has a shape older than the
+current skeletons (a `supervised` policy, a card at a checkpoint not in the list below, an `Execution Progress`
+section, Polish statuses, separate routing lines), read `references/legacy.md` first.
+When a simple inline task has no PR file, keep the same compact state in the conversation; do not create a
+blueprint solely for a progress counter or claim file-backed resumption where none exists.
 
 ### ONE-TASK DELEGATION
 
@@ -227,8 +230,23 @@ one question with a recommendation; a plan without a question is shown and not p
   risks only a human can judge, starting from the task's `Review focus`; (4) what the task-level
   audits already covered, so the user does not repeat mechanical review.
 - End with the next task's plan in plain words (what will be done and what the user will then see).
-  `continue` accepts this task (it becomes `done`) and starts that plan; a correction to the plan is settled
-  before it starts. The user reviews the task's code and tests together here, once.
+  `continue` accepts this task (it becomes `done`); it does not start the next one. A correction to the plan
+  is settled before it starts. The user reviews the task's code and tests together here, once.
+
+**Handoff after acceptance.** Accepting a task never authorizes the next one. When a next task exists, in the
+write that marks the accepted task `done` set `Current task` to the next one (still `open`) and persist its
+`task plan` card asking whether to start it. Then recommend a new thread in the chat and give a ready prompt in a
+fenced block, in the user's language, holding only these facts; copy no history and never open a thread yourself:
+
+```text
+/deliver Task <next ID>: start
+Repo: <repo path> · branch: <branch> · plan: <PR file path>
+Accepted: Task <ID> · <Verify command> → <result>
+Next step: <the next task's plan in one line>
+```
+
+Pasting that prompt, or `start` in this thread, is the go-ahead for that task. After the PR's last task, closure
+follows as before.
 
 For `behavior decision`, include the unknown, recommendation and consequence; do not pause when all are settled.
 A finding-decision card names the finding, its severity, the in-scope repair option, and any decision that
@@ -324,8 +342,15 @@ scope raises coordination only; it never raises every worker's configuration.
 
 Each task's `Bottleneck` comes from the architect. When a verified result is poor, escalate in this order:
 clean/retrieve context → adjust one effort step for a reasoning problem → route to a stronger role
-capability or specialist → ask for a decision/scope change. Never spend unbounded effort on retrieval, context
-noise or a repeated failed approach. Read `references/routing.md` for the first move and trigger per bottleneck.
+capability or specialist → ask for a decision/scope change. Never spend unbounded effort on retrieval or context
+noise. Read `references/routing.md` for the first move and trigger per bottleneck.
+
+**Loop breaker** (main session and every re-dispatch). When the same action runs a second time without a new
+result (the same command on unchanged files, a reread of an unchanged file, the same fix), change the approach:
+another hypothesis, a narrower context or another check. If the changed approach also brings no progress, stop
+retrying: persist the obstacle, what was tried and the proposed next step in the task's `Evidence` and
+`Awaiting decision`, set the task `awaiting decision` (`blocked` for an external obstacle) with a
+`behavior decision` card, and pause in both modes.
 
 ## 1.6 · MODEL & EFFORT ROUTING
 
@@ -395,10 +420,12 @@ scope (task, PR, feature, plan); a re-run overwrites it (current state; git keep
 | `design-docs/[ID]/planning-evidence.md` | `planning-analyst`, kept by the architect | confirmed facts and source paths the plan relies on |
 
 Nothing else is saved. RED/GREEN results live in the task's `Evidence` (command, exit, counts, the decisive
-assertion); the docs result is the docs diff itself, summarized in the final-review card; coder and tester
-reports stay in the conversation. Do not store raw logs, and never cite `/tmp` or another session-only path as
-evidence. The blueprint links only to these files. In-scope findings are repaired before the file is written
-(section 4), so the review file shows what was found and how it was fixed, and the user reads one file per task.
+assertion, and the fingerprint of the files it checked: `git hash-object <existing write-list and test files> |
+git hash-object --stdin`); the docs result is the docs diff itself, summarized in the final-review card;
+coder and tester reports stay in the conversation. Do not store raw logs, and never cite `/tmp` or another
+session-only path as evidence. The blueprint links only to these files. In-scope findings are repaired before
+the file is written (section 4), so the review file shows what was found and how it was fixed, and the user
+reads one file per task.
 
 ## 2 · BLUEPRINT OR RESUME  → `architect`
 

@@ -1,6 +1,6 @@
 # Agent Army skills catalog
 
-Agent Army 0.9.0 installs 21 skills: five engineering workflows and sixteen product skills (fifteen
+Agent Army 0.9.1 installs 21 skills: five engineering workflows and sixteen product skills (fifteen
 advisors plus the `/product` navigator). Every skill is optional and callable on its own. Nothing runs
 another skill for you: `/product` recommends a step, you run it.
 

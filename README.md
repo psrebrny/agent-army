@@ -184,6 +184,12 @@ where a copy is identical to its contract: `.claude/agents/agent-army-*.md`, `.c
 staging. It also moves generated `model:` lines from the contracts into the profile. An edited copy is kept
 and listed as a conflict.
 
+**0.9.1:** `/deliver` hands off after each accepted task: accepting a task no longer starts the next one; you get a
+ready prompt (repo, branch, plan, accepted task, check result, next step) to paste into a new thread. After a
+compaction or in a new thread it resumes from the saved task state and reuses passing checks whose files have not
+changed. A loop breaker changes approach after a repeated action with no new result, then stops with the obstacle
+written down instead of retrying.
+
 **0.9.0:** `/ship` is renamed to `/deliver`, because Claude Code now has its own `/ship`. `/bootstrap` lists
 the `/ship` mentions in your `AGENTS.md` and local roles for you to update. Blueprints are shorter: each task is
 a short block, rules shared by all tasks are written once in the manifest, the manifest's "What will be built"

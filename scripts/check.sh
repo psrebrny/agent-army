@@ -1062,6 +1062,7 @@ else:
 
 # (c) retired wording
 RETIRED = {
+    'starts that plan': 'accepting a task no longer starts the next one (handoff, 0.9.1)',
     'RED acceptance': 'removed checkpoint (folded into task plan)',
     'baseline acceptance': 'removed checkpoint',
     'implementation acceptance': 'removed checkpoint',
